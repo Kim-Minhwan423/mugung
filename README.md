@@ -1,1 +1,1 @@
-# naver-place-rank.api
+# naver-place-rank-api
