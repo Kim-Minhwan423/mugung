@@ -1,51 +1,43 @@
 from flask import Flask, request, jsonify
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-import time
 
 app = Flask(__name__)
 
-# 기본 루트 엔드포인트
-@app.route('/')
-def home():
-    return "Naver Place API is running!"
-
-# 네이버 플레이스 순위 크롤링 API
-@app.route('/get_naver_place_rank', methods=['GET'])
+@app.route("/get_naver_place_rank", methods=["GET"])
 def get_naver_place_rank():
-    keyword = request.args.get('keyword')
-    if not keyword:
-        return jsonify({'error': 'Keyword parameter is required'}), 400
-
-    # Chrome WebDriver 설정
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')  # GUI 없이 실행
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-
-    service = Service(ChromeDriverManager().install())
+    # URL 파라미터로 키워드를 받음
+    keyword = request.args.get("keyword")
+    
+    # Chrome 옵션 설정
+    options = Options()
+    options.binary_location = "/usr/bin/google-chrome"  # Chrome 실행 경로
+    options.add_argument("--headless")  # 헤드리스 모드
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    
+    # ChromeDriver 설정
+    service = Service(ChromeDriverManager().install())  # 자동으로 ChromeDriver 관리
     driver = webdriver.Chrome(service=service, options=options)
 
-    # 네이버 플레이스 검색 URL
-    search_url = f"https://map.naver.com/v5/search/{keyword}"
-    driver.get(search_url)
-    time.sleep(3)  # 페이지 로딩 대기
+    try:
+        # 네이버 플레이스 검색 URL로 이동
+        driver.get(f"https://m.place.naver.com/search/{keyword}")
+        
+        # 여기서 필요한 데이터 추출을 위한 코드 추가 (예: 무한 스크롤 구현, 특정 요소 추출 등)
+        # 예시로 페이지 타이틀을 반환합니다.
+        page_title = driver.title
+        
+        return jsonify({"keyword": keyword, "page_title": page_title})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # iframe 내부로 이동
-    driver.switch_to.frame("searchIframe")
+    finally:
+        # 브라우저 종료
+        driver.quit()
 
-    # 플레이스 목록 가져오기
-    places = driver.find_elements(By.CSS_SELECTOR, "div.YjdnP > div > div > span.TYaxT")
-
-    results = []
-    for idx, place in enumerate(places[:300], start=1):  # 최대 300위까지 저장
-        results.append({'rank': idx, 'name': place.text})
-
-    driver.quit()
-
-    return jsonify({'keyword': keyword, 'results': results})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
