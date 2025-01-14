@@ -2,7 +2,7 @@ name: Naver Place Checker
 
 on:
   schedule:
-    - cron: "0 15 * * *"
+    - cron: "0 15 * * *"  # 매일 15:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -23,7 +23,6 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---- (추가) Chrome 설치 단계 ----
       - name: Install Chrome
         run: |
           sudo apt-get update
@@ -33,6 +32,12 @@ jobs:
         run: |
           echo "${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > /tmp/keyfile.json
 
-      - name: Run script
+      # 첫 번째 스크립트 실행 (예: 송도)
+      - name: Run Songdo script
+        run: |
+          python 1-songdo-naver-place-checker.py
+
+      # 두 번째 스크립트 실행 (예: 청라)
+      - name: Run Chengla script
         run: |
           python 2-chengla-naver-place-checker.py
