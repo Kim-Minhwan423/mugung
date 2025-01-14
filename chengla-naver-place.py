@@ -2,7 +2,6 @@ import os
 import json
 import time
 import gspread
-import selenium
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -12,19 +11,24 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 
-# ✅ Chrome 실행 옵션 설정
-options = Options()
-options.add_argument("--headless")  # UI 없이 실행
-options.add_argument("--no-sandbox")  # 샌드박스 모드 비활성화
-options.add_argument("--disable-dev-shm-usage")  # 메모리 부족 문제 해결
-options.add_argument("--remote-debugging-port=9222")  # 디버깅 포트 추가
-options.binary_location = "/usr/bin/google-chrome"  # Chrome 실행 경로 설정
+def setup_chrome_driver():
+    """ChromeDriver와 Chrome 설정"""
+    options = Options()
+    options.add_argument("--headless")  # UI 없이 실행
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.binary_location = "/usr/bin/google-chrome"  # Google Chrome 경로
 
-# ✅ ChromeDriver 실행
-driver = webdriver.Chrome(service=Service(), options=options)
+    service = Service("/usr/local/bin/chromedriver")  # ChromeDriver 경로
+    return webdriver.Chrome(service=service, options=options)
 
-# ✅ Chrome 버전 확인
-print("Chrome Version:", driver.capabilities['browserVersion'])
+# ✅ ChromeDriver 설정
+try:
+    driver = setup_chrome_driver()
+    print("✅ Chrome 실행 성공")
+except Exception as e:
+    print(f"🚨 Chrome 실행 실패: {e}")
+    raise
 
 # ✅ 환경 변수에서 Google 인증 파일 가져오기
 json_keyfile_content = os.getenv('GOOGLE_CREDENTIALS')
