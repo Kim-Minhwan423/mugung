@@ -26,7 +26,7 @@ json_keyfile_dict = json.loads(json_keyfile_content)
 
 # Google Sheets API 인증
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_dict, scope)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(json_keyfile_dict, scope)
 client = gspread.authorize(creds)
 
 # 구글 스프레드시트 열기
