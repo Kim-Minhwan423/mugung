@@ -26,7 +26,7 @@ jobs:
       # ---- 여기가 핵심: Secret -> 임시 JSON 파일 만들기 ----
       - name: Decode JSON Key
         run: |
-          echo "${{ secrets.SERVICE_ACCOUNT_JSON }}" > /tmp/keyfile.json
+          echo "${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > /tmp/keyfile.json
 
       - name: Run script
         run: |
