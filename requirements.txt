@@ -1,3 +1,4 @@
-pip install Flask
-pip install selenium
-pip install gspread oauth2client
+selenium
+gspread
+webdriver-manager
+oauth2client
