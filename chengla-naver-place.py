@@ -9,17 +9,24 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 import os
+import json
 from oauth2client.service_account import ServiceAccountCredentials
 
 # 🛠 User-Agent 설정
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # 환경 변수에서 인증 파일 경로 가져오기
-json_keyfile_path = os.getenv('GOOGLE_CREDENTIALS')
+json_keyfile_content = os.getenv('GOOGLE_CREDENTIALS')
+
+if json_keyfile_content is None:
+    raise ValueError("환경 변수 'google_credentials'가 설정되지 않았습니다.")
+
+# JSON 문자열을 Python 딕셔너리로 변환
+json_keyfile_dict = json.loads(json_keyfile_content)
 
 # Google Sheets API 인증
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_path, scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_dict, scope)
 client = gspread.authorize(creds)
 
 # 구글 스프레드시트 열기
