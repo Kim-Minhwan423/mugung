@@ -1,0 +1,33 @@
+name: Naver Place Checker
+
+on:
+  schedule:
+    - cron: "0 15 * * *"  # 매일 15:00 UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ---- 여기가 핵심: Secret -> 임시 JSON 파일 만들기 ----
+      - name: Decode JSON Key
+        run: |
+          echo "${{ secrets.SERVICE_ACCOUNT_JSON }}" > /tmp/keyfile.json
+
+      - name: Run script
+        run: |
+          python 2-chengla-naver-place-checker.py
