@@ -3,7 +3,6 @@ import json
 import time
 import gspread
 import selenium
-import chromedriver_autoinstaller
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -13,9 +12,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
 
-# ✅ Chrome & ChromeDriver 자동 설치
-chromedriver_autoinstaller.install()
-
 # ✅ Chrome 실행 옵션 설정
 options = Options()
 options.add_argument("--headless")  # UI 없이 실행 (Render 환경에서 필수)
@@ -24,9 +20,10 @@ options.add_argument("--disable-dev-shm-usage")  # /dev/shm 파티션 부족 문
 options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920x1080")
 options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+options.binary_location = "/usr/bin/google-chrome"  # Render 환경에서 Chrome 실행 경로
 
 # ✅ ChromeDriver 실행
-driver = webdriver.Chrome(service=Service(), options=options)
+driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=options)
 
 # ✅ Chrome 버전 확인 (디버깅용)
 print("Chrome Version:", driver.capabilities['browserVersion'])
