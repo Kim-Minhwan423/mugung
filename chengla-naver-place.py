@@ -14,18 +14,16 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 
 # ✅ Chrome 실행 옵션 설정
 options = Options()
-options.add_argument("--headless")  # UI 없이 실행 (Render 환경에서 필수)
-options.add_argument("--no-sandbox")  # 샌드박스 모드 비활성화 (Render 환경 필수)
-options.add_argument("--disable-dev-shm-usage")  # /dev/shm 파티션 부족 문제 해결
-options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920x1080")
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-options.binary_location = "/usr/bin/google-chrome"  # Render 환경에서 Chrome 실행 경로
+options.add_argument("--headless")  # UI 없이 실행
+options.add_argument("--no-sandbox")  # 샌드박스 모드 비활성화
+options.add_argument("--disable-dev-shm-usage")  # 메모리 부족 문제 해결
+options.add_argument("--remote-debugging-port=9222")  # 디버깅 포트 추가
+options.binary_location = "/usr/bin/google-chrome"  # Chrome 실행 경로 설정
 
 # ✅ ChromeDriver 실행
-driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=options)
+driver = webdriver.Chrome(service=Service(), options=options)
 
-# ✅ Chrome 버전 확인 (디버깅용)
+# ✅ Chrome 버전 확인
 print("Chrome Version:", driver.capabilities['browserVersion'])
 
 # ✅ 환경 변수에서 Google 인증 파일 가져오기
