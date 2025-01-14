@@ -60,7 +60,7 @@ def get_places_from_page():
 
             previous_height = current_height
             driver.execute_script("arguments[0].scrollIntoView();", places[-1])
-            time.sleep(1)
+            time.sleep(5)
         except (NoSuchElementException, WebDriverException):
             print("🚨 스크롤 오류 발생")
             break
@@ -82,7 +82,7 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
     driver.get(f"https://map.naver.com/v5/search/{keyword}")
 
     try:
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, "//*[@id='searchIframe']")))
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='searchIframe']")))
         driver.switch_to.frame(driver.find_element(By.XPATH, "//*[@id='searchIframe']"))
     except TimeoutException:
         print(f"🚨 '{keyword}' 검색 실패: 페이지 로딩 시간 초과")
@@ -102,7 +102,7 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
                 if page_num < len(page_buttons):
                     next_page_button = page_buttons[page_num]
                     driver.execute_script("arguments[0].click();", next_page_button)
-                    time.sleep(1)
+                    time.sleep(5)
         except (TimeoutException, NoSuchElementException) as e:
             print(f"🚨 다음 페이지 이동 실패: {str(e)}")
             break
