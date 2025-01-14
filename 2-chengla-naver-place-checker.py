@@ -29,11 +29,17 @@ spreadsheet = client.open("청라 일일/월말 정산서")  # 예시
 sheet = spreadsheet.worksheet("체험단&예약")        # 예시
 
 options = webdriver.ChromeOptions()
-options.add_argument(f"user-agent={user_agent}")
-options.add_argument("--disable-gpu")
+options.add_argument("--headless")               # 헤드리스(화면 없이) 모드
+options.add_argument("--no-sandbox")             # 샌드박스 비활성 (권한 문제 방지)
+options.add_argument("--disable-dev-shm-usage")  # /dev/shm 용량 부족 문제 방지
+options.add_argument("--disable-gpu")            # GPU 비활성
 options.add_argument("--window-size=1920x1080")
+options.add_argument(f"user-agent={user_agent}")
 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=options
+)
 
 # 키워드 (예: B55 ~ B80)
 keywords = sheet.col_values(2)[54:80]
