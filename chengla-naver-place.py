@@ -15,7 +15,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 # 환경 변수에서 인증 파일 경로 가져오기
-json_keyfile_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+json_keyfile_path = os.getenv('GOOGLE_CREDENTIALS')
 
 # Google Sheets API 인증
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
