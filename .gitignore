@@ -1,3 +1,5 @@
 naver-place-check-4bf9d52f8439.json
 *.pyc
 __pycache__/
+chengla-naver-place.py
+songdo-naver-place.py
