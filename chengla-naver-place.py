@@ -8,13 +8,18 @@ from webdriver_manager.chrome import ChromeDriverManager
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium.common.exceptions import NoSuchElementException, TimeoutException, WebDriverException
+import os
+from oauth2client.service_account import ServiceAccountCredentials
 
 # 🛠 User-Agent 설정
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
+# 환경 변수에서 인증 파일 경로 가져오기
+json_keyfile_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
 # Google Sheets API 인증
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name('C:/Users/day9b/Desktop/네이버 플레이스 순위체크/naver-place-check-4bf9d52f8439.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_path, scope)
 client = gspread.authorize(creds)
 
 # 구글 스프레드시트 열기
