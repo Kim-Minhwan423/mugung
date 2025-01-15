@@ -27,22 +27,34 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# 반드시 /tmp/keyfile.json 으로 바꿔줘야 Actions에서 정상 작동
-json_path = "/tmp/keyfile.json"
+# GitHub Actions용: /tmp/keyfile.json 경로 (헤드리스 서버에서)
+json_path = "/tmp/keyfile.json"  
 creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
 client = gspread.authorize(creds)
 
-# 스프레드시트 열기
-spreadsheet = client.open("송도 일일/월말 정산서")  # 예시
-sheet = spreadsheet.worksheet("체험단&예약")        # 예시
+# 스프레드시트 열기 (예시)
+spreadsheet = client.open("송도 일일/월말 정산서")
+sheet = spreadsheet.worksheet("체험단&예약")
 
-# === (5) 세션 안정성: Headless / No-Sandbox / dev-shm / GPU 비활성 ===
+# --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")          # GUI 없이 동작
-options.add_argument("--no-sandbox")        # 권한 문제 방지
+
+# 1) Headless (GUI 없이 동작)
+options.add_argument("--headless")
+
+# 2) 서버 환경 안정성 옵션
+options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920x1080")
+
+# 3) 언어 설정
+options.add_argument("--lang=ko-KR")
+options.add_experimental_option("prefs", {
+    "intl.accept_languages": "ko,ko-KR"
+})
+
+# 4) 기타 설정
+options.add_argument("--window-size=1920,1080")
 options.add_argument(f"user-agent={user_agent}")
 
 driver = webdriver.Chrome(
@@ -50,16 +62,17 @@ driver = webdriver.Chrome(
     options=options
 )
 
-# 키워드
+# 키워드 (예: B55 ~ B80)
 keywords = sheet.col_values(2)[54:80]
 
 # 광고 제외 플레이스 목록
 real_places = []
 
-# =============== (1) 스크롤 방식 개선 ===============
 def robust_scroll():
     """
     스크롤을 여러 번 시도해서, 최대한 많은 place 요소를 불러오는 함수.
+    - 최대 30회
+    - 스크롤 후 5초 대기
     """
     try:
         scroll_container = driver.find_element(By.XPATH, "//*[@id='_pcmap_list_scroll_container']")
@@ -68,7 +81,7 @@ def robust_scroll():
         return []
 
     previous_count = 0
-    max_attempts = 20  # 최대 스크롤 시도 횟수
+    max_attempts = 30
     attempts = 0
 
     while attempts < max_attempts:
@@ -87,18 +100,15 @@ def robust_scroll():
 
         previous_count = current_count
         attempts += 1
-        time.sleep(1.5)  # 스크롤 후 약간 대기
+        time.sleep(5)  # 스크롤 후 충분히 대기
 
-    # 최종 수집된 place 요소 반환
     return scroll_container.find_elements(By.CSS_SELECTOR, "li.UEzoS.rTjJo")
 
-# =============== (2) 페이지 전환 안정화 ===============
 def go_to_next_page(page_idx):
     """
-    page_idx에 해당하는 페이지 버튼을 누르고, 로딩을 기다린다.
+    page_idx에 해당하는 페이지 버튼 클릭 후, 5초 대기
     """
     try:
-        # 페이지 버튼이 나타날 때까지 대기 (5초)
         WebDriverWait(driver, 5).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.zRM9F > a"))
         )
@@ -106,7 +116,7 @@ def go_to_next_page(page_idx):
 
         if page_idx < len(buttons):
             driver.execute_script("arguments[0].click();", buttons[page_idx])
-            time.sleep(3)  # 페이지 전환 후 로딩 시간
+            time.sleep(5)  # 페이지 전환 후 충분히 대기
         else:
             print(f"🚨 page_idx={page_idx}가 버튼 범위 밖입니다.")
     except Exception as e:
@@ -114,7 +124,8 @@ def go_to_next_page(page_idx):
 
 def get_places_from_page():
     """
-    robust_scroll()를 통해 스크롤 후, 광고 제외한 플레이스 이름을 real_places에 추가
+    robust_scroll() 호출 후,
+    광고 제외한 플레이스 이름을 real_places에 추가
     """
     place_elements = robust_scroll()
 
@@ -123,12 +134,11 @@ def get_places_from_page():
             name = place.find_element(By.CSS_SELECTOR, "span.TYaxT").text.strip()
             if not name:
                 continue
-            # 광고 클래스 "cZnHG" 제외
+            # 광고(class="cZnHG") 제외
             if "cZnHG" not in place.get_attribute("class"):
                 if name not in real_places:
                     real_places.append(name)
         except Exception:
-            # 광고나 예외는 무시
             continue
 
 def get_place_rank(keyword, target_place="무궁 송도점"):
@@ -153,21 +163,19 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
     except Exception:
         total_pages = 1
 
-    # 최대 5페이지까지만 탐색
+    # 최대 5페이지 탐색
     for page_num in range(1, min(total_pages, 5) + 1):
-        # 스크롤 후 플레이스 수집
         get_places_from_page()
 
-        # 다음 페이지 클릭 (마지막 페이지는 클릭 안 함)
         if page_num < total_pages:
-            go_to_next_page(page_num)  # page_num에 해당하는 버튼 클릭
+            go_to_next_page(page_num)
 
     # 순위 찾기
     if target_place in real_places:
         return real_places.index(target_place) + 1
     return None
 
-# 메인 로직: 키워드별 순위 가져오기
+# 메인 로직
 for i, keyword in enumerate(keywords, start=55):
     try:
         rank = get_place_rank(keyword)
@@ -185,3 +193,4 @@ for i, keyword in enumerate(keywords, start=55):
 
 driver.quit()
 print("✅ 모든 키워드 순위 업데이트 완료")
+
