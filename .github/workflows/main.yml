@@ -2,9 +2,9 @@ name: Naver Place Checker
 
 on:
   schedule:
-    - cron: "0 03 * * *"  # 매일 03:00 UTC -> 12:00pm
+    - cron: "0 3 * * *"  # 매일 03:00 UTC -> 12:00pm
   workflow_dispatch:
-
+  
 jobs:
   build:
     runs-on: ubuntu-latest
