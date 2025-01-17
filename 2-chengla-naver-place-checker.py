@@ -175,22 +175,39 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
         return real_places.index(target_place) + 1
     return None
 
+# --- Batch Update Preparation ---
+# Define the starting row and the columns to update
+start_row = 55
+end_row = 80
+column_rank = 4  # Column D
+column_keyword = 5  # Column E
+
+# Initialize a list to hold the update data
+update_data = []
+
 # 메인 로직
-for i, keyword in enumerate(keywords, start=55):
+for i, keyword in enumerate(keywords, start=start_row):
     try:
         rank = get_place_rank(keyword)
         if rank:
             print(f"✅ '{keyword}'의 순위는 {rank}")
-            sheet.update_cell(i, 4, rank)
-            sheet.update_cell(i, 5, keyword)
+            update_data.append([rank, keyword])
         else:
             print(f"🚨 '{keyword}'의 순위를 찾지 못했습니다.")
-            sheet.update_cell(i, 4, "검색결과없음")
-            sheet.update_cell(i, 5, keyword)
+            update_data.append(["검색결과없음", keyword])
     except Exception as e:
         print(f"🚨 '{keyword}' 처리 중 오류: {str(e)}")
-        sheet.update_cell(i, 4, "오류 발생")
+        update_data.append(["오류 발생", keyword])
+
+# Define the range for batch update (e.g., "D55:E80")
+update_range = f"D{start_row}:E{end_row}"
+
+# Perform the batch update
+try:
+    sheet.update(update_range, update_data)
+    print("✅ Google Sheets에 배치 업데이트 완료")
+except Exception as e:
+    print(f"🚨 배치 업데이트 중 오류 발생: {e}")
 
 driver.quit()
 print("✅ 모든 키워드 순위 업데이트 완료")
-
