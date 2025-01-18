@@ -1,0 +1,41 @@
+name: Easy Pos Auto
+
+on:
+  schedule:
+    # UTC 03:00부터 14:30까지 30분 단위로 실행
+    - cron: "0,30 3-14 * * *"
+    # UTC 14:30부터 14:50까지 10분 단위로 실행
+    - cron: "30-50/10 14 * * *"
+  workflow_dispatch:
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      - name: Decode JSON Key
+        run: |
+          echo "${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > /tmp/keyfile.json
+
+      # 두 번째 스크립트 실행 (예: 청라)
+      - name: Run Chengla script
+        run: |
+          python 2-chengla-easy-pos-auto.py
