@@ -72,7 +72,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=24, pause_time=0.1):
+def scroll_if_possible(driver, inc_button_selector, num_clicks=20, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
@@ -102,7 +102,7 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=24, pause_time=0.
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=60):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
     """
     i를 0부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
     새로운 데이터가 더 이상 발견되지 않을 때까지 스크롤을 계속 시도합니다.
@@ -196,7 +196,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=24,  # 스크롤 클릭 횟수를 24으로 설정
+                num_clicks=20,  # 스크롤 클릭 횟수를 24으로 설정
                 pause_time=0.1  # 클릭 후 대기 시간
             )
             if scrolled:
@@ -367,7 +367,7 @@ def main():
             driver, 
             code_to_cell_inventory, 
             special_prices, 
-            max_i=60  # i 값을 0~60으로 변경
+            max_i=30  # i 값을 0~30으로 변경
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
