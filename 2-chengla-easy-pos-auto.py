@@ -70,7 +70,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=5, pause_time=0.1):
+def scroll_if_possible(driver, inc_button_selector, num_clicks=10, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
@@ -102,13 +102,12 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=5, pause_time=0.1
 
 def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=2):
     """
-    i를 1부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
-    스크롤은 한 번에 5회씩 클릭하며, 최대 2회 스크롤 시도 후 종료합니다.
+    i를 0부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
 
     :param driver: Selenium WebDriver 인스턴스
     :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
     :param special_prices: 특수 단가 상품의 단가 딕셔너리
-    :param max_i: 최대 행 인덱스 (1~100)
+    :param max_i: 최대 행 인덱스 (0~15)
     :param max_scroll_attempts: 스크롤 시도 최대 횟수
     :return: update_cells_inventory
     """
@@ -116,95 +115,98 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
     processed_codes = set()
     scroll_attempts = 0
 
-    for i in range(1, max_i + 1):
-        # 각 행마다 동일한 열 인덱스(3, 6, 7)를 사용
-        for col in [3, 6, 7]:  # 열은 3,6,7로 고정
-            # 셀 선택자 정의
-            code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_3"
-            qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_6"
-            total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
+    while scroll_attempts <= max_scroll_attempts:
+        new_data_found = False
 
-            try:
-                # 상품코드 추출
-                code_elem = driver.find_element(By.CSS_SELECTOR, code_selector)
-                code_text = code_elem.text.strip()
-                if not code_text:
-                    print(f"[INFO] 행 {i}, 열 {col}의 상품코드가 비어 있습니다.")
-                    continue  # 빈 상품코드는 스킵
-                if code_text in processed_codes:
-                    continue  # 이미 처리된 상품코드는 스킵
+        for i in range(0, max_i + 1):
+            # 각 행마다 동일한 열 인덱스(3, 6, 7)를 사용
+            for col in [3, 6, 7]:  # 열은 3,6,7로 고정
+                # 셀 선택자 정의
+                code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_3"
+                qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_6"
+                total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
 
-                # 매출 수량 추출
-                qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
-                qty_text = qty_elem.text.strip().replace(",", "")
-
-                # 총매출 추출
-                total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
-                total_text = total_elem.text.strip().replace(",", "").replace("원", "")
                 try:
-                    total_val = int(total_text)
-                except ValueError:
-                    total_val = 0
+                    # 상품코드 추출
+                    code_elem = driver.find_element(By.CSS_SELECTOR, code_selector)
+                    code_text = code_elem.text.strip()
+                    if not code_text:
+                        print(f"[INFO] 행 {i}, 열 {col}의 상품코드가 비어 있습니다.")
+                        continue  # 빈 상품코드는 스킵
+                    if code_text in processed_codes:
+                        continue  # 이미 처리된 상품코드는 스킵
 
-                # 특수 단가 상품인지 확인 및 수량 계산
-                if code_text in special_prices:
-                    unit_price = special_prices[code_text]
-                    if unit_price == 0:
-                        calc_qty = 0
-                    else:
-                        calc_qty = total_val // unit_price  # 정수 몫
-                    qty_to_set = calc_qty  # 숫자 형식으로 유지
-                    print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {calc_qty}")
-                else:
+                    # 매출 수량 추출
+                    qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
+                    qty_text = qty_elem.text.strip().replace(",", "")
+
+                    # 총매출 추출
+                    total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
+                    total_text = total_elem.text.strip().replace(",", "").replace("원", "")
                     try:
-                        qty_to_set = int(qty_text)
+                        total_val = int(total_text)
                     except ValueError:
-                        qty_to_set = 0  # 비정상적인 값은 0으로 설정
-                    print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
+                        total_val = 0
 
-                # 스프레드시트 업데이트 준비
-                if code_text in code_to_cell_inventory:
-                    target_cell_inventory = code_to_cell_inventory[code_text]
-                    update_cells_inventory.append({
-                        'range': target_cell_inventory,  # 예: "A1"
-                        'values': [[qty_to_set]]
-                    })
-                    print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
-                    processed_codes.add(code_text)
-                else:
-                    print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
+                    # 특수 단가 상품인지 확인 및 수량 계산
+                    if code_text in special_prices:
+                        unit_price = special_prices[code_text]
+                        if unit_price == 0:
+                            calc_qty = 0
+                        else:
+                            calc_qty = total_val // unit_price  # 정수 몫
+                        qty_to_set = calc_qty  # 숫자 형식으로 유지
+                        print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {calc_qty}")
+                    else:
+                        try:
+                            qty_to_set = int(qty_text)
+                        except ValueError:
+                            qty_to_set = 0  # 비정상적인 값은 0으로 설정
+                        print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
 
-            except NoSuchElementException:
-                print(f"[INFO] 행 {i}, 열 {col}의 셀을 찾을 수 없습니다.")
-                continue  # 해당 셀이 없으면 스킵
-            except Exception as e:
-                print(f"[ERROR] 행 {i}, 열 {col} 처리 중 예외 발생: {e}")
-                traceback.print_exc()
-                continue  # 예외 발생 시 다음 셀로 이동
+                    # 스프레드시트 업데이트 준비
+                    if code_text in code_to_cell_inventory:
+                        target_cell_inventory = code_to_cell_inventory[code_text]
+                        update_cells_inventory.append({
+                            'range': target_cell_inventory,  # 예: "A1"
+                            'values': [[qty_to_set]]
+                        })
+                        print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
+                        processed_codes.add(code_text)
+                        new_data_found = True
+                    else:
+                        print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
 
-        # 각 i 반복 후 스크롤 시도
-        if (i % 2) == 0:  # i가 짝수일 때마다 스크롤 시도 (2회 클릭)
-            if scroll_attempts >= max_scroll_attempts:
-                print(f"[INFO] 최대 스크롤 시도 횟수({max_scroll_attempts})에 도달했습니다. 종료합니다.")
-                break  # 최대 스크롤 시도 횟수 초과 시 종료
+                except NoSuchElementException:
+                    print(f"[INFO] 행 {i}, 열 {col}의 셀을 찾을 수 없습니다.")
+                    continue  # 해당 셀이 없으면 스킵
+                except Exception as e:
+                    print(f"[ERROR] 행 {i}, 열 {col} 처리 중 예외 발생: {e}")
+                    traceback.print_exc()
+                    continue  # 예외 발생 시 다음 셀로 이동
 
+        if new_data_found:
+            scroll_attempts = 0  # 새로운 데이터가 발견되면 스크롤 시도 횟수 초기화
+            # 스크롤 시도
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=5,  # 5회 클릭
-                pause_time=0.1  # 클릭 후 대기 시간
+                num_clicks=10,  # 요청에 따라 2번 클릭
+                pause_time=0.1  # 클릭 후 대기 시간 변경
             )
             if scrolled:
-                print(f"[INFO] 스크롤 시도 완료. 현재 스크롤 시도 횟수: {scroll_attempts + 1}/{max_scroll_attempts}")
+                print(f"[INFO] 스크롤 시도 완료.")
                 scroll_attempts += 1
                 time.sleep(1)  # 스크롤 후 로딩 대기
             else:
                 print(f"[INFO] 더 이상 스크롤할 수 없습니다.")
                 break  # 스크롤 실패 시 종료
-
-    # 최대 스크롤 시도 횟수 초과 시 종료
-    if scroll_attempts > max_scroll_attempts:
-        print(f"[INFO] 최대 스크롤 시도 횟수({max_scroll_attempts})를 초과하여 데이터 추출을 종료합니다.")
+        else:
+            scroll_attempts += 1
+            print(f"[INFO] 새로운 데이터가 발견되지 않았습니다. 스크롤 시도 횟수: {scroll_attempts}/{max_scroll_attempts}")
+            if scroll_attempts > max_scroll_attempts:
+                print(f"[INFO] 최대 스크롤 시도를 초과했습니다. 데이터 추출 완료.")
+                break  # 최대 스크롤 시도를 초과했으므로 종료
 
     return update_cells_inventory
 
