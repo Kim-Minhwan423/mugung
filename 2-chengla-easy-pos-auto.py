@@ -70,7 +70,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=2, pause_time=0.1):
+def scroll_if_possible(driver, inc_button_selector, num_clicks=5, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
@@ -100,10 +100,10 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=2, pause_time=0.1
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=3):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=2):
     """
     i를 1부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
-    스크롤은 한 번에 2회씩 클릭하며, 최대 10회 스크롤 시도 후 종료합니다.
+    스크롤은 한 번에 5회씩 클릭하며, 최대 2회 스크롤 시도 후 종료합니다.
 
     :param driver: Selenium WebDriver 인스턴스
     :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
@@ -191,7 +191,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=2,  # 2회 클릭
+                num_clicks=5,  # 5회 클릭
                 pause_time=0.1  # 클릭 후 대기 시간
             )
             if scrolled:
@@ -365,7 +365,7 @@ def main():
             code_to_cell_inventory, 
             special_prices, 
             max_i=100, 
-            max_scroll_attempts=3
+            max_scroll_attempts=2
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
