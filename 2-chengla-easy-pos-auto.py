@@ -230,7 +230,7 @@ def main():
         id_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtId_input")
         id_input.click()
         id_input.clear()
-        id_input.send_keys("SCRIPT_ID")
+        id_input.send_keys(os.getenv("SCRIPT_ID"))
         print("[INFO] ID 입력 완료.")
 
         # PW 입력
@@ -240,7 +240,7 @@ def main():
         pw_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtPw_input")
         pw_input.click()
         pw_input.clear()
-        pw_input.send_keys("SCRIPT_PW")
+        pw_input.send_keys(os.getenv("SCRIPT_PW"))
         print("[INFO] PW 입력 완료.")
 
         # 로그인 버튼 클릭
