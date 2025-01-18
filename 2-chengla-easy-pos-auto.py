@@ -367,7 +367,7 @@ def main():
             code_to_cell_inventory, 
             special_prices, 
             max_i=15, 
-            max_scroll_attempts=1
+            max_scroll_attempts=5
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
