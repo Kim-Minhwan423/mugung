@@ -183,12 +183,6 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                 traceback.print_exc()
                 continue  # 예외 발생 시 다음 셀로 이동
 
-        # 각 i 반복 후 스크롤 시도
-        if (i % 2) == 0:  # i가 짝수일 때마다 스크롤 시도
-            if scroll_attempts >= max_scroll_attempts:
-                print(f"[INFO] 최대 스크롤 시도 횟수({max_scroll_attempts})에 도달했습니다. 종료합니다.")
-                break  # 최대 스크롤 시도 횟수 초과 시 종료
-
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
