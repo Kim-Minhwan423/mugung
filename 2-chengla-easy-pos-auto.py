@@ -1,7 +1,6 @@
 import os
 import time
 import gspread
-import traceback
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -71,7 +70,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=10, pause_time=0.1):
+def scroll_if_possible(driver, inc_button_selector, num_clicks=2, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
@@ -101,14 +100,15 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=10, pause_time=0.
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=60, max_scroll_attempts=2):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=10):
     """
-    i를 0부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
+    i를 1부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
+    스크롤은 한 번에 2회씩 클릭하며, 최대 10회 스크롤 시도 후 종료합니다.
 
     :param driver: Selenium WebDriver 인스턴스
     :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
     :param special_prices: 특수 단가 상품의 단가 딕셔너리
-    :param max_i: 최대 행 인덱스 (0~60)
+    :param max_i: 최대 행 인덱스 (1~100)
     :param max_scroll_attempts: 스크롤 시도 최대 횟수
     :return: update_cells_inventory
     """
@@ -116,7 +116,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
     processed_codes = set()
     scroll_attempts = 0
 
-    for i in range(0, max_i + 1):  # i 값을 0부터 60까지로 변경
+    for i in range(1, max_i + 1):
         # 각 행마다 동일한 열 인덱스(3, 6, 7)를 사용
         for col in [3, 6, 7]:  # 열은 3,6,7로 고정
             # 셀 선택자 정의
@@ -134,7 +134,6 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                 if code_text in processed_codes:
                     continue  # 이미 처리된 상품코드는 스킵
 
-                # code_selector가 비어있지 않을 경우에만 qty와 total 추출
                 # 매출 수량 추출
                 qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
                 qty_text = qty_elem.text.strip().replace(",", "")
@@ -183,10 +182,16 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                 traceback.print_exc()
                 continue  # 예외 발생 시 다음 셀로 이동
 
+        # 각 i 반복 후 스크롤 시도
+        if (i % 2) == 0:  # i가 짝수일 때마다 스크롤 시도 (2회 클릭)
+            if scroll_attempts >= max_scroll_attempts:
+                print(f"[INFO] 최대 스크롤 시도 횟수({max_scroll_attempts})에 도달했습니다. 종료합니다.")
+                break  # 최대 스크롤 시도 횟수 초과 시 종료
+
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=10,  # 스크롤 클릭 횟수를 10으로 변경
+                num_clicks=2,  # 2회 클릭
                 pause_time=0.1  # 클릭 후 대기 시간
             )
             if scrolled:
@@ -196,6 +201,10 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             else:
                 print(f"[INFO] 더 이상 스크롤할 수 없습니다.")
                 break  # 스크롤 실패 시 종료
+
+    # 최대 스크롤 시도 횟수 초과 시 종료
+    if scroll_attempts > max_scroll_attempts:
+        print(f"[INFO] 최대 스크롤 시도 횟수({max_scroll_attempts})를 초과하여 데이터 추출을 종료합니다.")
 
     return update_cells_inventory
 
@@ -355,8 +364,8 @@ def main():
             driver, 
             code_to_cell_inventory, 
             special_prices, 
-            max_i=60,  # i 값을 0~60으로 변경
-            max_scroll_attempts=2  # max_scroll_attempts를 2로 설정
+            max_i=100, 
+            max_scroll_attempts=10
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
