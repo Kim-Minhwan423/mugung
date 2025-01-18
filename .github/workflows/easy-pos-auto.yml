@@ -37,5 +37,8 @@ jobs:
 
       # 두 번째 스크립트 실행 (예: 청라)
       - name: Run Chengla script
+        env:
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+          SCRIPT_PW: ${{ secrets.SCRIPT_PW }}
         run: |
           python 2-chengla-easy-pos-auto.py
