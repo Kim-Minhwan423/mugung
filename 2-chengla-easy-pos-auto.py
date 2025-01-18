@@ -127,9 +127,9 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             for col in [3, 6, 7]:  # 열은 3,6,7로 고정
                 # 셀 선택자 정의
                 # 주의: cell_{i}_3 대신 cell_3로 수정 (보통 열 인덱스는 고정)
-                code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_3"
-                qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_6"
-                total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_7"
+                code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_3"
+                qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_6"
+                total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
 
                 try:
                     # 상품코드 추출
