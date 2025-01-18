@@ -72,7 +72,7 @@ driver = webdriver.Chrome(
     options=options
 )
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=2, pause_time=0.1):
+def scroll_if_possible(driver, inc_button_selector, num_clicks=24, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
@@ -196,7 +196,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=2,  # 스크롤 클릭 횟수를 10으로 설정
+                num_clicks=24,  # 스크롤 클릭 횟수를 24으로 설정
                 pause_time=0.1  # 클릭 후 대기 시간
             )
             if scrolled:
