@@ -100,7 +100,7 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=2, pause_time=0.1
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=10):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=100, max_scroll_attempts=3):
     """
     i를 1부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
     스크롤은 한 번에 2회씩 클릭하며, 최대 10회 스크롤 시도 후 종료합니다.
@@ -365,7 +365,7 @@ def main():
             code_to_cell_inventory, 
             special_prices, 
             max_i=100, 
-            max_scroll_attempts=10
+            max_scroll_attempts=3
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
