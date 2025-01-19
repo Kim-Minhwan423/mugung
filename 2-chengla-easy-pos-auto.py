@@ -110,7 +110,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
     :param driver: Selenium WebDriver 인스턴스
     :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
     :param special_prices: 특수 단가 상품의 단가 딕셔너리
-    :param max_i: 최대 행 인덱스 (0~30)
+    :param max_i: 최대 행 인덱스 (0~60)
     :return: update_cells_inventory
     """
     update_cells_inventory = []
@@ -141,6 +141,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                     if code_text in processed_codes:
                         continue  # 이미 처리된 상품코드는 스킵
 
+                    # code_selector가 비어있지 않을 경우에만 qty와 total 추출
                     # 매출 수량 추출
                     qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
                     qty_text = qty_elem.text.strip().replace(",", "")
@@ -195,7 +196,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             scrolled = scroll_if_possible(
                 driver, 
                 "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=15,  # 스크롤 클릭 횟수를 15으로 설정
+                num_clicks=15,  # 스크롤 클릭 횟수를 24으로 설정
                 pause_time=0.1  # 클릭 후 대기 시간
             )
             if scrolled:
@@ -387,12 +388,10 @@ def main():
         # '재고' 시트 배치 업데이트 수행
         if update_cells_inventory:
             try:
-                # 'update_cells_inventory'를 A1 범위와 값의 딕셔너리로 변환
-                update_dict = {item['range']: item['values'][0][0] for item in update_cells_inventory}
-                sheet_inventory.update(update_dict)
-                print("[INFO] '재고' 시트 업데이트 완료.")
+                sheet_inventory.batch_update(update_cells_inventory)
+                print("[INFO] '재고' 시트 배치 업데이트 완료.")
             except Exception as e:
-                print(f"[ERROR] '재고' 시트 업데이트 실패: {e}")
+                print(f"[ERROR] '재고' 시트 배치 업데이트 실패: {e}")
                 traceback.print_exc()
 
         # ================================================
@@ -657,10 +656,6 @@ def main():
         # "무궁 청라" 시트 배치 업데이트 수행
         if all_requests:
             try:
-                # 디버깅을 위해 all_requests 출력
-                print("All Requests for '무궁 청라' sheet:")
-                print(all_requests)
-
                 body = {
                     "requests": all_requests
                 }
