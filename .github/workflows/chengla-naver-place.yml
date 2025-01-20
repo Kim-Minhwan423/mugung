@@ -1,0 +1,38 @@
+name: Naver Place Checker
+
+on:
+  repository_dispatch:
+    types: [run-chengla-naver-place]  # 트리거 타입 정의
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Decode and Save Service Account JSON
+        env:
+          SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          echo "$SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > /tmp/keyfile.json
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      - name: Run Chengla script
+        run: |
+          python 2-chengla-naver-place-checker.py
