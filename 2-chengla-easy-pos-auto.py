@@ -16,6 +16,141 @@ from selenium.common.exceptions import (
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 
+def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.1):
+    """
+    증가 버튼을 클릭하여 스크롤을 시도합니다.
+    한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
+
+    :param driver: Selenium WebDriver 인스턴스
+    :param inc_button_selector: 증가 버튼의 CSS 선택자
+    :param num_clicks: 버튼 클릭 횟수
+    :param pause_time: 클릭 후 대기 시간 (초)
+    :return: 성공적으로 스크롤했는지 여부
+    """
+    try:
+        for click_num in range(1, num_clicks + 1):
+            inc_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, inc_button_selector))
+            )
+            inc_button.click()
+            print(f"[INFO] 증가 버튼 클릭하여 스크롤 시도 {click_num}/{num_clicks}.")
+            time.sleep(pause_time)
+        return True
+    except TimeoutException:
+        print("[ERROR] 증가 버튼 요소를 찾을 수 없습니다.")
+        return False
+    except WebDriverException as e:
+        print(f"[ERROR] 증가 버튼 클릭 중 WebDriver 예외 발생: {e}")
+        return False
+    except Exception as e:
+        print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
+        return False
+
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
+    """
+    i를 0부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
+    새로운 데이터가 더 이상 발견되지 않을 때까지 스크롤을 계속 시도합니다.
+
+    :param driver: Selenium WebDriver 인스턴스
+    :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
+    :param special_prices: 특수 단가 상품의 단가 딕셔너리
+    :param max_i: 최대 행 인덱스 (0~60)
+    :return: update_cells_inventory
+    """
+    update_cells_inventory = []
+    processed_codes = set()
+    new_data_found = True  # 초기에는 새로운 데이터가 있다고 가정
+
+    while new_data_found:
+        new_data_found = False  # 이번 루프에서 새로운 데이터가 발견되었는지 추적
+
+        for i in range(0, max_i + 1):
+            # 각 행마다 동일한 열 인덱스(3, 6, 7)를 사용
+            for col in [3, 6, 7]:  # 열은 3,6,7로 고정
+                # 셀 선택자 정의
+                code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_3"
+                qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_6"
+                total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
+
+                try:
+                    # 상품코드 추출
+                    code_elem = driver.find_element(By.CSS_SELECTOR, code_selector)
+                    code_text = code_elem.text.strip()
+                    if not code_text:
+                        print(f"[INFO] 행 {i}, 열 {col}의 상품코드가 비어 있습니다.")
+                        continue  # 빈 상품코드는 스킵
+                    if code_text in processed_codes:
+                        continue  # 이미 처리된 상품코드는 스킵
+
+                    # 매출 수량 추출
+                    qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
+                    qty_text = qty_elem.text.strip().replace(",", "")
+
+                    # 총매출 추출
+                    total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
+                    total_text = total_elem.text.strip().replace(",", "").replace("원", "")
+                    try:
+                        total_val = int(total_text)
+                    except ValueError:
+                        total_val = 0
+
+                    # 특수 단가 상품인지 확인 및 수량 계산
+                    if code_text in special_prices:
+                        unit_price = special_prices[code_text]
+                        if unit_price == 0:
+                            calc_qty = 0
+                        else:
+                            calc_qty = total_val // unit_price  # 정수 몫
+                        qty_to_set = calc_qty  # 숫자 형식으로 유지
+                        print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {calc_qty}")
+                    else:
+                        try:
+                            qty_to_set = int(qty_text)
+                        except ValueError:
+                            qty_to_set = 0  # 비정상적인 값은 0으로 설정
+                        print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
+
+                    # 스프레드시트 업데이트 준비
+                    if code_text in code_to_cell_inventory:
+                        target_cell_inventory = code_to_cell_inventory[code_text]
+                        update_cells_inventory.append({
+                            'range': target_cell_inventory,  # 예: "A1"
+                            'values': [[qty_to_set]]
+                        })
+                        print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
+                        processed_codes.add(code_text)
+                        new_data_found = True  # 새로운 데이터가 발견되었음을 표시
+                    else:
+                        print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
+
+                except NoSuchElementException:
+                    print(f"[INFO] 행 {i}, 열 {col}의 셀을 찾을 수 없습니다.")
+                    continue  # 해당 셀이 없으면 스킵
+                except Exception as e:
+                    print(f"[ERROR] 행 {i}, 열 {col} 처리 중 예외 발생: {e}")
+                    traceback.print_exc()
+                    continue  # 예외 발생 시 다음 셀로 이동
+
+        if new_data_found:
+            # 새로운 데이터가 발견되었으므로 스크롤 시도
+            scrolled = scroll_if_possible(
+                driver, 
+                "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
+                num_clicks=15,  # 스크롤 클릭 횟수를 15으로 설정
+                pause_time=0.1  # 클릭 후 대기 시간
+            )
+            if scrolled:
+                print(f"[INFO] 스크롤 시도 완료.")
+                time.sleep(1)  # 스크롤 후 로딩 대기
+            else:
+                print(f"[INFO] 더 이상 스크롤할 수 없습니다.")
+                break  # 스크롤 실패 시 종료
+        else:
+            print(f"[INFO] 새로운 데이터가 더 이상 발견되지 않았습니다. 데이터 추출 완료.")
+            break  # 새로운 데이터가 없으면 종료
+
+    return update_cells_inventory
+
 def main():
     try:
         # 로그 시작 시간
@@ -79,6 +214,7 @@ def main():
             service=ChromeService(ChromeDriverManager().install()),
             options=options
         )
+        print("[INFO] Chrome WebDriver 초기화 완료.")
 
         # ================================================
         # 3. EasyPOS 로그인 페이지 접속 및 로그인 진행
