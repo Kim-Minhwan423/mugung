@@ -1,4 +1,4 @@
-name: Naver Place Checker
+name: Chengla NaverPlace
 
 on:
   repository_dispatch:
