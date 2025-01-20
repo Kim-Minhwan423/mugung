@@ -1,0 +1,36 @@
+name: Scheduled EasyPOS Script
+
+on:
+  repository_dispatch:
+    types: [run-easypos-script]  # 트리거 타입 정의
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Decode and Save Service Account JSON
+        env:
+          SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          echo "$SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > /tmp/keyfile.json
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Python Script
+        env:
+          CHENGLA_EASY_POS_ID: ${{ secrets.CHENGLA_EASY_POS_ID }}
+          CHENGLA_EASY_POS_PW: ${{ secrets.CHENGLA_EASY_POS_PW }}
+        run: |
+          python 2-chengla-easy-pos-auto.py
