@@ -1,8 +1,8 @@
-name: Scheduled EasyPOS Script
+name: Chengla EasyPOS
 
 on:
   repository_dispatch:
-    types: [run-easypos-script]  # 트리거 타입 정의
+    types: [run-chengla-easypos]  # 트리거 타입 정의
 
 jobs:
   run-script:
