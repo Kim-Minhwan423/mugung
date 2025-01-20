@@ -2,7 +2,7 @@ name: Naver Place Checker
 
 on:
   repository_dispatch:
-    types: [run-chengla-naver-place]  # 트리거 타입 정의
+    types: [run-songdo-naver-place]  # 트리거 타입 정의
   
 jobs:
   build:
@@ -35,4 +35,4 @@ jobs:
 
       - name: Run Chengla script
         run: |
-          python 2-chengla-naver-place-checker.py
+          python 1-songdo-naver-place-checker.py
