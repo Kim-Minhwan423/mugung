@@ -1,4 +1,4 @@
-name: Naver Place Checker
+name: Songdo NaverPlace
 
 on:
   repository_dispatch:
