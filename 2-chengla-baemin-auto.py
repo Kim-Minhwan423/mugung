@@ -83,7 +83,7 @@ try:
     print("사이트에 접속 중...")
 
     # 3.2. 사용자명 입력
-    username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
+    username_selector = #root > "div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1)"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
     username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
     username_input.clear()
@@ -91,7 +91,7 @@ try:
     print("사용자명을 입력했습니다.")
 
     # 3.3. 비밀번호 입력
-    password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
+    password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
     password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
     password_input.clear()
