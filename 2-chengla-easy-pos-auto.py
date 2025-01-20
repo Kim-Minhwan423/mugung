@@ -15,6 +15,7 @@ from selenium.common.exceptions import (
 )
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.1):
     """
@@ -155,7 +156,7 @@ def main():
     try:
         # 로그 시작 시간
         current_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        current_local = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_local = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S') 
         print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 현지: {current_local}")
 
         # ================================
