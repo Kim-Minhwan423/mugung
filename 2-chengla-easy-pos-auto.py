@@ -14,6 +14,13 @@ from selenium.common.exceptions import (
     WebDriverException
 )
 from webdriver_manager.chrome import ChromeDriverManager
+from datetime import datetime
+
+def main():
+    try:
+        current_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        current_local = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 현지: {current_local}")
 
 # ================================
 # 1. Google Sheets API 인증 설정
