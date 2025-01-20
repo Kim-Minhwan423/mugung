@@ -87,7 +87,7 @@ try:
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
     username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
     username_input.clear()
-    username_input.send_keys("mugung876")
+    username_input.send_keys(os.getenv("CHENGLA_BAEMIN_ID"))
     print("사용자명을 입력했습니다.")
 
     # 3.3. 비밀번호 입력
@@ -95,7 +95,7 @@ try:
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
     password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
     password_input.clear()
-    password_input.send_keys("Zz1070619!")
+    password_input.send_keys(os.getenv("CHENGLA_BAEMIN_PW"))
     print("비밀번호를 입력했습니다.")
 
     # 3.4. 로그인 버튼 클릭
