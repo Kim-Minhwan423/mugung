@@ -1,8 +1,8 @@
-name: Chengla EasyPOS
+name: Chengla BaeMin
 
 on:
   repository_dispatch:
-    types: [run-chengla-easypos]  # 트리거 타입 정의
+    types: [run-chengla-baemin]  # 트리거 타입 정의
 
 jobs:
   run-script:
@@ -30,7 +30,7 @@ jobs:
 
       - name: Run Python Script
         env:
-          CHENGLA_EASY_POS_ID: ${{ secrets.CHENGLA_EASY_POS_ID }}
-          CHENGLA_EASY_POS_PW: ${{ secrets.CHENGLA_EASY_POS_PW }}
+          CHENGLA_EASY_POS_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
+          CHENGLA_EASY_POS_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
         run: |
-          python 2-chengla-easy-pos-auto.py
+          python 2-chengla-baemin-auto.py
