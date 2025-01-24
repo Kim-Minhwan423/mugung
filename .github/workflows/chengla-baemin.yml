@@ -6,7 +6,9 @@ on:
 
 jobs:
   run-script:
-    runs-on: instance-20250124-140519
+    runs-on: self-hosted          # self-hosted runner (Ubuntu 등)
+    # 만약 GitHub 호스티드 ubuntu-22.04 쓰고 싶으면: runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -43,5 +45,16 @@ jobs:
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
           CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
+          GOOGLE_APPLICATION_CREDENTIALS: "/tmp/keyfile.json"
         run: |
           python 2-chengla-baemin-auto.py
+
+      # 스크린샷 업로드
+      - name: Upload Screenshots
+        if: failure()  # 스크립트가 실패했을 때만 실행
+        uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: |
+            *.png
+            script.log
