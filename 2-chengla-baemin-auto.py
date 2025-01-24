@@ -67,12 +67,22 @@ def authorize_google_sheets(json_path):
 def initialize_webdriver(user_agent):
     try:
         options = webdriver.ChromeOptions()
-        options.add_argument(f"user-agent={user_agent}")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1920x1080")
-        #options.add_argument("--headless=new")  # 필요 시 주석 해제
+
+        # (1) 유니크한 프로필 폴더 지정 → session not created 충돌 방지
+        unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
+        options.add_argument(f"--user-data-dir={unique_dir}")
+
+        # (2) 헤드리스 모드 사용 (원한다면 주석 해제)
+        options.add_argument("--headless=new")
+
+        # (3) 서버 환경 안정성 옵션
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+
+        # (4) 기타 옵션: User-Agent 등
+        options.add_argument(f"user-agent={user_agent}")
+        options.add_argument("--window-size=1920x1080")
 
         driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
@@ -249,11 +259,10 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
         day = today.day
         logging.info(f"오늘 일자: {day}")
 
-        # U3:U33 범위 읽기
+        # U3:U33 범위 읽기 (1~31일)
         date_cells = muGung_sheet.range('U3:U33')
         day_list = [cell.value for cell in date_cells]
 
-        # 현재 일(day)에 해당하는 셀 찾기
         day_str = str(day)
         if day_str in day_list:
             index = day_list.index(day_str)  # 0-based index
@@ -261,10 +270,9 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             target_column = 'V'
             target_cell = f"{target_column}{row_number}"
 
-            # summary_text에서 ',' 제거하고 정수 변환
             summary_value = int(re.sub(r'[^\d]', '', summary_text))
 
-            # **핵심 수정: 키워드 인자 대신 위치 인자**
+            # (가장 중요한 부분) gspread는 위치 인자로만 update
             muGung_sheet.update(target_cell, [[summary_value]])
             logging.info(f"주문 요약 데이터를 {target_cell} 셀에 기록했습니다.")
 
@@ -300,7 +308,7 @@ def clear_inventory_sheet(inventory_sheet):
         raise
 
 
-# 12. 판매 수량 추출 및 '재고' 시트에 기록 (batch_update 사용)
+# 12. 판매 수량 추출 및 '재고' 시트에 기록
 def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
     try:
         logging.info("웹사이트에서 품목별 판매 수량 추출을 시작합니다.")
@@ -308,7 +316,7 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
 
         while True:
             # 현재 페이지의 모든 주문 처리
-            for order_num in range(1, 20, 2):  # i=1,3,5,...19
+            for order_num in range(1, 20, 2):  # 1,3,5,...19
                 if order_num == 1:
                     # 첫 번째 주문은 이미 열려 있음
                     order_details_tr_num = 2
@@ -335,8 +343,8 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                         traceback.print_exc()
                         continue
 
-                # 각 품목 추출 (j=1,4,7,...)
-                for j in range(1, 100, 3):
+                # 각 품목 추출
+                for j in range(1, 100, 3):  # j=1,4,7,... 최대 99
                     item_name_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_details_tr_num}]/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[1]'
                     item_qty_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_details_tr_num}]/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[2]'
 
@@ -516,4 +524,3 @@ def main():
 # 14. 엔트리 포인트
 if __name__ == "__main__":
     main()
-
