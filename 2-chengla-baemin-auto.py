@@ -5,6 +5,7 @@ import logging
 import traceback
 import sys
 import time  # 3초 대기를 위해 추가
+import uuid  # 고유 User Data Directory 생성용
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -20,15 +21,12 @@ import gspread
 from google.oauth2.service_account import Credentials
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 
-# ==============================
-# 1. 환경변수로부터 ID/PW, JSON
-# ==============================
+# 1. CHENGLA_BAEMIN_ID, CHENGLA_BAEMIN_PW 환경 변수로부터 읽기
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
 
-# GOOGLE_CREDENTIALS_PATH를 환경변수에서 읽고, 없으면 /tmp/keyfile.json 사용
+# Google Service Account JSON 경로 (GitHub Actions 환경에서는 /tmp/keyfile.json 활용)
 GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/keyfile.json")
-
 
 # 2. 로깅 설정
 logger = logging.getLogger()
