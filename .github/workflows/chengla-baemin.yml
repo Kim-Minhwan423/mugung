@@ -2,23 +2,24 @@ name: Chengla BaeMin
 
 on:
   repository_dispatch:
-    types: [run-chengla-baemin]
+    types: [run-chengla-baemin]  # 원하는 트리거 (이벤트)
 
 jobs:
   run-script:
-    runs-on: self-hosted
+    runs-on: self-hosted          # self-hosted runner (Ubuntu 등)
+    # 만약 GitHub 호스티드 ubuntu-22.04 쓰고 싶으면: runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # (선택) Python 버전 설정 (예: 3.10.16)
+      # Python 버전 설정
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10.16'
-      
-      # (필수) Chrome 브라우저 설치
+
+      # Chrome 브라우저 설치 (Ubuntu 예시)
       - name: Install Google Chrome
         run: |
           sudo apt-get update
@@ -26,18 +27,20 @@ jobs:
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
 
-      # (선택) Decode and Save Service Account JSON, etc.
+      # 구글 시트 인증 JSON (Base64) 디코딩 → /tmp/keyfile.json
       - name: Decode and Save Service Account JSON
         env:
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
         run: |
           echo "$SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > /tmp/keyfile.json
 
+      # Python Dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # 스크립트 실행
       - name: Run Python Script
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
