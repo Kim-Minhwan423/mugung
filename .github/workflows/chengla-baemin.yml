@@ -30,7 +30,7 @@ jobs:
 
       - name: Run Python Script
         env:
-          CHENGLA_EASY_POS_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
-          CHENGLA_EASY_POS_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
+          CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
+          CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
         run: |
           python 2-chengla-baemin-auto.py
