@@ -15,7 +15,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          # Python 3.10.x (구체 버전 지정)
+          python-version: '3.10.x'
 
       - name: Decode and Save Service Account JSON
         env:
