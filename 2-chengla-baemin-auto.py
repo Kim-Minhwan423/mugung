@@ -108,6 +108,10 @@ def login(driver, wait, username, password):
         driver.get("https://self.baemin.com/")
         logging.info("배민 사이트에 접속 중...")
 
+        main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
+        logging.info("배민 로그인 페이지 로드 완료.")
+
         username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
 
