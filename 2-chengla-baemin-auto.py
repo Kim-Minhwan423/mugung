@@ -132,15 +132,25 @@ def login(driver, wait, username, password):
 
         # 로그인 완료 확인 (메뉴 버튼 등장)
         menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
-        logging.info("로그인에 성공했습니다.")
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
+            logging.info("로그인에 성공했습니다.")
+        except TimeoutException:
+            # 로그인 실패 시 스크린샷 저장
+            driver.save_screenshot("after_login_timeout.png")
+            logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다. 스크린샷을 확인하세요.")
+            raise
 
     except TimeoutException:
         logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다.")
+        # 로그인 실패 시 스크린샷 저장
+        driver.save_screenshot("after_login_exception.png")
         raise
     except Exception as e:
         logging.error("로그인 처리 중 오류가 발생했습니다.")
         logging.error(f"{str(e)}")
+        # 예외 발생 시 스크린샷 저장
+        driver.save_screenshot("after_login_error.png")
         raise
 
 
@@ -179,13 +189,19 @@ def navigate_to_order_history(driver, wait):
         date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
         logging.info("주문내역 페이지가 로드되었습니다.")
+
     except TimeoutException:
         logging.error("주문내역 페이지로 이동하는 데 실패했습니다.")
+        # 스크린샷 저장
+        driver.save_screenshot("navigate_order_history_timeout.png")
         raise
     except Exception as e:
         logging.error("주문내역 페이지로 이동 중 오류가 발생했습니다.")
         logging.error(f"{str(e)}")
+        # 스크린샷 저장
+        driver.save_screenshot("navigate_order_history_error.png")
         raise
+
 
 
 # 6) 날짜 필터 설정
