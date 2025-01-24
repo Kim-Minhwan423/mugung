@@ -2,7 +2,7 @@ import os
 import time
 import gspread
 import traceback
-import uuid    
+import uuid
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -18,16 +18,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+
 def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.1):
     """
     증가 버튼을 클릭하여 스크롤을 시도합니다.
     한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
-
-    :param driver: Selenium WebDriver 인스턴스
-    :param inc_button_selector: 증가 버튼의 CSS 선택자
-    :param num_clicks: 버튼 클릭 횟수
-    :param pause_time: 클릭 후 대기 시간 (초)
-    :return: 성공적으로 스크롤했는지 여부
     """
     try:
         for click_num in range(1, num_clicks + 1):
@@ -48,16 +43,11 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
+
 def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
     """
     i를 0부터 max_i까지 순차적으로 처리하며, 필요한 경우 스크롤을 시도합니다.
     새로운 데이터가 더 이상 발견되지 않을 때까지 스크롤을 계속 시도합니다.
-
-    :param driver: Selenium WebDriver 인스턴스
-    :param code_to_cell_inventory: '재고' 시트의 상품 코드와 셀 매핑 딕셔너리
-    :param special_prices: 특수 단가 상품의 단가 딕셔너리
-    :param max_i: 최대 행 인덱스 (0~60)
-    :return: update_cells_inventory
     """
     update_cells_inventory = []
     processed_codes = set()
@@ -103,7 +93,7 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                             calc_qty = 0
                         else:
                             calc_qty = total_val // unit_price  # 정수 몫
-                        qty_to_set = calc_qty  # 숫자 형식으로 유지
+                        qty_to_set = calc_qty
                         print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {calc_qty}")
                     else:
                         try:
@@ -116,60 +106,54 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                     if code_text in code_to_cell_inventory:
                         target_cell_inventory = code_to_cell_inventory[code_text]
                         update_cells_inventory.append({
-                            'range': target_cell_inventory,  # 예: "A1"
+                            'range': target_cell_inventory,
                             'values': [[qty_to_set]]
                         })
                         print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
                         processed_codes.add(code_text)
-                        new_data_found = True  # 새로운 데이터가 발견되었음을 표시
+                        new_data_found = True
                     else:
                         print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
 
                 except NoSuchElementException:
                     print(f"[INFO] 행 {i}, 열 {col}의 셀을 찾을 수 없습니다.")
-                    continue  # 해당 셀이 없으면 스킵
+                    continue
                 except Exception as e:
                     print(f"[ERROR] 행 {i}, 열 {col} 처리 중 예외 발생: {e}")
                     traceback.print_exc()
-                    continue  # 예외 발생 시 다음 셀로 이동
+                    continue
 
         if new_data_found:
             # 새로운 데이터가 발견되었으므로 스크롤 시도
             scrolled = scroll_if_possible(
-                driver, 
-                "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton", 
-                num_clicks=15,  # 스크롤 클릭 횟수를 15으로 설정
-                pause_time=0.1  # 클릭 후 대기 시간
+                driver,
+                "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton",
+                num_clicks=15,
+                pause_time=0.1
             )
             if scrolled:
                 print(f"[INFO] 스크롤 시도 완료.")
                 time.sleep(1)  # 스크롤 후 로딩 대기
             else:
                 print(f"[INFO] 더 이상 스크롤할 수 없습니다.")
-                break  # 스크롤 실패 시 종료
+                break
         else:
             print(f"[INFO] 새로운 데이터가 더 이상 발견되지 않았습니다. 데이터 추출 완료.")
-            break  # 새로운 데이터가 없으면 종료
+            break
 
     return update_cells_inventory
+
 
 def main():
     try:
         # 로그 시작 시간
         current_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        current_local = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S') 
+        current_local = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
         print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 현지: {current_local}")
 
         # ================================
         # 1. Google Sheets API 인증 설정
         # ================================
-        # User-Agent 설정
-        user_agent = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            " AppleWebKit/537.36 (KHTML, like Gecko)"
-            " Chrome/120.0.0.0 Safari/537.36"
-        )
-
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/spreadsheets",
@@ -177,46 +161,52 @@ def main():
         ]
 
         # GitHub Actions용: /tmp/keyfile.json 경로 (헤드리스 서버에서)
-        json_path = "/tmp/keyfile.json"  
+        json_path = "/tmp/keyfile.json"
         creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
         client = gspread.authorize(creds)
 
-        # 스프레드시트 열기 (예시)
-        spreadsheet = client.open("청라 일일/월말 정산서")  # 스프레드시트 이름
-
-        sheet_inventory = spreadsheet.worksheet("재고")    # '재고' 시트 선택
-        sheet_report = spreadsheet.worksheet("무궁 청라")  # '무궁 청라' 시트 선택
+        # 스프레드시트 열기
+        spreadsheet = client.open("청라 일일/월말 정산서")
+        sheet_inventory = spreadsheet.worksheet("재고")
+        sheet_report = spreadsheet.worksheet("무궁 청라")
 
         # ================================
         # 2. Chrome WebDriver 실행
         # ================================
-        
-        # --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
+        # 사용자 정의 User-Agent
+        user_agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            " AppleWebKit/537.36 (KHTML, like Gecko)"
+            " Chrome/120.0.0.0 Safari/537.36"
+        )
+
+        # --- 헤드리스 모드 + 고유 user-data-dir + 안정성 옵션 ---
         options = webdriver.ChromeOptions()
 
+        # (중요) 매 실행마다 고유한 폴더 사용 → session not created 충돌 방지
         unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
         options.add_argument(f"--user-data-dir={unique_dir}")
 
-        # 1) Headless (GUI 없이 동작)
-        options.add_argument("--headless=new")  # 최신 headless 모드 사용
+        # 최신 Headless 모드
+        options.add_argument("--headless=new")
 
-        # 2) 서버 환경 안정성 옵션
+        # 서버 환경 안정성 옵션
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
 
-        # 3) 언어 설정
+        # 언어 설정
         options.add_argument("--lang=ko-KR")
         options.add_experimental_option("prefs", {
             "intl.accept_languages": "ko,ko-KR"
         })
 
-        # 4) 기타 설정
+        # 기타 설정
         options.add_argument("--window-size=1920,1080")
         options.add_argument(f"user-agent={user_agent}")
 
         # ChromeDriver 설치 및 WebDriver 초기화
-        driver = initialize_webdriver.Chrome(
+        driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install()),
             options=options
         )
@@ -258,7 +248,6 @@ def main():
         login_button = driver.find_element(By.ID, "mainframe_childframe_form_divMain_btnLogin")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
-
         time.sleep(3)  # 로그인 후 화면 로딩 대기
 
         # ================================================
@@ -282,7 +271,6 @@ def main():
         # ================================================
         # 5. 매출분석 → 상품분석 → 상품별 일매출분석
         # ================================================
-        # 매출분석 탭
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divTop_img_TA_top_menu3 > div"))
         )
@@ -351,7 +339,6 @@ def main():
         # ================================================
         # 7. 데이터 행 처리 및 스프레드시트 업데이트 ("재고" 시트)
         # ================================================
-        # '재고' 시트용 셀 매핑 (실제 매핑에 맞게 수정 필요)
         code_to_cell_inventory = {
             "000001": "N43", "000002": "C38", "000003": "C39", "000004": "C40",
             "000005": "C41", "000006": "C42", "000007": "C43", "000008": "C44",
@@ -368,18 +355,17 @@ def main():
             "000018": 2000,  "000019": 2000,  "000020": 2000,  "000055": 2000,
             "000021": 28000, "000022": 22000, "000023": 18000, "000024": 18000,
             "000039": 28000
-            # 필요하면 추가
         }
 
-        # 데이터 행 처리 및 업데이트 리스트 생성
+        # 데이터 행 처리
         update_cells_inventory = process_rows_sequentially(
-            driver, 
-            code_to_cell_inventory, 
-            special_prices, 
-            max_i=30  # i 값을 0~30으로 변경
+            driver,
+            code_to_cell_inventory,
+            special_prices,
+            max_i=30  # 0~30까지 탐색
         )
 
-        # '재고' 시트의 특정 범위를 먼저 비웁니다.
+        # '재고' 시트 특정 범위 삭제
         ranges_inventory_clear = [
             "C38", "C39", "C40", "C41", "C42", "C43", "C44", "C45",
             "N38", "N39", "N40", "N41", "N42", "N43", "N44", "N45",
@@ -394,7 +380,7 @@ def main():
             print(f"[ERROR] '재고' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
-        # '재고' 시트 배치 업데이트 수행
+        # '재고' 시트 배치 업데이트
         if update_cells_inventory:
             try:
                 sheet_inventory.batch_update(update_cells_inventory)
@@ -417,7 +403,7 @@ def main():
         print("[INFO] 영업속보 탭 클릭 완료.")
         time.sleep(1)
 
-        # 영업일보 탭 클릭
+        # 영업일보 탭
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"))
         )
@@ -428,7 +414,7 @@ def main():
         print("[INFO] 영업일보 탭 클릭 완료.")
         time.sleep(1)
 
-        # 영업일보 분석 탭 클릭
+        # 영업일보 분석 탭
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_2_cell_2_0_controltreeTextBoxElement"))
         )
@@ -463,12 +449,11 @@ def main():
         time.sleep(2)
 
         # ================================================
-        # 10. 데이터 추출 및 스프레드시트 업데이트 ("무궁 청라" 시트)
+        # 10. "무궁 청라" 시트 업데이트
         # ================================================
-        # '무궁 청라' 시트 업데이트를 위한 요청 리스트
         requests = []
 
-        # 카드 매출
+        # (1) 카드 매출
         try:
             card_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_2_cell_2_2"
@@ -486,9 +471,9 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 2,  # E3: 0-based
+                        'startRowIndex': 2,  # E3 (0-based)
                         'endRowIndex': 3,
-                        'startColumnIndex': 4,  # E열: 0-based (E=4)
+                        'startColumnIndex': 4,  # E열 (0-based -> A=0, B=1, ...)
                         'endColumnIndex': 5
                     }
                 }
@@ -498,7 +483,7 @@ def main():
             print(f"[ERROR] 카드 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 현금 영수증 매출
+        # (2) 현금 영수증 매출
         try:
             cash_receipt_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_1_cell_1_2"
@@ -516,7 +501,7 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 5,  # E6: 0-based
+                        'startRowIndex': 5,  # E6
                         'endRowIndex': 6,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
@@ -528,7 +513,7 @@ def main():
             print(f"[ERROR] 현금 영수증 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 현금 매출 (총 현금 - 현금 영수증 매출)
+        # (3) 현금 매출 (총 현금 - 현금 영수증 매출)
         try:
             total_cash_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_0_cell_0_2"
@@ -547,7 +532,7 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 4,  # E5: 0-based
+                        'startRowIndex': 4,  # E5
                         'endRowIndex': 5,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
@@ -559,7 +544,7 @@ def main():
             print(f"[ERROR] 현금 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 전체 테이블 수
+        # (4) 전체 테이블 수
         try:
             total_tables = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_1"
@@ -577,9 +562,9 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 29,  # D30: 0-based
+                        'startRowIndex': 29,  # D30
                         'endRowIndex': 30,
-                        'startColumnIndex': 3,  # D열: 0-based (D=3)
+                        'startColumnIndex': 3,  # D열
                         'endColumnIndex': 4
                     }
                 }
@@ -589,7 +574,7 @@ def main():
             print(f"[ERROR] 전체 테이블 수 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 전체 매출
+        # (5) 전체 매출
         try:
             total_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_2"
@@ -607,7 +592,7 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 29,  # E30: 0-based
+                        'startRowIndex': 29,  # E30
                         'endRowIndex': 30,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
@@ -619,7 +604,7 @@ def main():
             print(f"[ERROR] 전체 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # "무궁 청라" 시트의 특정 범위를 먼저 비웁니다.
+        # "무궁 청라" 시트 특정 범위 비우기
         ranges_report_clear = ["E3", "E5", "E6", "D30", "E30"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
@@ -628,7 +613,7 @@ def main():
             print(f"[ERROR] '무궁 청라' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
-        # 숫자 형식 설정을 위한 요청 추가
+        # 숫자 형식 설정(,#형식) 위한 요청
         number_format_requests = []
         for cell in ["E3", "E5", "E6", "E30"]:
             column_letter = ''.join(filter(str.isalpha, cell))
@@ -659,10 +644,10 @@ def main():
                 }
             })
 
-        # 모든 요청을 하나의 리스트로 합칩니다.
+        # 모든 요청 합치기
         all_requests = requests + number_format_requests
 
-        # "무궁 청라" 시트 배치 업데이트 수행
+        # "무궁 청라" 시트 배치 업데이트
         if all_requests:
             try:
                 body = {
@@ -677,20 +662,14 @@ def main():
     except Exception as e:
         print(f"[ERROR] 메인 함수 실행 중 예외 발생: {e}")
         traceback.print_exc()
-
-        # ================================================
-        # 비상 대처: 필요한 경우 추가적인 코드 실행
-        # ================================================
-        # 예: 로그 파일에 기록, 알림 보내기 등
-        # 현재는 단순히 예외를 출력합니다.
-
     finally:
-        # 브라우저를 자동으로 종료
+        # 브라우저 종료
         try:
             driver.quit()
             print("[INFO] 브라우저 종료 완료.")
-        except Exception as e:
-            print(f"[ERROR] 브라우저 종료 중 예외 발생: {e}")
+        except Exception as ex:
+            print(f"[ERROR] 브라우저 종료 중 예외 발생: {ex}")
+
 
 if __name__ == "__main__":
     main()
