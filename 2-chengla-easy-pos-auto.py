@@ -2,6 +2,7 @@ import os
 import time
 import gspread
 import traceback
+import uuid    
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -189,8 +190,12 @@ def main():
         # ================================
         # 2. Chrome WebDriver 실행
         # ================================
+        
         # --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
         options = webdriver.ChromeOptions()
+
+        unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
+        options.add_argument(f"--user-data-dir={unique_dir}")
 
         # 1) Headless (GUI 없이 동작)
         options.add_argument("--headless=new")  # 최신 headless 모드 사용
@@ -211,7 +216,7 @@ def main():
         options.add_argument(f"user-agent={user_agent}")
 
         # ChromeDriver 설치 및 WebDriver 초기화
-        driver = webdriver.Chrome(
+        driver = initialize_webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install()),
             options=options
         )
