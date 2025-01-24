@@ -6,9 +6,7 @@ on:
 
 jobs:
   run-script:
-    runs-on: self-hosted          # self-hosted runner (Ubuntu 등)
-    # 만약 GitHub 호스티드 ubuntu-22.04 쓰고 싶으면: runs-on: ubuntu-22.04
-
+    runs-on: instance-20250124-140519
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
