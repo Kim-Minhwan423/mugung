@@ -6,6 +6,8 @@ import traceback
 import sys
 import time
 import uuid  # user-data-dir (충돌 방지)용
+import json
+import base64  # Base64 디코딩을 위해 추가
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -46,14 +48,21 @@ logger.addHandler(file_handler)
 
 
 # 1) Google Sheets 인증
-def authorize_google_sheets(json_path):
+def authorize_google_sheets(base64_json):
     try:
+        if not base64_json:
+            raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
+        
+        # Base64 디코딩 및 JSON 로드
+        json_content = base64.b64decode(base64_json).decode('utf-8')
+        credentials_dict = json.loads(json_content)
+        
         scopes = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scopes)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scopes)
         client = gspread.authorize(creds)
         logger.info("Google Sheets API 인증에 성공했습니다.")
         return client
@@ -77,7 +86,7 @@ def initialize_webdriver(user_agent):
         options.add_argument("--disable-gpu")
 
         # 창 사이즈 (필요하다면)
-        options.add_argument("--window-size=1200,800")
+        options.add_argument("--window-size=1020,980")
 
         # User-Agent 설정 (필요 시)
         options.add_argument(f"user-agent={user_agent}")
@@ -98,6 +107,22 @@ def initialize_webdriver(user_agent):
             "source": """
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
+                })
+            """
+        })
+
+        # 추가적인 탐지 방지 스크립트
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": """
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5],
+                })
+            """
+        })
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": """
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['en-US', 'en'],
                 })
             """
         })
@@ -312,12 +337,11 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             logging.warning(f"시트에 오늘 날짜({day})가 없습니다.")
     except ValueError:
         logging.error(f"데이터 형식 오류: '{summary_text}'")
-        driver.save_screenshot("update_order_summary_value_error.png")
+        # Google Sheets 업데이트와 관련된 오류이므로, WebDriver 관련 스크린샷 저장은 불필요
         raise
     except Exception as e:
         logging.error("구글 시트 기록 중 오류 발생.")
         logging.error(f"{str(e)}")
-        driver.save_screenshot("update_order_summary_error.png")
         raise
 
 
@@ -330,7 +354,6 @@ def clear_inventory_sheet(inventory_sheet):
     except Exception as e:
         logging.error("재고 시트의 특정 범위 삭제 중 오류 발생.")
         logging.error(f"{str(e)}")
-        driver.save_screenshot("clear_inventory_sheet_error.png")
         raise
 
 
@@ -456,7 +479,7 @@ def main():
     )
 
     # 구글 시트 인증
-    client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
+    client = authorize_google_sheets(SERVICE_ACCOUNT_JSON_BASE64)
     spreadsheet = client.open("청라 일일/월말 정산서")
     muGung_sheet = spreadsheet.worksheet("무궁 청라")
     inventory_sheet = spreadsheet.worksheet("재고")
