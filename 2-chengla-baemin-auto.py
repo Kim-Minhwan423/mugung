@@ -126,21 +126,19 @@ def login(driver, wait, username, password):
         driver.get("https://self.baemin.com/")
         logger.info("배민 사이트에 접속 중...")
 
-        # 로그인 페이지 로드 대기 (예: 큰 컨테이너)
-        main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
+        # 로그인 페이지 로드 대기 (사용자명 입력 필드)
+        username_selector = "input[type='text'][name='username'], input[type='text']"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
         logger.info("배민 로그인 페이지 로드 완료.")
 
         # 사용자명 입력
-        username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
         username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
         username_input.clear()
         username_input.send_keys(username)
         logger.info("사용자명을 입력했습니다.")
 
         # 비밀번호 입력
-        password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
+        password_selector = "input[type='password'][name='password'], input[type='password']"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
         password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
         password_input.clear()
@@ -148,14 +146,14 @@ def login(driver, wait, username, password):
         logger.info("비밀번호를 입력했습니다.")
 
         # 로그인 버튼 클릭
-        login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
+        login_button_selector = "button[type='submit'], button.login-button, button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, login_button_selector)))
         login_button = driver.find_element(By.CSS_SELECTOR, login_button_selector)
         login_button.click()
         logger.info("로그인 버튼을 클릭했습니다.")
 
         # 로그인 완료 확인 (메뉴 버튼 등장)
-        menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+        menu_button_selector = "div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
         try:
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
             logger.info("로그인에 성공했습니다.")
@@ -201,20 +199,20 @@ def close_popup(driver, wait):
 # 5) 주문내역 페이지 진입
 def navigate_to_order_history(driver, wait):
     try:
-        menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+        menu_button_selector = "div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
         menu_button = driver.find_element(By.CSS_SELECTOR, menu_button_selector)
         menu_button.click()
         logger.info("메뉴 버튼을 클릭하여 메뉴창을 열었습니다.")
 
-        order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
+        order_history_selector = "nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
         order_history_button = driver.find_element(By.CSS_SELECTOR, order_history_selector)
         order_history_button.click()
         logger.info("'주문내역' 버튼을 클릭했습니다.")
 
         # 주문내역 페이지 로드
-        date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+        date_filter_button_selector = "div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
         logger.info("주문내역 페이지가 로드되었습니다.")
 
@@ -232,7 +230,7 @@ def navigate_to_order_history(driver, wait):
 # 6) 날짜 필터 설정
 def set_date_filter(driver, wait):
     try:
-        date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+        date_filter_button_selector = "div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, date_filter_button_selector)))
         date_filter_button = driver.find_element(By.CSS_SELECTOR, date_filter_button_selector)
         date_filter_button.click()
@@ -253,22 +251,24 @@ def set_date_filter(driver, wait):
         time.sleep(3)
         logger.info("3초 대기 완료.")
 
-        summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
+        summary_selector = "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
         logger.info("필터 적용 후 데이터가 로드되었습니다.")
     except TimeoutException:
         logger.error("날짜 필터 설정에 실패했습니다.")
+        driver.save_screenshot("set_date_filter_timeout.png")
         raise
     except Exception as e:
         logger.error("날짜 필터 설정 중 오류가 발생했습니다.")
         logger.error(f"{str(e)}")
+        driver.save_screenshot("set_date_filter_error.png")
         raise
 
 
 # 7) 주문 요약 추출
 def extract_order_summary(driver, wait):
     try:
-        summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
+        summary_selector = "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
         summary_element = driver.find_element(By.CSS_SELECTOR, summary_selector)
         summary_text = summary_element.text.strip()
@@ -276,13 +276,16 @@ def extract_order_summary(driver, wait):
         return summary_text
     except TimeoutException:
         logger.error("주문 요약 데이터를 추출하는 데 실패했습니다.")
+        driver.save_screenshot("extract_order_summary_timeout.png")
         raise
     except NoSuchElementException:
         logger.error("주문 요약 데이터 요소를 찾을 수 없습니다.")
+        driver.save_screenshot("extract_order_summary_no_element.png")
         raise
     except Exception as e:
         logger.error("주문 요약 데이터 추출 중 오류가 발생했습니다.")
         logger.error(f"{str(e)}")
+        driver.save_screenshot("extract_order_summary_error.png")
         raise
 
 
@@ -319,10 +322,12 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             logger.warning(f"시트에 오늘 날짜({day})가 없습니다.")
     except ValueError:
         logger.error(f"데이터 형식 오류: '{summary_text}'")
+        driver.save_screenshot("update_order_summary_value_error.png")
         raise
     except Exception as e:
         logger.error("구글 시트 기록 중 오류 발생.")
         logger.error(f"{str(e)}")
+        driver.save_screenshot("update_order_summary_error.png")
         raise
 
 
@@ -335,6 +340,7 @@ def clear_inventory_sheet(inventory_sheet):
     except Exception as e:
         logger.error("재고 시트의 특정 범위 삭제 중 오류 발생.")
         logger.error(f"{str(e)}")
+        driver.save_screenshot("clear_inventory_sheet_error.png")
         raise
 
 
@@ -366,10 +372,12 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                         continue
                     except TimeoutException:
                         logger.error(f"tr[{order_details_tr_num}] 주문 상세 로드 실패.")
+                        driver.save_screenshot(f"order_{order_num}_details_timeout.png")
                         continue
                     except Exception as e:
                         logger.error(f"tr[{order_num}] 처리 중 오류: {e}")
                         traceback.print_exc()
+                        driver.save_screenshot(f"order_{order_num}_processing_error.png")
                         continue
 
                 # 상세에서 j=1,4,7,... 최대 99
@@ -403,6 +411,7 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                     except Exception as e:
                         logger.error(f"tr[{order_details_tr_num}], j={j} 오류: {e}")
                         traceback.print_exc()
+                        driver.save_screenshot(f"order_{order_details_tr_num}_item_{j}_error.png")
                         break
 
             # 다음 페이지 버튼
@@ -421,6 +430,7 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
             except Exception as e:
                 logger.error(f"다음 페이지 이동 중 오류: {e}")
                 traceback.print_exc()
+                driver.save_screenshot("next_page_error.png")
                 break
 
         # 모든 페이지 끝 → batch_update
@@ -434,12 +444,14 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                 logger.info("'재고' 시트 배치 업데이트 완료.")
             except Exception as e:
                 logger.error(f"'재고' 시트 업데이트 오류: {e}")
+                driver.save_screenshot("update_inventory_sheet_error.png")
         else:
             logger.info("판매 데이터가 없습니다.")
     except Exception as e:
         logger.error("판매 수량 추출/기록 중 오류:")
         logger.error(f"{str(e)}")
         traceback.print_exc()
+        driver.save_screenshot("extract_and_update_sales_data_error.png")
         raise
 
 
