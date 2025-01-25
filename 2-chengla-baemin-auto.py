@@ -29,15 +29,42 @@ import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 from oauth2client.service_account import ServiceAccountCredentials
 
-
 ###############################################################################
 # 환경설정 및 상수
 ###############################################################################
 ITEM_TO_CELL = {
+    # 예시 매핑 (품목명: 시트셀주소)
     '육회비빔밥(1인분)': 'P43',
     '꼬리곰탕(1인분)': 'E38',
     '빨간곰탕(1인분)': 'E39',
-    # ... 생략 (나머지 품목 맵핑)
+    '꼬리덮밥(1인분)': 'E40',
+    '육전(200g)': 'P44',
+    '육회(300g)': 'P42',
+    '육사시미(250g)': 'P41',
+    '꼬리수육(2인분)': 'E41',
+    '소꼬리찜(2인분)': 'E42',
+    '불꼬리찜(2인분)': 'E43',
+    '로제꼬리(2인분)': 'E44',
+    '꼬리구이(2인분)': 'E45',
+    '코카콜라': 'AD42',
+    '스프라이트': 'AD43',
+    '토닉워터': 'AD44',
+    '제로콜라': 'AD41',
+    '만월': 'AP39',
+    '문배술25': 'AP40',
+    '로아 화이트': 'AP43',
+    '황금보리': 'AP38',
+    '왕율주': 'AP41',
+    '왕주': 'AP42',
+    '청하': 'BA38',
+    '참이슬 후레쉬': 'BA39',
+    '처음처럼': 'BA40',
+    '새로': 'BA42',
+    '진로이즈백': 'BA41',
+    '카스': 'BA43',
+    '테라': 'BA44',
+    '켈리': 'BA45',
+    '소성주막걸리': 'AP45'
 }
 
 ###############################################################################
@@ -47,14 +74,12 @@ def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     
-    # Stream Handler (콘솔)
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.INFO)
     stream_formatter = logging.Formatter('%(message)s')
     stream_handler.setFormatter(stream_formatter)
     logger.addHandler(stream_handler)
     
-    # File Handler (파일)
     file_handler = logging.FileHandler(log_filename, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter('%(message)s')
@@ -99,10 +124,31 @@ class SeleniumDriverManager:
     
     def __enter__(self):
         options = webdriver.ChromeOptions()
-        
+
+        # =============================================
+        # 1) Stealth 옵션 설정 (AutomationControlled 등)
+        # =============================================
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
+        # =============================================
+        # 2) user-data-dir (고유 브라우저 프로필 디렉토리)
+        #    - 매번 다른 UUID 디렉토리를 사용하면 로그인 세션도 새로 생김
+        #    - 한번 세션을 유지하고 싶다면 고정된 경로 사용
+        # =============================================
+        unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
+        options.add_argument(f"--user-data-dir={unique_dir}")
+
+        # =============================================
+        # 3) 헤드리스 설정
+        # =============================================
         if self.headless:
             options.add_argument("--headless")
 
+        # =============================================
+        # 4) 기타 안정성 옵션
+        # =============================================
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
@@ -111,12 +157,26 @@ class SeleniumDriverManager:
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
         options.add_argument("--remote-debugging-port=9222")
-        
+
         try:
             self.driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=options
             )
+            # =============================================
+            # 5) CDP를 이용해 navigator.webdriver 제거
+            # =============================================
+            self.driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {
+                    "source": """
+                      Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                      })
+                    """
+                }
+            )
+
             logging.info("WebDriver 초기화 성공")
         except WebDriverException as e:
             logging.error("WebDriver 초기화 실패")
@@ -218,21 +278,22 @@ def login_and_close_popup(driver, wait, username, password):
     driver.get("https://self.baemin.com/")
     logging.info("배민 페이지 접속 시도")
 
+    # (예) 사람처럼 살짝 대기
+    time.sleep(2)
+
     # 2. 로그인 화면 요소 대기
     login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
     try:
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, login_page_selector)))
     except TimeoutException:
-        # 스크린샷 + HTML 소스 저장
         driver.save_screenshot("login_timeout.png")
         with open("login_timeout.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
-
-        logging.error("Timeout: 로그인 페이지 요소를 찾지 못했습니다. 스크린샷과 HTML 소스를 저장했습니다.")
+        logging.error("Timeout: 로그인 페이지 요소를 찾지 못했습니다.")
         traceback.print_exc()
         raise
 
-    # 3. ID/PW 입력 (CSS)
+    # 3. ID/PW 입력
     username_selector = (
         "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > "
         "form > div:nth-child(1) > span > input[type=text]"
@@ -243,23 +304,34 @@ def login_and_close_popup(driver, wait, username, password):
     )
     
     driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
+    # (예) 사람처럼 타이핑 후 1~2초 대기
+    time.sleep(1)
     driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
-    
-    # 4. 로그인 버튼 클릭 (CSS)
+
+    # 4. 로그인 버튼 클릭
     login_button_selector = (
         "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     )
+    time.sleep(1)
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
     
-    # 5. 로그인 완료 대기 (메뉴 버튼 확인)
+    # 5. 로그인 완료 대기
     menu_button_selector = (
         "#root > div > div.Container_c_9rpk_1utdzds5."
         "MobileHeader-module__mihN > div > div > div:nth-child(1)"
     )
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
-    logging.info("로그인 성공")
-    
+    try:
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
+        logging.info("로그인 성공")
+    except TimeoutException:
+        driver.save_screenshot("login_timeout_after_click.png")
+        with open("login_timeout_after_click.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        logging.error("Timeout: 로그인 후 메뉴버튼 요소가 나타나지 않았습니다.")
+        traceback.print_exc()
+        raise
+
     # 6. 팝업 닫기 (있으면)
     popup_close_selector = "body > div.bsds-portal > div > section > footer > div > button"
     try:
@@ -272,12 +344,14 @@ def login_and_close_popup(driver, wait, username, password):
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = (
-        "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > "
-        "div > div > div:nth-child(1)"
+        "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
     )
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
-    
+
+    # (예) 1초 정도 쉬어주기
+    time.sleep(1)
+
     order_history_selector = (
         "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > "
         "div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
@@ -301,6 +375,9 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
     
+    # (간격)
+    time.sleep(1)
+
     daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
@@ -330,6 +407,9 @@ def extract_sales_details(driver, wait):
     sales_data = {}
     
     while True:
+        # (예: 한 페이지 읽고 1~2초 쉬어주기)
+        time.sleep(1)
+
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
             order_button_xpath = (
@@ -347,6 +427,7 @@ def extract_sales_details(driver, wait):
                             )
                         )
                     )
+                    time.sleep(1)
                 except NoSuchElementException:
                     logging.debug(f"주문 tr[{order_num}] 버튼 없음, 스킵")
                     continue
@@ -391,8 +472,8 @@ def extract_sales_details(driver, wait):
                 logging.info("다음 페이지 없음. 추출 종료")
                 break
             next_btn.click()
-            time.sleep(2)
             logging.info("다음 페이지 이동")
+            time.sleep(2)
         except NoSuchElementException:
             logging.info("다음 페이지 버튼 없음. 추출 종료")
             break
@@ -413,14 +494,19 @@ def main():
     
     baemin_id, baemin_pw, service_account_json_b64 = get_environment_variables()
     
+    # (Stealth 모드 ON, 헤드리스 설정=True)
     with SeleniumDriverManager(headless=True) as driver:
         wait = WebDriverWait(driver, 30)
         
         try:
+            # 로그인 + 팝업 닫기
             login_and_close_popup(driver, wait, baemin_id, baemin_pw)
+            
+            # 주문내역 이동 + 필터
             navigate_to_order_history(driver, wait)
             set_daily_filter(driver, wait)
             
+            # 요약 / 판매 디테일
             order_summary = extract_order_summary(driver, wait)
             sales_details = extract_sales_details(driver, wait)
         except Exception as e:
@@ -428,6 +514,7 @@ def main():
             traceback.print_exc()
             return
     
+    # 구글 시트 연동
     sheets_manager = GoogleSheetsManager(service_account_json_b64)
     sheets_manager.authenticate()
     
@@ -449,7 +536,6 @@ def main():
         if day in day_values:
             row_index = day_values.index(day) + 3
             target_cell = f"V{row_index}"
-            
             extracted_num = int(re.sub(r'[^\\d]', '', order_summary))
             sheets_manager.update_cell_value(mu_gung_sheet, target_cell, extracted_num)
             sheets_manager.format_cells_number(mu_gung_sheet, 'V3:V33')
