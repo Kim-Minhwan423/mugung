@@ -25,9 +25,10 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 
-# 환경변수에서 ID/PW/JSON_CONTENT
+# 환경변수에서 ID/PW/JSON_PATH
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
+GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/keyfile.json")
 SERVICE_ACCOUNT_JSON_BASE64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")  # Base64 인코딩된 JSON
 
 # 로깅 설정
@@ -48,21 +49,14 @@ logger.addHandler(file_handler)
 
 
 # 1) Google Sheets 인증
-def authorize_google_sheets(base64_json):
+def authorize_google_sheets(json_path):
     try:
-        if not base64_json:
-            raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
-        
-        # Base64 디코딩 및 JSON 로드
-        json_content = base64.b64decode(base64_json).decode('utf-8')
-        credentials_dict = json.loads(json_content)
-        
         scopes = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scopes)
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scopes)
         client = gspread.authorize(creds)
         logger.info("Google Sheets API 인증에 성공했습니다.")
         return client
@@ -139,33 +133,49 @@ def initialize_webdriver(user_agent):
 def login(driver, wait, username, password):
     try:
         driver.get("https://self.baemin.com/")
-        logger.info("배민 사이트에 접속 중...")
+        logging.info("배민 사이트에 접속 중...")
 
-        # 로그인 페이지 로드 대기 (예: 큰 컨테이너)
+        # 현재 URL과 페이지 타이틀 로그
+        logging.info(f"현재 URL: {driver.current_url}")
+        logging.info(f"페이지 타이틀: {driver.title}")
+
+        # 로그인 페이지 로드 대기 (큰 컨테이너)
         main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
         logging.info("배민 로그인 페이지 로드 완료.")
 
         # 사용자명 입력
-        username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
+        username_selector = "input[type='text'][name='username'], input[type='text'][id='user-id']"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
         username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
+        if username_input:
+            logging.info("사용자명 입력 필드가 존재합니다.")
+        else:
+            logging.error("사용자명 입력 필드를 찾을 수 없습니다.")
         username_input.clear()
         username_input.send_keys(username)
         logging.info("사용자명을 입력했습니다.")
 
         # 비밀번호 입력
-        password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
+        password_selector = "input[type='password'][name='password'], input[type='password'][id='user-password']"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
         password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
+        if password_input:
+            logging.info("비밀번호 입력 필드가 존재합니다.")
+        else:
+            logging.error("비밀번호 입력 필드를 찾을 수 없습니다.")
         password_input.clear()
         password_input.send_keys(password)
         logging.info("비밀번호를 입력했습니다.")
 
         # 로그인 버튼 클릭
-        login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
+        login_button_selector = "button[type='submit'], button.login-button, button#login-button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, login_button_selector)))
         login_button = driver.find_element(By.CSS_SELECTOR, login_button_selector)
+        if login_button:
+            logging.info("로그인 버튼이 존재합니다.")
+        else:
+            logging.error("로그인 버튼을 찾을 수 없습니다.")
         login_button.click()
         logging.info("로그인 버튼을 클릭했습니다.")
 
@@ -196,6 +206,7 @@ def login(driver, wait, username, password):
             f.write(driver.page_source)
         raise
 
+
 # 4) 팝업 닫기
 def close_popup(driver, wait):
     popup_close_selector = "body > div.bsds-portal > div > section > footer > div > button"
@@ -203,42 +214,42 @@ def close_popup(driver, wait):
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         popup_close_button = driver.find_element(By.CSS_SELECTOR, popup_close_selector)
         popup_close_button.click()
-        logger.info("팝업을 성공적으로 닫았습니다.")
+        logging.info("팝업을 성공적으로 닫았습니다.")
     except TimeoutException:
-        logger.warning("닫을 수 있는 팝업이 없거나 로드되지 않았습니다.")
+        logging.warning("닫을 수 있는 팝업이 없거나 로드되지 않았습니다.")
     except Exception as e:
-        logger.error("팝업을 닫는 중 오류가 발생했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("팝업을 닫는 중 오류가 발생했습니다.")
+        logging.error(f"{str(e)}")
         raise
 
 
 # 5) 주문내역 페이지 진입
 def navigate_to_order_history(driver, wait):
     try:
-        menu_button_selector = "div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+        menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
         menu_button = driver.find_element(By.CSS_SELECTOR, menu_button_selector)
         menu_button.click()
-        logger.info("메뉴 버튼을 클릭하여 메뉴창을 열었습니다.")
+        logging.info("메뉴 버튼을 클릭하여 메뉴창을 열었습니다.")
 
-        order_history_selector = "nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
+        order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
         order_history_button = driver.find_element(By.CSS_SELECTOR, order_history_selector)
         order_history_button.click()
-        logger.info("'주문내역' 버튼을 클릭했습니다.")
+        logging.info("'주문내역' 버튼을 클릭했습니다.")
 
         # 주문내역 페이지 로드
-        date_filter_button_selector = "div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+        date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
-        logger.info("주문내역 페이지가 로드되었습니다.")
+        logging.info("주문내역 페이지가 로드되었습니다.")
 
     except TimeoutException:
-        logger.error("주문내역 페이지로 이동하는 데 실패했습니다.")
+        logging.error("주문내역 페이지로 이동하는 데 실패했습니다.")
         driver.save_screenshot("navigate_order_history_timeout.png")
         raise
     except Exception as e:
-        logger.error("주문내역 페이지로 이동 중 오류가 발생했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("주문내역 페이지로 이동 중 오류가 발생했습니다.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("navigate_order_history_error.png")
         raise
 
@@ -246,37 +257,37 @@ def navigate_to_order_history(driver, wait):
 # 6) 날짜 필터 설정
 def set_date_filter(driver, wait):
     try:
-        date_filter_button_selector = "div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+        date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, date_filter_button_selector)))
         date_filter_button = driver.find_element(By.CSS_SELECTOR, date_filter_button_selector)
         date_filter_button.click()
-        logger.info("날짜 필터 버튼을 클릭했습니다.")
+        logging.info("날짜 필터 버튼을 클릭했습니다.")
 
         daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
         wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
         daily_filter = driver.find_element(By.XPATH, daily_filter_xpath)
         daily_filter.click()
-        logger.info("'일・주' 필터를 선택했습니다.")
+        logging.info("'일・주' 필터를 선택했습니다.")
 
         apply_button_xpath = "//button[contains(., '적용')]"
         wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
         apply_button = driver.find_element(By.XPATH, apply_button_xpath)
         apply_button.click()
-        logger.info("'적용' 버튼을 클릭했습니다.")
+        logging.info("'적용' 버튼을 클릭했습니다.")
 
         time.sleep(3)
-        logger.info("3초 대기 완료.")
+        logging.info("3초 대기 완료.")
 
-        summary_selector = "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
+        summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
-        logger.info("필터 적용 후 데이터가 로드되었습니다.")
+        logging.info("필터 적용 후 데이터가 로드되었습니다.")
     except TimeoutException:
-        logger.error("날짜 필터 설정에 실패했습니다.")
+        logging.error("날짜 필터 설정에 실패했습니다.")
         driver.save_screenshot("set_date_filter_timeout.png")
         raise
     except Exception as e:
-        logger.error("날짜 필터 설정 중 오류가 발생했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("날짜 필터 설정 중 오류가 발생했습니다.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("set_date_filter_error.png")
         raise
 
@@ -284,23 +295,23 @@ def set_date_filter(driver, wait):
 # 7) 주문 요약 추출
 def extract_order_summary(driver, wait):
     try:
-        summary_selector = "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
+        summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
         summary_element = driver.find_element(By.CSS_SELECTOR, summary_selector)
         summary_text = summary_element.text.strip()
-        logger.info(f"주문 요약 데이터: {summary_text}")
+        logging.info(f"주문 요약 데이터: {summary_text}")
         return summary_text
     except TimeoutException:
-        logger.error("주문 요약 데이터를 추출하는 데 실패했습니다.")
+        logging.error("주문 요약 데이터를 추출하는 데 실패했습니다.")
         driver.save_screenshot("extract_order_summary_timeout.png")
         raise
     except NoSuchElementException:
-        logger.error("주문 요약 데이터 요소를 찾을 수 없습니다.")
+        logging.error("주문 요약 데이터 요소를 찾을 수 없습니다.")
         driver.save_screenshot("extract_order_summary_no_element.png")
         raise
     except Exception as e:
-        logger.error("주문 요약 데이터 추출 중 오류가 발생했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("주문 요약 데이터 추출 중 오류가 발생했습니다.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("extract_order_summary_error.png")
         raise
 
@@ -338,7 +349,6 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             logging.warning(f"시트에 오늘 날짜({day})가 없습니다.")
     except ValueError:
         logging.error(f"데이터 형식 오류: '{summary_text}'")
-        # Google Sheets 업데이트와 관련된 오류이므로, WebDriver 관련 스크린샷 저장은 불필요
         raise
     except Exception as e:
         logging.error("구글 시트 기록 중 오류 발생.")
@@ -479,15 +489,22 @@ def main():
         " Chrome/132.0.6834.110 Safari/537.36"
     )
 
+    # Base64 디코딩하여 JSON 파일로 저장
+    if SERVICE_ACCOUNT_JSON_BASE64:
+        with open(GOOGLE_CREDENTIALS_PATH, "wb") as f:
+            f.write(base64.b64decode(SERVICE_ACCOUNT_JSON_BASE64))
+    else:
+        raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
+
     # 구글 시트 인증
-    client = authorize_google_sheets(SERVICE_ACCOUNT_JSON_BASE64)
+    client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
     spreadsheet = client.open("청라 일일/월말 정산서")
     muGung_sheet = spreadsheet.worksheet("무궁 청라")
     inventory_sheet = spreadsheet.worksheet("재고")
 
     # WebDriver (Headless)
     driver = initialize_webdriver(user_agent)
-    wait = WebDriverWait(driver, 60)  # 타임아웃 시간을 30초에서 60초로 증가
+    wait = WebDriverWait(driver, 30)
 
     try:
         # 배민 ID/PW 체크
