@@ -2,5 +2,4 @@ selenium
 gspread
 webdriver-manager
 oauth2client
-Flask
 gspread-formatting
