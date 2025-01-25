@@ -5,7 +5,6 @@ import logging
 import traceback
 import sys
 import time
-import uuid  # user-data-dir (충돌 방지)용
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -15,18 +14,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
     NoSuchElementException, TimeoutException, WebDriverException
 )
-from webdriver_manager.chrome import ChromeDriverManager
-
-# oauth2client로 Google Sheets 인증
-from oauth2client.service_account import ServiceAccountCredentials
 
 import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
+from oauth2client.service_account import ServiceAccountCredentials
 
 # 환경변수에서 ID/PW/JSON_PATH
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
-GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/keyfile.json")
+GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # 로깅 설정
 logger = logging.getLogger()
@@ -34,13 +30,13 @@ logger.setLevel(logging.INFO)
 
 stream_handler = logging.StreamHandler(sys.stdout)
 stream_handler.setLevel(logging.INFO)
-stream_formatter = logging.Formatter('%(message)s')
+stream_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(stream_formatter)
 logger.addHandler(stream_handler)
 
 file_handler = logging.FileHandler("script.log", encoding='utf-8')
 file_handler.setLevel(logging.INFO)
-file_formatter = logging.Formatter('%(message)s')
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
@@ -63,36 +59,38 @@ def authorize_google_sheets(json_path):
         raise
 
 
-# 2) Selenium WebDriver 초기화 (Headless)
-def initialize_webdriver():
-    """
-    GitHub Actions 또는 일반 서버 환경에서 Headless 크롬을 사용하도록 수정.
-    """
+# 2) Selenium WebDriver 초기화 (헤드리스 모드 설정 가능)
+def initialize_webdriver(user_agent, headless=True):
     try:
         options = webdriver.ChromeOptions()
 
-        # 고유 user-data-dir (필요 없으면 주석 처리 가능)
-        unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
-        options.add_argument(f"--user-data-dir={unique_dir}")
-
-        # 헤드리스 모드 (기존 --headless=new 대신 --headless)
-        options.add_argument("--headless")
+        if headless:
+            options.add_argument("--headless")  # 헤드리스 모드 활성화
+        else:
+            # 헤드리스 모드 비활성화: 브라우저 창을 실제로 표시
+            pass
 
         # 안정성 옵션
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
 
-        # 창 사이즈 (필요하다면)
+        # 창 사이즈 (필요하다면 조정)
         options.add_argument("--window-size=1020,980")
 
-        # User-Agent 오버라이드 제거 (필요 시 추가)
-        # options.add_argument("user-agent=Mozilla/5.0 ...")
+        # User-Agent 설정 (실제 브라우저와 동일하게 설정)
+        options.add_argument(f"user-agent={user_agent}")
 
-        driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=options
-        )
+        # 추가 최적화 옵션
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--remote-debugging-port=9222")
+
+        # ChromeDriver 경로 지정 (chromedriver.exe는 스크립트와 동일한 디렉토리에 있다고 가정)
+        chrome_driver_path = os.path.join(os.getcwd(), "chromedriver.exe")
+        service = Service(chrome_driver_path)
+
+        driver = webdriver.Chrome(service=service, options=options)
         logging.info("WebDriver가 성공적으로 초기화되었습니다.")
         return driver
     except WebDriverException as e:
@@ -112,7 +110,7 @@ def login(driver, wait, username, password):
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
         logging.info("배민 로그인 페이지 로드 완료.")
 
-        # 사용자명
+        # 사용자명 입력
         username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
         username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
@@ -120,7 +118,7 @@ def login(driver, wait, username, password):
         username_input.send_keys(username)
         logging.info("사용자명을 입력했습니다.")
 
-        # 비밀번호
+        # 비밀번호 입력
         password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
         password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
@@ -128,7 +126,7 @@ def login(driver, wait, username, password):
         password_input.send_keys(password)
         logging.info("비밀번호를 입력했습니다.")
 
-        # 로그인 버튼
+        # 로그인 버튼 클릭
         login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, login_button_selector)))
         login_button = driver.find_element(By.CSS_SELECTOR, login_button_selector)
@@ -141,19 +139,25 @@ def login(driver, wait, username, password):
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
             logging.info("로그인에 성공했습니다.")
         except TimeoutException:
-            # 로그인 실패 시 스크린샷 저장
+            # 로그인 실패 시 스크린샷 및 페이지 소스 저장
             driver.save_screenshot("after_login_timeout.png")
-            logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다. 스크린샷을 확인하세요.")
+            with open("after_login_timeout.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다. 스크린샷과 페이지 소스를 확인하세요.")
             raise
 
     except TimeoutException:
         logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다.")
         driver.save_screenshot("after_login_exception.png")
+        with open("after_login_exception.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
         raise
     except Exception as e:
         logging.error("로그인 처리 중 오류가 발생했습니다.")
         logging.error(f"{str(e)}")
         driver.save_screenshot("after_login_error.png")
+        with open("after_login_error.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
         raise
 
 
@@ -422,14 +426,20 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
 def main():
     print("스크립트가 시작되었습니다.")
 
+    user_agent = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        " AppleWebKit/537.36 (KHTML, like Gecko)"
+        " Chrome/132.0.6834.110 Safari/537.36"
+    )
+
     # 구글 시트 인증
     client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
     spreadsheet = client.open("청라 일일/월말 정산서")
     muGung_sheet = spreadsheet.worksheet("무궁 청라")
     inventory_sheet = spreadsheet.worksheet("재고")
 
-    # WebDriver (Headless)
-    driver = initialize_webdriver()
+    # WebDriver (헤드리스 모드 설정: True로 설정하면 헤드리스, False로 설정하면 브라우저 창 표시)
+    driver = initialize_webdriver(user_agent, headless=False)  # headless=True로 변경 가능
     wait = WebDriverWait(driver, 30)
 
     try:
@@ -500,4 +510,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
