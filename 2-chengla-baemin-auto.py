@@ -7,7 +7,6 @@ import sys
 import time
 import json
 import tempfile
-import base64
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -27,8 +26,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 # 환경변수에서 ID/PW/JSON_CONTENT
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
-SERVICE_ACCOUNT_JSON_BASE64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")  # Base64 인코딩된 JSON
-# 또는
 SERVICE_ACCOUNT_JSON = os.getenv("SERVICE_ACCOUNT_JSON")  # JSON 문자열
 
 # 로깅 설정
@@ -56,15 +53,12 @@ def authorize_google_sheets():
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        
+
         if SERVICE_ACCOUNT_JSON:
             creds_dict = json.loads(SERVICE_ACCOUNT_JSON)
-        elif SERVICE_ACCOUNT_JSON_BASE64:
-            creds_json = base64.b64decode(SERVICE_ACCOUNT_JSON_BASE64).decode('utf-8')
-            creds_dict = json.loads(creds_json)
         else:
             raise ValueError("Google 서비스 계정 JSON이 제공되지 않았습니다.")
-        
+
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as tmpfile:
             json.dump(creds_dict, tmpfile)
             tmpfile_path = tmpfile.name
@@ -73,6 +67,10 @@ def authorize_google_sheets():
         client = gspread.authorize(creds)
         logger.info("Google Sheets API 인증에 성공했습니다.")
         return client
+    except json.JSONDecodeError as e:
+        logger.error("Google 서비스 계정 JSON이 유효하지 않습니다.")
+        logger.error(f"{str(e)}")
+        raise
     except Exception as e:
         logger.error("Google Sheets API 인증에 실패했습니다.")
         logger.error(f"{str(e)}")
@@ -457,7 +455,7 @@ def main():
     inventory_sheet = spreadsheet.worksheet("재고")
 
     # WebDriver (헤드리스 모드 설정: True로 설정하면 헤드리스, False로 설정하면 브라우저 창 표시)
-    driver = initialize_webdriver(user_agent, headless=False)  # headless=True로 변경 가능
+    driver = initialize_webdriver(user_agent, headless=True)  # GitHub Actions에서는 headless=True 권장
     wait = WebDriverWait(driver, 30)
 
     try:
