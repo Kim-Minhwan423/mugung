@@ -1,62 +1,61 @@
-name: Chengla Baemin Headless
+name: Chengla BaeMin
 
 on:
-  workflow_dispatch:  # 수동으로 실행하거나, 다른 이벤트로 바꿀 수 있음
-  # push:
-  #   branches: [ main ]
+  repository_dispatch:
+    types: [run-chengla-baemin]  # 원하는 트리거 (이벤트)
 
 jobs:
-  run-baemin-script:
-    runs-on: ubuntu-latest  # GitHub 호스티드 runner (리눅스 기반)
+  run-script:
+    runs-on: self-hosted          # self-hosted runner (Ubuntu 등)
+    # 만약 GitHub 호스티드 ubuntu-22.04 쓰고 싶으면: runs-on: ubuntu-22.04
+
     steps:
-      # (1) 저장소 체크아웃
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # (2) Python 세팅
+      # Python 버전 설정
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10.16'
 
-      # (3) Chrome & 필요한 패키지 설치
-      - name: Install Dependencies
+      # Chrome 브라우저 설치 (Ubuntu 예시)
+      - name: Install Google Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg unzip
-          # 구글 크롬 리포 추가 & 설치
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-          # 파이썬 패키지
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          sudo apt-get install -y wget
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
 
-      # (4) 구글 시트 인증 JSON (base64) 디코딩 → /tmp/keyfile.json
+      # 구글 시트 인증 JSON (Base64) 디코딩 → /tmp/keyfile.json
       - name: Decode and Save Service Account JSON
-        if: env.SERVICE_ACCOUNT_JSON_BASE64
         env:
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
         run: |
           echo "$SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > /tmp/keyfile.json
 
-      # (5) 실제 배민 스크립트 실행
-      - name: Run Chengla Baemin Script (Headless)
+      # Python Dependencies
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 스크립트 실행
+      - name: Run Python Script
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
           CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
           GOOGLE_APPLICATION_CREDENTIALS: "/tmp/keyfile.json"
         run: |
-          python chengla-baemin-auto.py
+          python 2-chengla-baemin-auto.py
 
-      # (6) 실패 시 디버그 아티팩트 업로드 (스크린샷, 로그 등)
+      # 스크린샷(에러 시) 및 로그 업로드
       - name: Upload Debug Artifacts
-        if: failure()
+        if: failure()  # 스크립트가 실패했을 때만 실행
         uses: actions/upload-artifact@v3
         with:
           name: debug-artifacts
           path: |
             *.png
             *.html
-            script.log
+            script.log 
