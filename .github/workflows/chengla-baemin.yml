@@ -30,17 +30,20 @@ jobs:
           python 2-chengla-baemin-auto.py
 
       - name: Upload Debug Files
-        if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: debug-files
           path: |
             before_login.png
+            after_login_success.png
             after_login_timeout.png
             after_login_exception.png
             after_login_error.png
             before_login.html
+            after_login_success.html
             after_login_timeout.html
             after_login_exception.html
             after_login_error.html
+            after_script_success.png
+            after_script_success.html
 
