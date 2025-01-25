@@ -1,20 +1,24 @@
 name: Chengla Baemin
 
 on:
-  workflow_dispatch:
+  repository_dispatch:
+    types: [run-chengla-baemin]  # 원하는 이벤트 타입
 
 jobs:
-  run-baemin-script:
-    runs-on: self-hosted
+  run-script:
+    runs-on: self-hosted  # 로컬/개인 PC Runner
+
     steps:
-      - name: Check out
+      - name: Check out repository
         uses: actions/checkout@v3
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-        shell: cmd
+        shell: cmd  # Windows라면 cmd, Linux면 생략가능
 
       - name: Run Baemin Auto Script
         run: python 2-chengla-baemin-auto.py
+        shell: cmd
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
           CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
