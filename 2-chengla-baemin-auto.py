@@ -25,6 +25,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 
+import random
+
+def random_delay(min_seconds=2, max_seconds=5):
+    delay = random.uniform(min_seconds, max_seconds)
+    logging.info(f"랜덤 지연 시간: {delay:.2f}초 대기합니다.")
+    time.sleep(delay)
+
 # 환경변수에서 ID/PW/JSON_PATH
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
@@ -105,7 +112,7 @@ def initialize_webdriver(user_agent):
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
                 Object.defineProperty(navigator, 'webdriver', {
-                  get: () => undefined
+                    get: () => undefined
                 })
             """
         })
@@ -144,6 +151,9 @@ def login(driver, wait, username, password):
         username_input.send_keys(username)
         logging.info("사용자명을 입력했습니다.")
 
+        # 랜덤 지연 시간 추가
+        random_delay()
+
         # 비밀번호 입력
         password_xpath = "//input[@type='password' and @name='password']"  # 실제 name 속성 확인 필요
         wait.until(EC.presence_of_element_located((By.XPATH, password_xpath)))
@@ -151,6 +161,9 @@ def login(driver, wait, username, password):
         password_input.clear()
         password_input.send_keys(password)
         logging.info("비밀번호를 입력했습니다.")
+
+        # 랜덤 지연 시간 추가
+        random_delay()
 
         # 로그인 버튼 클릭
         login_button_xpath = "//button[contains(text(), '로그인')]"  # 버튼 텍스트 확인 필요
@@ -185,7 +198,6 @@ def login(driver, wait, username, password):
         with open("after_login_error.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         raise
-
 
 # 4) 팝업 닫기
 def close_popup(driver, wait):
