@@ -304,7 +304,8 @@ def set_daily_filter(driver, wait):
     apply_button_xpath = "//button[contains(., '적용')]"
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
-    
+
+    time.sleep(3)
     logging.info("날짜 필터 '일·주' 적용 완료")
 
 
