@@ -5,29 +5,49 @@ on:
 
 jobs:
   run-baemin-script:
+    # 1) self-hosted 러너 (한국 IP, etc.)
     runs-on: self-hosted
+    # runs-on: [self-hosted, your_label]   # 라벨 지정 시
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
+          sudo apt-get update
+          # Chrome 설치 (Ubuntu 기준)
+          sudo apt-get install -y wget gnupg2
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+          # 의존 패키지
+          sudo apt-get install -y libnss3 libxss1 libappindicator3-1 libgbm1 libgtk-3-0
+          # 필요에 따라 추가 설치 (libasound2, etc.)
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
-          # etc...
 
       - name: Run Baemin Auto Script
-        run: |
-          python 2-chengla-baemin-auto.py
+        run: python 2-chengla-baemin-auto.py
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
           CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
 
-      - name: Upload screenshot artifact
-        if: always()  # 스크립트 실패/성공 모두 업로드하고 싶으면 always()
+      # 2) 스크린샷/HTML 업로드 (timeout 발생 시 생성된 파일)
+      - name: Upload artifacts (Screenshots, HTML)
+        if: always()  # 실패/성공 여부 상관없이 실행
         uses: actions/upload-artifact@v3
         with:
-          name: baemin-screenshot
+          name: baemin-logs
           path: |
             login_timeout.png
             login_timeout.html
+          # 필요하다면 기타 로그 파일들도 추가
