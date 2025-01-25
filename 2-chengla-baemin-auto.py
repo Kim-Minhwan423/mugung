@@ -141,59 +141,60 @@ def login(driver, wait, username, password):
         driver.get("https://self.baemin.com/")
         logger.info("배민 사이트에 접속 중...")
 
-        # 로그인 페이지 로드 대기 (사용자명 입력 필드)
-        username_selector = "input[type='text'][name='username'], input[type='text']"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
-        logger.info("배민 로그인 페이지 로드 완료.")
+        # 로그인 페이지 로드 대기 (예: 큰 컨테이너)
+        main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
+        logging.info("배민 로그인 페이지 로드 완료.")
 
         # 사용자명 입력
+        username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
         username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
         username_input.clear()
         username_input.send_keys(username)
-        logger.info("사용자명을 입력했습니다.")
+        logging.info("사용자명을 입력했습니다.")
 
         # 비밀번호 입력
-        password_selector = "input[type='password'][name='password'], input[type='password']"
+        password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
         password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
         password_input.clear()
         password_input.send_keys(password)
-        logger.info("비밀번호를 입력했습니다.")
+        logging.info("비밀번호를 입력했습니다.")
 
         # 로그인 버튼 클릭
-        login_button_selector = "button[type='submit'], button.login-button, button"
+        login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, login_button_selector)))
         login_button = driver.find_element(By.CSS_SELECTOR, login_button_selector)
         login_button.click()
-        logger.info("로그인 버튼을 클릭했습니다.")
+        logging.info("로그인 버튼을 클릭했습니다.")
 
         # 로그인 완료 확인 (메뉴 버튼 등장)
-        menu_button_selector = "div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+        menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
         try:
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
-            logger.info("로그인에 성공했습니다.")
+            logging.info("로그인에 성공했습니다.")
         except TimeoutException:
             # 로그인 실패 시 스크린샷 및 페이지 소스 저장
             driver.save_screenshot("after_login_timeout.png")
             with open("after_login_timeout.html", "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
-            logger.error("로그인 페이지 로드 또는 로그인에 실패했습니다. 스크린샷과 페이지 소스를 확인하세요.")
+            logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다. 스크린샷과 페이지 소스를 확인하세요.")
             raise
 
     except TimeoutException:
-        logger.error("로그인 페이지 로드 또는 로그인에 실패했습니다.")
+        logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다.")
         driver.save_screenshot("after_login_exception.png")
         with open("after_login_exception.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         raise
     except Exception as e:
-        logger.error("로그인 처리 중 오류가 발생했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("로그인 처리 중 오류가 발생했습니다.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("after_login_error.png")
         with open("after_login_error.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         raise
-
 
 # 4) 팝업 닫기
 def close_popup(driver, wait):
