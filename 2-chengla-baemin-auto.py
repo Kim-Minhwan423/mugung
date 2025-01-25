@@ -297,15 +297,14 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
     
-    ##daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
-    ##wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    ##driver.find_element(By.XPATH, daily_filter_xpath).click()
+    daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
+    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
+    driver.find_element(By.XPATH, daily_filter_xpath).click()
     
     apply_button_xpath = "//button[contains(., '적용')]"
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
     
-    time.sleep(3)
     logging.info("날짜 필터 '일·주' 적용 완료")
 
 
