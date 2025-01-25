@@ -269,31 +269,23 @@ def login_and_close_popup(driver, wait, username, password):
     driver.get("https://self.baemin.com/")
     logging.info("배민 페이지 접속 시도")
     
-    # 2. 로그인 화면 요소 대기
-    login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, login_page_selector)))
+    # 2. 로그인 화면 요소 대기 (XPath 사용)
+    login_form_xpath = '//*[@id="root"]/div[1]/div/div/form'
+    wait.until(EC.presence_of_element_located((By.XPATH, login_form_xpath)))
     
-    # 3. ID/PW 입력
-    username_selector = (
-        "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > "
-        "form > div:nth-child(1) > span > input[type=text]"
-    )
-    password_selector = (
-        "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > "
-        "form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
-    )
+    # 3. ID/PW 입력 (XPath)
+    username_xpath = '//*[@id="root"]/div[1]/div/div/form/div[1]/span/input'
+    password_xpath = '//*[@id="root"]/div[1]/div/div/form/div[2]/span/input'
     
-    driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
-    driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
+    driver.find_element(By.XPATH, username_xpath).send_keys(username)
+    driver.find_element(By.XPATH, password_xpath).send_keys(password)
     
-    # 4. 로그인 버튼 클릭
-    login_button_selector = (
-        "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
-    )
-    driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
+    # 4. 로그인 버튼 클릭 (XPath)
+    login_button_xpath = '//*[@id="root"]/div[1]/div/div/form/button'
+    driver.find_element(By.XPATH, login_button_xpath).click()
     logging.info("로그인 버튼 클릭")
     
-    # 5. 로그인 완료 대기
+    # 5. 로그인 완료 대기 (메뉴 버튼 존재 여부)
     menu_button_selector = (
         "#root > div > div.Container_c_9rpk_1utdzds5."
         "MobileHeader-module__mihN > div > div > div:nth-child(1)"
@@ -309,7 +301,6 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("닫을 팝업이 없음 (스킵)")
-
 
 def navigate_to_order_history(driver, wait):
     """
