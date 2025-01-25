@@ -1,4 +1,4 @@
-name: Chengla Baemin
+name: Run Baemin Automation
 
 on:
   schedule:
@@ -29,7 +29,7 @@ jobs:
         run: |
           python 2-chengla-baemin-auto.py
 
-      - name: Upload Screenshots and HTML
+      - name: Upload Debug Files
         if: failure()
         uses: actions/upload-artifact@v3
         with:
@@ -43,3 +43,4 @@ jobs:
             after_login_timeout.html
             after_login_exception.html
             after_login_error.html
+
