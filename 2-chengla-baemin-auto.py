@@ -322,11 +322,6 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
     
-    # 2. '일·주' 선택
-    daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
-    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    driver.find_element(By.XPATH, daily_filter_xpath).click()
-    
     # 3. 적용 클릭
     apply_button_xpath = "//button[contains(., '적용')]"
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
