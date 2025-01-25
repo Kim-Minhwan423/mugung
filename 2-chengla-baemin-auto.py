@@ -192,16 +192,13 @@ def navigate_to_order_history(driver, wait):
 
     except TimeoutException:
         logging.error("주문내역 페이지로 이동하는 데 실패했습니다.")
-        # 스크린샷 저장
         driver.save_screenshot("navigate_order_history_timeout.png")
         raise
     except Exception as e:
         logging.error("주문내역 페이지로 이동 중 오류가 발생했습니다.")
         logging.error(f"{str(e)}")
-        # 스크린샷 저장
         driver.save_screenshot("navigate_order_history_error.png")
         raise
-
 
 
 # 6) 날짜 필터 설정
@@ -268,7 +265,6 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
         day = today.day
         logging.info(f"오늘 일자: {day}")
 
-        # 1~31일 범위(U3:U33)
         date_cells = muGung_sheet.range('U3:U33')
         day_list = [cell.value for cell in date_cells]
 
@@ -284,7 +280,6 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             muGung_sheet.update(target_cell, [[summary_value]])
             logging.info(f"주문 요약 데이터를 {target_cell} 셀에 기록했습니다.")
 
-            # 셀 형식 (쉼표)
             format_cell_range(muGung_sheet, 'V3:V33', CellFormat(
                 numberFormat=NumberFormat(
                     type='NUMBER',
