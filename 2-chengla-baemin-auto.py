@@ -279,7 +279,7 @@ def login_and_close_popup(driver, wait, username, password):
     logging.info("배민 페이지 접속 시도")
 
     # (예) 사람처럼 살짝 대기
-    time.sleep(2)
+    time.sleep(5)
 
     # 2. 로그인 화면 요소 대기
     login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
@@ -305,7 +305,7 @@ def login_and_close_popup(driver, wait, username, password):
     
     driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
     # (예) 사람처럼 타이핑 후 1~2초 대기
-    time.sleep(1)
+    time.sleep(2)
     driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
 
     # 4. 로그인 버튼 클릭
