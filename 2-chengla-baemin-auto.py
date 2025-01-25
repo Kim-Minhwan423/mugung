@@ -278,9 +278,6 @@ def login_and_close_popup(driver, wait, username, password):
     driver.get("https://self.baemin.com/")
     logging.info("배민 페이지 접속 시도")
 
-    # (예) 사람처럼 살짝 대기
-    time.sleep(5)
-
     # 2. 로그인 화면 요소 대기
     login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
     try:
@@ -304,8 +301,6 @@ def login_and_close_popup(driver, wait, username, password):
     )
     
     driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
-    # (예) 사람처럼 타이핑 후 1~2초 대기
-    time.sleep(2)
     driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
 
     # 4. 로그인 버튼 클릭
@@ -349,9 +344,6 @@ def navigate_to_order_history(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
 
-    # (예) 1초 정도 쉬어주기
-    time.sleep(1)
-
     order_history_selector = (
         "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > "
         "div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
@@ -374,19 +366,12 @@ def set_daily_filter(driver, wait):
     )
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-    
-    # (간격)
-    time.sleep(1)
-
-    daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
-    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    driver.find_element(By.XPATH, daily_filter_xpath).click()
+###############################################################################
     
     apply_button_xpath = "//button[contains(., '적용')]"
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
-    
-    time.sleep(3)
+
     logging.info("날짜 필터 '일·주' 적용 완료")
 
 
