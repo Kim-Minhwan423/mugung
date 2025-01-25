@@ -1,13 +1,14 @@
-name: BaeminAuto
+name: BaeminAutoSelfHosted
 
 on:
   workflow_dispatch:
-    # (원하는 이벤트로 조정 가능)
 
 jobs:
   run-baemin-script:
-    runs-on: ubuntu-latest
-    
+    # 기존 'runs-on: ubuntu-latest' 대신:
+    runs-on: self-hosted
+    # 또는 'runs-on: [self-hosted, mylabel]' if you added a custom label
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -19,15 +20,13 @@ jobs:
           sudo apt-get install -y wget gnupg2
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
-          # 의존 패키지 (libnss3, libasound2 등)
-          sudo apt-get install -y libappindicator3-1 libnss3 libxss1 libgbm1 libgtk-3-0
-          # 필요에 따라 추가 설치
-          # sudo apt-get install -y ...
+          # 의존 패키지
+          sudo apt-get install -y libnss3 libxss1 libappindicator3-1 libgbm1 libgtk-3-0
 
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'  # 원하는 버전
+          python-version: '3.9'
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -38,3 +37,4 @@ jobs:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
           CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+
