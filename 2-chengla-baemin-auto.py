@@ -137,15 +137,15 @@ def login(driver, wait, username, password):
         # 로그인 시도 전 스크린샷 저장
         save_debug_files(driver, "before_login")
 
-        # 로그인 컨테이너 XPath
-        main_container_xpath = "//div[contains(@class, 'LoginWrap')]"
-        wait.until(EC.presence_of_element_located((By.XPATH, main_container_xpath)))
+        # 로그인 페이지 로드 대기 (예: 큰 컨테이너)
+        main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
         logging.info("배민 로그인 페이지 로드 완료.")
 
         # 사용자명 입력
-        username_xpath = "//input[@type='text' and @name='username']"  # 실제 name 속성 확인 필요
-        wait.until(EC.presence_of_element_located((By.XPATH, username_xpath)))
-        username_input = driver.find_element(By.XPATH, username_xpath)
+        username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
+        username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
         username_input.clear()
         username_input.send_keys(username)
         logging.info("사용자명을 입력했습니다.")
