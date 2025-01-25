@@ -1,4 +1,4 @@
-name: BaeminAutoSelfHosted
+name: chengla baemin
 
 on:
   workflow_dispatch:
