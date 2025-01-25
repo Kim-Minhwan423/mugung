@@ -30,13 +30,17 @@ jobs:
         run: |
           echo "CHENGLA_BAEMIN_ID=${{ secrets.CHENGLA_BAEMIN_ID }}" >> $GITHUB_ENV
           echo "CHENGLA_BAEMIN_PW=${{ secrets.CHENGLA_BAEMIN_PW }}" >> $GITHUB_ENV
-          echo "SERVICE_ACCOUNT_JSON_BASE64=${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/keyfile.json" >> $GITHUB_ENV
+          # Base64로 인코딩된 JSON을 파일로 디코딩
+          echo "${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > /tmp/keyfile.json
 
       - name: Run Python script
         run: |
           python 2-chengla-baemin-auto.py
         env:
-          SERVICE_ACCOUNT_JSON_BASE64: ${{ env.SERVICE_ACCOUNT_JSON_BASE64 }}
+          CHENGLA_BAEMIN_ID: ${{ env.CHENGLA_BAEMIN_ID }}
+          CHENGLA_BAEMIN_PW: ${{ env.CHENGLA_BAEMIN_PW }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_APPLICATION_CREDENTIALS }}
 
       - name: Upload Logs and Screenshots
         if: failure()
@@ -47,4 +51,5 @@ jobs:
             script.log
             *.png
             *.html
+
 
