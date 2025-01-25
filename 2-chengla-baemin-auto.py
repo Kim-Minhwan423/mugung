@@ -173,11 +173,21 @@ def login(driver, wait, username, password):
         login_button.click()
         logging.info("로그인 버튼을 클릭했습니다.")
 
+        # 랜덤 지연 시간 추가
+        random_delay()
+
         # 로그인 완료 확인 (메뉴 버튼 등장)
         menu_button_xpath = "//div[contains(@class, 'MobileHeader')]//div[contains(@class, 'MenuButton')]"
         try:
             wait.until(EC.presence_of_element_located((By.XPATH, menu_button_xpath)))
             logging.info("로그인에 성공했습니다.")
+
+            # 로그인 성공 후 스크린샷 및 HTML 저장
+            driver.save_screenshot("after_login_success.png")
+            with open("after_login_success.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            logging.info("로그인 성공 후 스크린샷과 HTML 소스를 저장했습니다.")
+
         except TimeoutException:
             # 로그인 실패 시 스크린샷 및 페이지 소스 저장
             driver.save_screenshot("after_login_timeout.png")
@@ -482,22 +492,26 @@ def main():
         " Chrome/132.0.6834.110 Safari/537.36"
     )
 
-    # Base64 디코딩하여 JSON 파일로 저장
-    if SERVICE_ACCOUNT_JSON_BASE64:
-        with open(GOOGLE_CREDENTIALS_PATH, "wb") as f:
-            f.write(base64.b64decode(SERVICE_ACCOUNT_JSON_BASE64))
-    else:
-        raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
-
-    # 구글 시트 인증
-    client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
-    spreadsheet = client.open("청라 일일/월말 정산서")
-    muGung_sheet = spreadsheet.worksheet("무궁 청라")
-    inventory_sheet = spreadsheet.worksheet("재고")
+    # 구글 시트 인증을 위한 서비스 계정 JSON 설정
+    try:
+        json_path = setup_google_credentials()
+    except Exception as e:
+        logging.error("구글 시트 인증을 위한 서비스 계정 설정 실패.")
+        sys.exit(1)
+    
+    try:
+        # 구글 시트 인증
+        client = authorize_google_sheets(json_path)
+        spreadsheet = client.open("청라 일일/월말 정산서")
+        muGung_sheet = spreadsheet.worksheet("무궁 청라")
+        inventory_sheet = spreadsheet.worksheet("재고")
+    except Exception as e:
+        logging.error("구글 시트 인증 또는 시트 접근 중 오류 발생.")
+        sys.exit(1)
 
     # WebDriver (Headless)
     driver = initialize_webdriver(user_agent)
-    wait = WebDriverWait(driver, 60)
+    wait = WebDriverWait(driver, 60)  # Increased timeout to 60 seconds
 
     try:
         # 배민 ID/PW 체크
@@ -555,6 +569,12 @@ def main():
         }
 
         extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell)
+
+        # 스크립트가 성공적으로 끝난 후 최종 스크린샷 및 HTML 저장
+        driver.save_screenshot("after_script_success.png")
+        with open("after_script_success.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        logging.info("스크립트 성공 후 스크린샷과 HTML 소스를 저장했습니다.")
 
     except Exception as e:
         logging.error("프로세스 중 오류가 발생했습니다:")
