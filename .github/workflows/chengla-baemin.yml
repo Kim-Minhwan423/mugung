@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '0 9 * * *'  # 매일 오전 9시에 실행
+    - cron: '0 9 * * *'  # 매일 오전 9시에 실행 (UTC 기준)
 
 jobs:
   build:
@@ -24,17 +24,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-- name: Set environment variables
-  run: |
-    echo "CHENGLA_BAEMIN_ID=${{ secrets.CHENGLA_BAEMIN_ID }}" >> $GITHUB_ENV
-    echo "CHENGLA_BAEMIN_PW=${{ secrets.CHENGLA_BAEMIN_PW }}" >> $GITHUB_ENV
-    echo "SERVICE_ACCOUNT_JSON=${{ secrets.SERVICE_ACCOUNT_JSON }}" >> $GITHUB_ENV
+      - name: Set environment variables
+        run: |
+          echo "CHENGLA_BAEMIN_ID=${{ secrets.CHENGLA_BAEMIN_ID }}" >> $GITHUB_ENV
+          echo "CHENGLA_BAEMIN_PW=${{ secrets.CHENGLA_BAEMIN_PW }}" >> $GITHUB_ENV
+          echo "SERVICE_ACCOUNT_JSON=${{ secrets.SERVICE_ACCOUNT_JSON }}" >> $GITHUB_ENV
 
       - name: Run Python script
         run: |
           python 2-chengla-baemin-auto.py
         env:
           SERVICE_ACCOUNT_JSON: ${{ env.SERVICE_ACCOUNT_JSON }}
-          # 또는
-          # SERVICE_ACCOUNT_JSON_BASE64: ${{ env.SERVICE_ACCOUNT_JSON_BASE64 }}
-
