@@ -4,7 +4,7 @@ import datetime
 import logging
 import traceback
 import sys
-import time
+import time  # 3초 대기를 위해
 import uuid  # user-data-dir (충돌 방지)용
 
 from selenium import webdriver
@@ -63,31 +63,26 @@ def authorize_google_sheets(json_path):
         raise
 
 
-# 2) Selenium WebDriver 초기화 (Headless)
-def initialize_webdriver():
-    """
-    GitHub Actions 또는 일반 서버 환경에서 Headless 크롬을 사용하도록 수정.
-    """
+# 2) Selenium WebDriver 초기화
+def initialize_webdriver(user_agent):
     try:
         options = webdriver.ChromeOptions()
 
-        # 고유 user-data-dir (필요 없으면 주석 처리 가능)
+        # 고유 user-data-dir
         unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
         options.add_argument(f"--user-data-dir={unique_dir}")
 
-        # 헤드리스 모드 (기존 --headless=new 대신 --headless)
-        options.add_argument("--headless")
+        # 헤드리스 모드
+        options.add_argument("--headless=new")
 
         # 안정성 옵션
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
 
-        # 창 사이즈 (필요하다면)
-        options.add_argument("--window-size=1920,1080")
-
-        # User-Agent 오버라이드 제거 (필요 시 추가)
-        # options.add_argument("user-agent=Mozilla/5.0 ...")
+        # UA + 창 사이즈
+        options.add_argument(f"user-agent={user_agent}")
+        options.add_argument("--window-size=1920x1080")
 
         driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
@@ -148,11 +143,13 @@ def login(driver, wait, username, password):
 
     except TimeoutException:
         logging.error("로그인 페이지 로드 또는 로그인에 실패했습니다.")
+        # 로그인 실패 시 스크린샷 저장
         driver.save_screenshot("after_login_exception.png")
         raise
     except Exception as e:
         logging.error("로그인 처리 중 오류가 발생했습니다.")
         logging.error(f"{str(e)}")
+        # 예외 발생 시 스크린샷 저장
         driver.save_screenshot("after_login_error.png")
         raise
 
@@ -422,14 +419,20 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
 def main():
     print("스크립트가 시작되었습니다.")
 
+    user_agent = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        " AppleWebKit/537.36 (KHTML, like Gecko)"
+        " Chrome/120.0.0.0 Safari/537.36"
+    )
+
     # 구글 시트 인증
     client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
     spreadsheet = client.open("청라 일일/월말 정산서")
     muGung_sheet = spreadsheet.worksheet("무궁 청라")
     inventory_sheet = spreadsheet.worksheet("재고")
 
-    # WebDriver (Headless)
-    driver = initialize_webdriver()
+    # WebDriver
+    driver = initialize_webdriver(user_agent)
     wait = WebDriverWait(driver, 30)
 
     try:
