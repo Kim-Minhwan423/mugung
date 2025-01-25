@@ -126,14 +126,14 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # 헤드리스 모드
-        # if self.headless:
-        #    options.add_argument("--headless")
+         #if self.headless:
+         #   options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=3080,960")
+        options.add_argument("--window-size=1080,980")
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
