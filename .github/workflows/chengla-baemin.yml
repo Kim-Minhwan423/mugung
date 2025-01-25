@@ -49,12 +49,13 @@ jobs:
         run: |
           python 2-chengla-baemin-auto.py
 
-      # 스크린샷 업로드
-      - name: Upload Screenshots
+      # 스크린샷(에러 시) 및 로그 업로드
+      - name: Upload Debug Artifacts
         if: failure()  # 스크립트가 실패했을 때만 실행
         uses: actions/upload-artifact@v3
         with:
-          name: screenshots
+          name: debug-artifacts
           path: |
             *.png
+            *.html
             script.log
