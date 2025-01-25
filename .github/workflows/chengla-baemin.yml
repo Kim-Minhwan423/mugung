@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # self-hosted runner 사용
+    # 특정 태그를 사용하는 경우 아래처럼 지정
+    # runs-on: [self-hosted, google-cloud]
 
     steps:
       - name: Checkout repository
