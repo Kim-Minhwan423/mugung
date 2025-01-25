@@ -25,13 +25,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 
-import random
-
-def random_delay(min_seconds=2, max_seconds=5):
-    delay = random.uniform(min_seconds, max_seconds)
-    logging.info(f"랜덤 지연 시간: {delay:.2f}초 대기합니다.")
-    time.sleep(delay)
-
 # 환경변수에서 ID/PW/JSON_PATH
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
@@ -125,6 +118,14 @@ def initialize_webdriver(user_agent):
         raise
 
 # 3) 배민 로그인
+import random
+import time
+
+def random_delay(min_seconds=2, max_seconds=5):
+    delay = random.uniform(min_seconds, max_seconds)
+    logging.info(f"랜덤 지연 시간: {delay:.2f}초 대기합니다.")
+    time.sleep(delay)
+
 def login(driver, wait, username, password):
     try:
         driver.get("https://self.baemin.com/")
