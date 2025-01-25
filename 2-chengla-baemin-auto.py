@@ -7,6 +7,7 @@ import sys
 import time
 import json
 import tempfile
+import base64
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -26,7 +27,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 # 환경변수에서 ID/PW/JSON_CONTENT
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
-SERVICE_ACCOUNT_JSON = os.getenv("SERVICE_ACCOUNT_JSON")  # JSON 문자열
+SERVICE_ACCOUNT_JSON_BASE64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")  # Base64 인코딩된 JSON
+SERVICE_ACCOUNT_JSON = os.getenv("SERVICE_ACCOUNT_JSON")  # 직접 JSON 문자열 (선택사항)
 
 # 로깅 설정
 logger = logging.getLogger()
@@ -53,12 +55,15 @@ def authorize_google_sheets():
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-
+        
         if SERVICE_ACCOUNT_JSON:
             creds_dict = json.loads(SERVICE_ACCOUNT_JSON)
+        elif SERVICE_ACCOUNT_JSON_BASE64:
+            creds_json = base64.b64decode(SERVICE_ACCOUNT_JSON_BASE64).decode('utf-8')
+            creds_dict = json.loads(creds_json)
         else:
             raise ValueError("Google 서비스 계정 JSON이 제공되지 않았습니다.")
-
+        
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as tmpfile:
             json.dump(creds_dict, tmpfile)
             tmpfile_path = tmpfile.name
