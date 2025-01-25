@@ -1,8 +1,8 @@
-name: Chengla Baemin
+name: Songdo Baemin
 
 on:
   repository_dispatch:
-    types: [run-chengla-baemin]  # 원하는 이벤트 타입
+    types: [run-songdo-baemin]  # 원하는 이벤트 타입
 
 jobs:
   run-script:
@@ -17,10 +17,10 @@ jobs:
         shell: cmd  # Windows라면 cmd, Linux면 생략가능
 
       - name: Run Baemin Auto Script
-        run: python 2-chengla-baemin-auto.py
+        run: python 1-songdo-baemin-auto.py
         shell: cmd
         env:
-          CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
-          CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_BAEMIN_PW }}
+          SONGDO_BAEMIN_ID: ${{ secrets.SONGDO_BAEMIN_ID }}
+          SONGDO_BAEMIN_PW: ${{ secrets.SONGDO_BAEMIN_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
           PYTHONIOENCODING: utf-8
