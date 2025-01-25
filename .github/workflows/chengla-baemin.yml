@@ -1,19 +1,25 @@
+name: BaeminAutoOnMyPC
+
+on:
+  workflow_dispatch:
+
 jobs:
   run-baemin-script:
+    # 1) self-hosted 러너 사용
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.9'
-
+      # (예) Python, Chrome 설치 등 필요한 단계
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          # etc...
 
-      - name: Run Baemin Auto
+      # (예) 스크립트 실행
+      - name: Run Baemin Auto Script
         run: python 2-chengla-baemin-auto.py
         env:
           CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_BAEMIN_ID }}
