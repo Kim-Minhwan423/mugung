@@ -123,54 +123,46 @@ def login(driver, wait, username, password):
         driver.get("https://self.baemin.com/")
         logging.info("배민 사이트에 접속 중...")
 
-        # 현재 URL과 페이지 타이틀 로그
+        # 현재 URL과 타이틀 로그
         logging.info(f"현재 URL: {driver.current_url}")
         logging.info(f"페이지 타이틀: {driver.title}")
 
-        # 로그인 페이지 로드 대기 (큰 컨테이너)
-        main_container_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, main_container_selector)))
+        # 로그인 시도 전 스크린샷 저장
+        driver.save_screenshot("before_login.png")
+        logging.info("로그인 시도 전 스크린샷을 저장했습니다.")
+
+        # 로그인 컨테이너 XPath 수정 (예시)
+        main_container_xpath = "//div[contains(@class, 'LoginWrap')]"
+        wait.until(EC.presence_of_element_located((By.XPATH, main_container_xpath)))
         logging.info("배민 로그인 페이지 로드 완료.")
 
         # 사용자명 입력
-        username_selector = "input[type='text'][name='username'], input[type='text'][id='user-id']"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, username_selector)))
-        username_input = driver.find_element(By.CSS_SELECTOR, username_selector)
-        if username_input:
-            logging.info("사용자명 입력 필드가 존재합니다.")
-        else:
-            logging.error("사용자명 입력 필드를 찾을 수 없습니다.")
+        username_xpath = "//input[@type='text' and @name='username']"  # 실제 name 속성 확인 필요
+        wait.until(EC.presence_of_element_located((By.XPATH, username_xpath)))
+        username_input = driver.find_element(By.XPATH, username_xpath)
         username_input.clear()
         username_input.send_keys(username)
         logging.info("사용자명을 입력했습니다.")
 
         # 비밀번호 입력
-        password_selector = "input[type='password'][name='password'], input[type='password'][id='user-password']"
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, password_selector)))
-        password_input = driver.find_element(By.CSS_SELECTOR, password_selector)
-        if password_input:
-            logging.info("비밀번호 입력 필드가 존재합니다.")
-        else:
-            logging.error("비밀번호 입력 필드를 찾을 수 없습니다.")
+        password_xpath = "//input[@type='password' and @name='password']"  # 실제 name 속성 확인 필요
+        wait.until(EC.presence_of_element_located((By.XPATH, password_xpath)))
+        password_input = driver.find_element(By.XPATH, password_xpath)
         password_input.clear()
         password_input.send_keys(password)
         logging.info("비밀번호를 입력했습니다.")
 
         # 로그인 버튼 클릭
-        login_button_selector = "button[type='submit'], button.login-button, button#login-button"
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, login_button_selector)))
-        login_button = driver.find_element(By.CSS_SELECTOR, login_button_selector)
-        if login_button:
-            logging.info("로그인 버튼이 존재합니다.")
-        else:
-            logging.error("로그인 버튼을 찾을 수 없습니다.")
+        login_button_xpath = "//button[contains(text(), '로그인')]"  # 버튼 텍스트 확인 필요
+        wait.until(EC.element_to_be_clickable((By.XPATH, login_button_xpath)))
+        login_button = driver.find_element(By.XPATH, login_button_xpath)
         login_button.click()
         logging.info("로그인 버튼을 클릭했습니다.")
 
         # 로그인 완료 확인 (메뉴 버튼 등장)
-        menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+        menu_button_xpath = "//div[contains(@class, 'MobileHeader')]//div[contains(@class, 'MenuButton')]"
         try:
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
+            wait.until(EC.presence_of_element_located((By.XPATH, menu_button_xpath)))
             logging.info("로그인에 성공했습니다.")
         except TimeoutException:
             # 로그인 실패 시 스크린샷 및 페이지 소스 저장
