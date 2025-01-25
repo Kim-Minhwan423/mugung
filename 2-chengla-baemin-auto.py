@@ -492,7 +492,7 @@ def main():
 
     # WebDriver (Headless)
     driver = initialize_webdriver(user_agent)
-    wait = WebDriverWait(driver, 30)
+    wait = WebDriverWait(driver, 60)
 
     try:
         # 배민 ID/PW 체크
