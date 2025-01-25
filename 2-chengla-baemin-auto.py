@@ -84,7 +84,7 @@ def initialize_webdriver():
         options.add_argument("--disable-gpu")
 
         # 창 사이즈 (필요하다면)
-        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--window-size=1020,980")
 
         # User-Agent 오버라이드 제거 (필요 시 추가)
         # options.add_argument("user-agent=Mozilla/5.0 ...")
