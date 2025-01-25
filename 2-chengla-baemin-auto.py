@@ -90,44 +90,32 @@ def initialize_webdriver(user_agent):
         options.add_argument("--disable-infobars")
         options.add_argument("--remote-debugging-port=9222")
 
-        # 자동화 탐지 방지 스크립트 추가
+        # Headless 브라우저 감지 방지
+        options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
+
+        # WebDriver Manager를 통한 ChromeDriver 설정
         driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
             options=options
         )
+
+        # 브라우저 속성 수정하여 자동화 감지 방지
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
                 Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
+                  get: () => undefined
                 })
             """
         })
 
-        # 추가적인 탐지 방지 스크립트
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": """
-                Object.defineProperty(navigator, 'plugins', {
-                    get: () => [1, 2, 3, 4, 5],
-                })
-            """
-        })
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": """
-                Object.defineProperty(navigator, 'languages', {
-                    get: () => ['en-US', 'en'],
-                })
-            """
-        })
-
-        logger.info("WebDriver가 성공적으로 초기화되었습니다.")
+        logging.info("WebDriver가 성공적으로 초기화되었습니다.")
         return driver
     except WebDriverException as e:
-        logger.error("WebDriver 초기화에 실패했습니다.")
-        logger.error(f"{str(e)}")
+        logging.error("WebDriver 초기화에 실패했습니다.")
+        logging.error(f"{str(e)}")
         raise
-
 
 # 3) 배민 로그인
 def login(driver, wait, username, password):
