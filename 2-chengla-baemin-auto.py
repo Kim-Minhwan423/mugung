@@ -5,9 +5,7 @@ import logging
 import traceback
 import sys
 import time
-import json
-import tempfile
-import base64
+import uuid  # user-data-dir (충돌 방지)용
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -17,18 +15,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (
     NoSuchElementException, TimeoutException, WebDriverException
 )
+from webdriver_manager.chrome import ChromeDriverManager
+
+# oauth2client로 Google Sheets 인증
+from oauth2client.service_account import ServiceAccountCredentials
 
 import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
-from oauth2client.service_account import ServiceAccountCredentials
-
-from webdriver_manager.chrome import ChromeDriverManager
 
 # 환경변수에서 ID/PW/JSON_CONTENT
 BAEMIN_USERNAME = os.getenv("CHENGLA_BAEMIN_ID")
 BAEMIN_PASSWORD = os.getenv("CHENGLA_BAEMIN_PW")
 SERVICE_ACCOUNT_JSON_BASE64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")  # Base64 인코딩된 JSON
-SERVICE_ACCOUNT_JSON = os.getenv("SERVICE_ACCOUNT_JSON")  # 직접 JSON 문자열 (선택사항)
 
 # 로깅 설정
 logger = logging.getLogger()
@@ -48,70 +46,62 @@ logger.addHandler(file_handler)
 
 
 # 1) Google Sheets 인증
-def authorize_google_sheets():
+def authorize_google_sheets(json_path):
     try:
         scopes = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        
-        if SERVICE_ACCOUNT_JSON:
-            creds_dict = json.loads(SERVICE_ACCOUNT_JSON)
-        elif SERVICE_ACCOUNT_JSON_BASE64:
-            creds_json = base64.b64decode(SERVICE_ACCOUNT_JSON_BASE64).decode('utf-8')
-            creds_dict = json.loads(creds_json)
-        else:
-            raise ValueError("Google 서비스 계정 JSON이 제공되지 않았습니다.")
-        
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as tmpfile:
-            json.dump(creds_dict, tmpfile)
-            tmpfile_path = tmpfile.name
-
-        creds = ServiceAccountCredentials.from_json_keyfile_name(tmpfile_path, scopes)
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scopes)
         client = gspread.authorize(creds)
         logger.info("Google Sheets API 인증에 성공했습니다.")
         return client
-    except json.JSONDecodeError as e:
-        logger.error("Google 서비스 계정 JSON이 유효하지 않습니다.")
-        logger.error(f"{str(e)}")
-        raise
     except Exception as e:
         logger.error("Google Sheets API 인증에 실패했습니다.")
         logger.error(f"{str(e)}")
         raise
 
 
-# 2) Selenium WebDriver 초기화 (헤드리스 모드 설정 가능)
-def initialize_webdriver(user_agent, headless=True):
+# 2) Selenium WebDriver 초기화 (Headless)
+def initialize_webdriver(user_agent):
     try:
         options = webdriver.ChromeOptions()
 
-        if headless:
-            options.add_argument("--headless")  # 헤드리스 모드 활성화
-            options.add_argument("--disable-gpu")  # GPU 비활성화 (헤드리스 모드에서 필요할 수 있음)
-            options.add_argument("--no-sandbox")
-        else:
-            # 헤드리스 모드 비활성화: 브라우저 창을 실제로 표시
-            pass
+        # 헤드리스 모드 (디버깅 시 주석 처리 가능)
+        options.add_argument("--headless")  # 필요 시 주석 처리하여 브라우저 창 표시
 
-        # 창 사이즈 (필요하다면 조정)
-        options.add_argument("--window-size=1020,980")
+        # 안정성 옵션
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
 
-        # User-Agent 설정 (실제 브라우저와 동일하게 설정)
+        # 창 사이즈 (필요하다면)
+        options.add_argument("--window-size=1200,800")
+
+        # User-Agent 설정 (필요 시)
         options.add_argument(f"user-agent={user_agent}")
 
         # 추가 최적화 옵션
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
         options.add_argument("--remote-debugging-port=9222")
-        options.add_argument("--disable-blink-features=AutomationControlled")  # 자동화 감지 방지
 
-        # 웹드라이버 매니저를 통한 ChromeDriver 설정
+        # 자동화 탐지 방지 스크립트 추가
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
         driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
             options=options
         )
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": """
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                })
+            """
+        })
+
         logger.info("WebDriver가 성공적으로 초기화되었습니다.")
         return driver
     except WebDriverException as e:
@@ -294,7 +284,7 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
     try:
         today = datetime.datetime.today()
         day = today.day
-        logger.info(f"오늘 일자: {day}")
+        logging.info(f"오늘 일자: {day}")
 
         date_cells = muGung_sheet.range('U3:U33')
         day_list = [cell.value for cell in date_cells]
@@ -309,7 +299,7 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
             summary_value = int(re.sub(r'[^\d]', '', summary_text))
 
             muGung_sheet.update(target_cell, [[summary_value]])
-            logger.info(f"주문 요약 데이터를 {target_cell} 셀에 기록했습니다.")
+            logging.info(f"주문 요약 데이터를 {target_cell} 셀에 기록했습니다.")
 
             format_cell_range(muGung_sheet, 'V3:V33', CellFormat(
                 numberFormat=NumberFormat(
@@ -317,16 +307,16 @@ def update_order_summary_sheet(muGung_sheet, summary_text):
                     pattern='#,##0'
                 )
             ))
-            logger.info("V3:V33 셀 형식을 지정했습니다.")
+            logging.info("V3:V33 셀 형식을 지정했습니다.")
         else:
-            logger.warning(f"시트에 오늘 날짜({day})가 없습니다.")
+            logging.warning(f"시트에 오늘 날짜({day})가 없습니다.")
     except ValueError:
-        logger.error(f"데이터 형식 오류: '{summary_text}'")
+        logging.error(f"데이터 형식 오류: '{summary_text}'")
         driver.save_screenshot("update_order_summary_value_error.png")
         raise
     except Exception as e:
-        logger.error("구글 시트 기록 중 오류 발생.")
-        logger.error(f"{str(e)}")
+        logging.error("구글 시트 기록 중 오류 발생.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("update_order_summary_error.png")
         raise
 
@@ -336,10 +326,10 @@ def clear_inventory_sheet(inventory_sheet):
     try:
         ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
         inventory_sheet.batch_clear(ranges_to_clear)
-        logger.info("'재고' 시트 지정 범위 삭제 완료.")
+        logging.info("'재고' 시트 지정 범위 삭제 완료.")
     except Exception as e:
-        logger.error("재고 시트의 특정 범위 삭제 중 오류 발생.")
-        logger.error(f"{str(e)}")
+        logging.error("재고 시트의 특정 범위 삭제 중 오류 발생.")
+        logging.error(f"{str(e)}")
         driver.save_screenshot("clear_inventory_sheet_error.png")
         raise
 
@@ -347,7 +337,7 @@ def clear_inventory_sheet(inventory_sheet):
 # 10) 판매 수량 추출 + '재고' 시트 기록
 def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
     try:
-        logger.info("판매 수량 추출을 시작합니다.")
+        logging.info("판매 수량 추출을 시작합니다.")
         sales_data = {}
 
         while True:
@@ -355,27 +345,27 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
             for order_num in range(1, 20, 2):
                 if order_num == 1:
                     order_details_tr_num = 2
-                    logger.info("첫 번째 주문 처리.")
+                    logging.info("첫 번째 주문 처리.")
                 else:
                     order_button_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
                     try:
                         order_button = driver.find_element(By.XPATH, order_button_xpath)
                         order_button.click()
-                        logger.info(f"tr[{order_num}] 클릭됨.")
+                        logging.info(f"tr[{order_num}] 클릭됨.")
 
                         order_details_tr_num = order_num + 1
                         order_details_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_details_tr_num}]'
                         wait.until(EC.presence_of_element_located((By.XPATH, order_details_xpath)))
-                        logger.info(f"tr[{order_details_tr_num}] 주문 상세 로드됨.")
+                        logging.info(f"tr[{order_details_tr_num}] 주문 상세 로드됨.")
                     except NoSuchElementException:
-                        logger.info(f"tr[{order_num}] 버튼이 없습니다. 스킵.")
+                        logging.info(f"tr[{order_num}] 버튼이 없습니다. 스킵.")
                         continue
                     except TimeoutException:
-                        logger.error(f"tr[{order_details_tr_num}] 주문 상세 로드 실패.")
+                        logging.error(f"tr[{order_details_tr_num}] 주문 상세 로드 실패.")
                         driver.save_screenshot(f"order_{order_num}_details_timeout.png")
                         continue
                     except Exception as e:
-                        logger.error(f"tr[{order_num}] 처리 중 오류: {e}")
+                        logging.error(f"tr[{order_num}] 처리 중 오류: {e}")
                         traceback.print_exc()
                         driver.save_screenshot(f"order_{order_num}_processing_error.png")
                         continue
@@ -396,20 +386,20 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                         if match:
                             sales_qty = int(match.group())
                         else:
-                            logger.warning(f"수량 추출 실패: '{item_qty_text}'")
+                            logging.warning(f"수량 추출 실패: '{item_qty_text}'")
                             continue
 
                         if item_name in item_to_cell:
                             cell = item_to_cell[item_name]
                             sales_data[cell] = sales_data.get(cell, 0) + sales_qty
-                            logger.info(f"[{item_name}] 수량 {sales_qty}, 셀 {cell}")
+                            logging.info(f"[{item_name}] 수량 {sales_qty}, 셀 {cell}")
                         else:
-                            logger.warning(f"매핑되지 않은 품목 [{item_name}], 수량 {sales_qty}")
+                            logging.warning(f"매핑되지 않은 품목 [{item_name}], 수량 {sales_qty}")
                     except NoSuchElementException:
-                        logger.info(f"tr[{order_details_tr_num}] j={j} 품목/수량 없으므로 중단.")
+                        logging.info(f"tr[{order_details_tr_num}] j={j} 품목/수량 없으므로 중단.")
                         break
                     except Exception as e:
-                        logger.error(f"tr[{order_details_tr_num}], j={j} 오류: {e}")
+                        logging.error(f"tr[{order_details_tr_num}], j={j} 오류: {e}")
                         traceback.print_exc()
                         driver.save_screenshot(f"order_{order_details_tr_num}_item_{j}_error.png")
                         break
@@ -419,16 +409,16 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
                 next_page_button_xpath = '//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[5]/div/div[2]/span/button'
                 next_page_button = driver.find_element(By.XPATH, next_page_button_xpath)
                 if 'disabled' in next_page_button.get_attribute('class'):
-                    logger.info("다음 페이지 없음. 종료.")
+                    logging.info("다음 페이지 없음. 종료.")
                     break
                 next_page_button.click()
-                logger.info("다음 페이지로 이동.")
+                logging.info("다음 페이지로 이동.")
                 time.sleep(2)
             except NoSuchElementException:
-                logger.info("다음 페이지 버튼 없음. 종료.")
+                logging.info("다음 페이지 버튼 없음. 종료.")
                 break
             except Exception as e:
-                logger.error(f"다음 페이지 이동 중 오류: {e}")
+                logging.error(f"다음 페이지 이동 중 오류: {e}")
                 traceback.print_exc()
                 driver.save_screenshot("next_page_error.png")
                 break
@@ -438,18 +428,18 @@ def extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell):
             batch = []
             for cell_address, qty in sales_data.items():
                 batch.append({'range': cell_address, 'values': [[qty]]})
-                logger.info(f"배치 업데이트 준비: {cell_address} = {qty}")
+                logging.info(f"배치 업데이트 준비: {cell_address} = {qty}")
             try:
                 inventory_sheet.batch_update(batch)
-                logger.info("'재고' 시트 배치 업데이트 완료.")
+                logging.info("'재고' 시트 배치 업데이트 완료.")
             except Exception as e:
-                logger.error(f"'재고' 시트 업데이트 오류: {e}")
+                logging.error(f"'재고' 시트 업데이트 오류: {e}")
                 driver.save_screenshot("update_inventory_sheet_error.png")
         else:
-            logger.info("판매 데이터가 없습니다.")
+            logging.info("판매 데이터가 없습니다.")
     except Exception as e:
-        logger.error("판매 수량 추출/기록 중 오류:")
-        logger.error(f"{str(e)}")
+        logging.error("판매 수량 추출/기록 중 오류:")
+        logging.error(f"{str(e)}")
         traceback.print_exc()
         driver.save_screenshot("extract_and_update_sales_data_error.png")
         raise
@@ -466,14 +456,14 @@ def main():
     )
 
     # 구글 시트 인증
-    client = authorize_google_sheets()
+    client = authorize_google_sheets(GOOGLE_CREDENTIALS_PATH)
     spreadsheet = client.open("청라 일일/월말 정산서")
     muGung_sheet = spreadsheet.worksheet("무궁 청라")
     inventory_sheet = spreadsheet.worksheet("재고")
 
-    # WebDriver (헤드리스 모드 설정: True로 설정하면 헤드리스, False로 설정하면 브라우저 창 표시)
-    driver = initialize_webdriver(user_agent, headless=True)  # GitHub Actions에서는 headless=True 권장
-    wait = WebDriverWait(driver, 30)
+    # WebDriver (Headless)
+    driver = initialize_webdriver(user_agent)
+    wait = WebDriverWait(driver, 60)  # 타임아웃 시간을 30초에서 60초로 증가
 
     try:
         # 배민 ID/PW 체크
@@ -533,12 +523,12 @@ def main():
         extract_and_update_sales_data(driver, wait, inventory_sheet, item_to_cell)
 
     except Exception as e:
-        logger.error("프로세스 중 오류가 발생했습니다:")
-        logger.error(f"{str(e)}")
+        logging.error("프로세스 중 오류가 발생했습니다:")
+        logging.error(f"{str(e)}")
         traceback.print_exc()
     finally:
         driver.quit()
-        logger.info("WebDriver를 종료했습니다.")
+        logging.info("WebDriver를 종료했습니다.")
 
 
 if __name__ == "__main__":
