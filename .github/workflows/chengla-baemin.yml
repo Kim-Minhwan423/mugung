@@ -1,4 +1,4 @@
-name: Chengla Baemin Headless
+name: Chengla Baemin
 
 on:
   workflow_dispatch:  # 수동으로 실행하거나, 다른 이벤트로 바꿀 수 있음
