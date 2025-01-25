@@ -36,3 +36,13 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON_BASE64: ${{ env.SERVICE_ACCOUNT_JSON_BASE64 }}
 
+      - name: Upload Logs and Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-artifacts
+          path: |
+            script.log
+            *.png
+            *.html
+
