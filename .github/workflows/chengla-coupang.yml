@@ -20,7 +20,7 @@ jobs:
         run: python 2-chengla-coupang-auto.py
         shell: cmd
         env:
-          CHENGLA_BAEMIN_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
-          CHENGLA_BAEMIN_PW: ${{ secrets.CHENGLA_COUPANG_PW }}
+          CHENGLA_COUPANG_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
+          CHENGLA_COUPANG_PW: ${{ secrets.CHENGLA_COUPANG_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
           PYTHONIOENCODING: utf-8
