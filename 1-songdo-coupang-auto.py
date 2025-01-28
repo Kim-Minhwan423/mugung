@@ -60,16 +60,16 @@ def setup_logging(log_filename='script.log'):
 def get_environment_variables():
     """
     필수 환경 변수:
-        - CHENGLA_COUPANG_ID (쿠팡 아이디)
-        - CHENGLA_COUPANG_PW (쿠팡 비밀번호)
+        - SONGDO_COUPANG_ID (쿠팡 아이디)
+        - SONGDO_COUPANG_PW (쿠팡 비밀번호)
         - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
     """
-    coupang_id = os.getenv("CHENGLA_COUPANG_ID")
-    coupang_pw = os.getenv("CHENGLA_COUPANG_PW")
+    coupang_id = os.getenv("SONGDO_COUPANG_ID")
+    coupang_pw = os.getenv("SONGDO_COUPANG_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
 
     if not coupang_id or not coupang_pw:
-        raise ValueError("CHENGLA_COUPANG_ID 혹은 CHENGLA_COUPANG_PW 환경 변수가 설정되지 않았습니다.")
+        raise ValueError("SONGDO_COUPANG_ID 혹은 SONGDO_COUPANG_PW 환경 변수가 설정되지 않았습니다.")
 
     if not service_account_json_b64:
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
@@ -84,11 +84,7 @@ def get_chrome_driver(use_profile=False):
     ChromeDriver를 초기화한 뒤, 여러 옵션(봇 차단 방지, 프로필 재사용 등) 적용.
     """
     chrome_options = webdriver.ChromeOptions()
-
-    # 필요하면 헤드리스 모드
-    # chrome_options.add_argument("--headless")
-
-    # User-Agent 변경
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -519,20 +515,20 @@ def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
 
 def update_revenue_by_day(mugeung_sheet, revenue):
     """
-    무궁 청라 시트:
+    무궁 송도 시트:
     - E1에 적힌 날짜(YYYY-MM-DD) -> day(DD) 추출
     - U열(3~33)에서 동일 day 찾음 -> X열(24)에 revenue 입력
     """
     date_in_e1 = mugeung_sheet.acell('E1').value
     if not date_in_e1:
-        logging.warning("[무궁 청라] E1에 날짜가 없습니다.")
+        logging.warning("[무궁 송도] E1에 날짜가 없습니다.")
         return
 
     day_str = date_in_e1.split("-")[-1]  # '27' 등
     try:
         day_str = str(int(day_str))  # '01' -> '1'
     except ValueError:
-        logging.warning(f"[무궁 청라] 일자 추출 실패: {date_in_e1}")
+        logging.warning(f"[무궁 송도] 일자 추출 실패: {date_in_e1}")
         return
 
     date_cells = mugeung_sheet.range('U3:U33')
@@ -541,12 +537,12 @@ def update_revenue_by_day(mugeung_sheet, revenue):
         if cell.value == day_str:
             row_num = cell.row
             mugeung_sheet.update_cell(row_num, 24, revenue)
-            logging.info(f"[무궁 청라] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
+            logging.info(f"[무궁 송도] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
             found = True
             break
 
     if not found:
-        logging.warning(f"[무궁 청라] U열에서 일자 {day_str} 찾지 못함.")
+        logging.warning(f"[무궁 송도] U열에서 일자 {day_str} 찾지 못함.")
 
 ###############################################################################
 # 8. 메인 실행 흐름
@@ -589,8 +585,8 @@ def main():
     try:
         # Base64 디코딩하여 gspread.Client 생성
         client = get_gspread_client_from_b64(service_account_json_b64)
-        doc = client.open("청라 일일/월말 정산서")  # 문서 이름
-        mugeung_sheet = doc.worksheet("무궁 청라")
+        doc = client.open("송도 일일/월말 정산서")  # 문서 이름
+        mugeung_sheet = doc.worksheet("무궁 송도")
         jaego_sheet = doc.worksheet("재고")
 
         # 매출액 업데이트
