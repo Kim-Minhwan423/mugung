@@ -84,7 +84,11 @@ def get_chrome_driver(use_profile=False):
     ChromeDriver를 초기화한 뒤, 여러 옵션(봇 차단 방지, 프로필 재사용 등) 적용.
     """
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
+
+    # 필요하면 헤드리스 모드
+    # chrome_options.add_argument("--headless")
+
+    # User-Agent 변경
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -644,4 +648,3 @@ def main():
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
-
