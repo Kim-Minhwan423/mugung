@@ -8,7 +8,7 @@ import traceback
 import base64
 import json
 
-# -----------------------------
+# ----------------------------------------
 # Selenium
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -25,10 +25,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 # WebDriver Manager
 from webdriver_manager.chrome import ChromeDriverManager
 
-# -----------------------------
+# ----------------------------------------
 # Google Sheets
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+
 
 ###############################################################################
 # 1. 로깅 설정
@@ -54,6 +55,7 @@ def setup_logging(log_filename='script.log'):
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
+
 ###############################################################################
 # 2. 환경 변수 & 설정값 불러오기
 ###############################################################################
@@ -76,8 +78,9 @@ def get_environment_variables():
 
     return coupang_id, coupang_pw, service_account_json_b64
 
+
 ###############################################################################
-# 2-1. Selenium 드라이버 세팅
+# 3. Chrome 드라이버 세팅
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     """
@@ -85,6 +88,8 @@ def get_chrome_driver(use_profile=False):
     """
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--headless")
+
+    # User-Agent 변경
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -125,8 +130,9 @@ def get_chrome_driver(use_profile=False):
     logging.info("ChromeDriver 초기화 성공")
     return driver
 
+
 ###############################################################################
-# 3. 쿠팡이츠 로그인 & 팝업 닫기
+# 4. 쿠팡이츠 로그인 & 팝업 닫기
 ###############################################################################
 def login_coupang_eats(driver, user_id, password):
     """
@@ -215,8 +221,9 @@ def login_coupang_eats(driver, user_id, password):
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
 
+
 ###############################################################################
-# 4. '오늘' 버튼 + '조회' 버튼
+# 5. '오늘' 버튼 + '조회' 버튼
 ###############################################################################
 def click_today_and_search(driver):
     """
@@ -255,8 +262,9 @@ def click_today_and_search(driver):
 
     time.sleep(2)
 
+
 ###############################################################################
-# 5. 매출액 추출
+# 6. 매출액 추출
 ###############################################################################
 def get_today_revenue(driver):
     """
@@ -288,14 +296,16 @@ def get_today_revenue(driver):
         logging.warning(f"매출액 변환 실패, 문자열 그대로 반환: {revenue_text}")
         return 0
 
+
 ###############################################################################
-# 6. 주문 목록 스크래핑 (페이지 버튼 이동, 무한)
+# 7. 주문 목록 스크래핑 (페이지 버튼 이동, 무한)
 ###############################################################################
 def expand_and_parse_order(driver, order_index):
     """
-    order_index번째 주문의 '펼치기' 버튼을 클릭한 뒤, 상세 파싱.
-    - 클릭 시 화면 겹침이 있으면 스크롤+JS 클릭 재시도.
-    - 실패 시 [] 반환 (주문만 스킵).
+    order_index번째 주문의 '펼치기' 버튼 클릭 후, 상세 파싱.
+    - 버튼 못 찾거나 (Timeout) -> return []
+    - 클릭 시 인터셉트 등 -> JS 클릭 재시도
+    - 그래도 실패 -> 그 주문만 스킵 ([] 반환)
     """
     expand_selector = (
         "#merchant-management > div > div > div.management-scroll > "
@@ -305,47 +315,52 @@ def expand_and_parse_order(driver, order_index):
         "section.order-item.row.text-nowrap > div.order-price.col-4.col-md-3.text-right > button"
     )
 
+    expand_btn = None  # 미리 None으로 선언
     try:
-        # 버튼 대기
+        # 1) 버튼 대기
         expand_btn = WebDriverWait(driver, 3).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, expand_selector))
         )
 
-        # 스크롤
+        # 2) 스크롤
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", expand_btn)
         time.sleep(0.5)
 
-        # 클릭 시도
+        # 3) 클릭
         expand_btn.click()
         logging.info(f"{order_index}번째 주문 펼치기 버튼 클릭 성공")
-
-    except (ElementClickInterceptedException, WebDriverException) as e:
-        # 인터셉트나 기타 클릭 오류 -> JS 클릭 재시도
-        logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e}")
-        logging.info("-> JS 클릭 재시도")
-        try:
-            driver.execute_script("arguments[0].click();", expand_btn)
-        except WebDriverException as e2:
-            logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
-            return []
 
     except TimeoutException:
         logging.warning(f"{order_index}번째 주문 펼치기 버튼을 찾지 못했습니다.")
         return []
-    except Exception as e:
-        logging.warning(f"{order_index}번째 주문 버튼 대기 중 오류: {e}")
+    except ElementClickInterceptedException as e:
+        # 화면 겹침 등 -> JS 클릭
+        logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e}")
+        logging.info("-> JS 클릭 재시도")
+        if expand_btn:
+            try:
+                driver.execute_script("arguments[0].click();", expand_btn)
+            except WebDriverException as e2:
+                logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
+                return []
+        else:
+            logging.warning("expand_btn이 None이라 JS 클릭 불가능 -> 스킵")
+            return []
+    except WebDriverException as e:
+        # 다른 webdriver 에러
+        logging.warning(f"{order_index}번째 주문 펼치기 클릭 오류: {e}")
         return []
 
+    # 4) 펼쳐진 주문 파싱
     time.sleep(1)
     return parse_expanded_order(driver)
 
+
 def parse_expanded_order(driver):
     """
-    펼쳐진 주문 섹션에서 '메뉴명, 판매량'을 파싱.
-    - 옵션이 줄바꿈(\n) 형태이면 첫 줄만 취함.
+    펼쳐진 주문 섹션에서 '메뉴명, 판매량' 추출
+    - 옵션이 여러 줄(\n)일 경우 첫 줄만 사용
     """
-    from selenium.common.exceptions import NoSuchElementException
-
     try:
         expanded_section = driver.find_element(
             By.CSS_SELECTOR, "li.col-12.expanded section.order-details.initial-order-detail"
@@ -366,7 +381,7 @@ def parse_expanded_order(driver):
 
             raw_name = name_el.text.strip()
             lines = raw_name.split('\n')
-            item_name = lines[0]  # 첫 줄만
+            item_name = lines[0]
 
             item_qty = qty_el.text.strip()
             results.append((item_name, item_qty))
@@ -377,32 +392,31 @@ def parse_expanded_order(driver):
 
     return results
 
+
 def scrape_orders_in_page(driver):
     """
     현재 페이지에서 1~10번째 주문을 펼쳐 파싱.
-    펼치기 실패 시 해당 주문만 스킵, 나머지 계속.
+    - '펼치기' 실패 시 그 주문만 [] 리턴
     """
     all_items = []
     for i in range(1, 11):
         items = expand_and_parse_order(driver, i)
-        if items:  # []이면 스킵
+        # 만약 펼치기 실패하면 items=[] -> 그 주문만 스킵, 나머지 계속
+        if items:
             all_items.extend(items)
     return all_items
 
+
 def go_to_page_button(driver, page_number):
     """
-    페이지 번호 'page_number'를 누르는 버튼 클릭.
-    - page=1 -> 이미 접속 상태라고 가정 -> 클릭 스킵
-    - page=2 -> li:nth-child(4)
-    - page=3 -> li:nth-child(5)
-    - page=4 -> li:nth-child(6)
-    ...
-    성공 시 True, 실패 시 False
+    'page_number'번째 페이지 버튼 클릭
+    - page=1 -> 이미 현재 페이지
+    - page=2 -> li:nth-child(4), page=3 -> li:nth-child(5), ...
     """
     if page_number == 1:
-        return True  # 1페이지는 이미 로딩된 상태
+        return True
 
-    nth = page_number + 2  # 예: page=2 -> li:nth-child(4)
+    nth = page_number + 2
     selector = (
         "#merchant-management > div > div > div.management-scroll > "
         "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
@@ -421,21 +435,19 @@ def go_to_page_button(driver, page_number):
         logging.info(f"{page_number}페이지 버튼을 찾지 못했습니다.")
         return False
 
+
 def scrape_all_pages_by_buttons(driver):
     """
-    1페이지 -> 2페이지 -> 3페이지 ... 
-    페이지 버튼이 없을 때까지 '무한'으로 스크래핑.
+    1페이지 ~ '버튼이 없을 때까지' 무한 스크래핑
     """
     all_data = []
     current_page = 1
 
     while True:
-        # 현재 페이지 스크래핑
         logging.info(f"\n=== [PAGE {current_page}] ===")
         items_in_this_page = scrape_orders_in_page(driver)
         all_data.extend(items_in_this_page)
 
-        # 다음 페이지 버튼 클릭 시도
         next_page = current_page + 1
         success = go_to_page_button(driver, next_page)
         if not success:
@@ -443,26 +455,25 @@ def scrape_all_pages_by_buttons(driver):
             break
 
         current_page = next_page
-        time.sleep(1)  # 페이지 로딩 대기
+        time.sleep(1)
 
     return all_data
 
+
 ###############################################################################
-# 7. Google Sheets 연동
+# 8. Google Sheets (Base64 인증)
 ###############################################################################
 def get_gspread_client_from_b64(service_account_json_b64):
     """
-    Base64로 인코딩된 Google Service Account JSON을 디코딩하여 
-    gspread.Client 인스턴스를 생성.
+    Base64 인코딩된 구글 서비스계정 JSON -> 디코딩 -> gspread.Client
     """
-    # 1) base64 디코딩
+    import base64, json
+    from oauth2client.service_account import ServiceAccountCredentials
+
     json_bytes = base64.b64decode(service_account_json_b64)
-    # 2) 문자열 변환
     json_str = json_bytes.decode('utf-8')
-    # 3) JSON 파싱
     json_keyfile = json.loads(json_str)
 
-    # 구글 스프레드시트 인증
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/spreadsheets",
@@ -472,11 +483,12 @@ def get_gspread_client_from_b64(service_account_json_b64):
     client = gspread.authorize(creds)
     return client
 
+
 def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
     """
     재고 시트:
-    1) 지정된 범위를 batch_clear로 초기화
-    2) item_cell_map과 item_quantity_map을 사용해 batch_update로 일괄 기록
+    1) 범위 초기화 (batch_clear)
+    2) item_cell_map, item_quantity_map -> batch_update
     """
     ranges_to_clear = [
         "G38:G45",
@@ -513,22 +525,23 @@ def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
     except Exception as e:
         logging.error(f"[재고] 배치 업데이트 중 오류: {e}")
 
+
 def update_revenue_by_day(mugeung_sheet, revenue):
     """
     무궁 청라 시트:
-    - E1에 적힌 날짜(YYYY-MM-DD) -> day(DD) 추출
-    - U열(3~33)에서 동일 day 찾음 -> X열(24)에 revenue 입력
+    - E1 날짜 -> day 추출
+    - U열(3~33)에서 해당 day 찾아 X열(24)에 revenue 기록
     """
     date_in_e1 = mugeung_sheet.acell('E1').value
     if not date_in_e1:
         logging.warning("[무궁 청라] E1에 날짜가 없습니다.")
         return
 
-    day_str = date_in_e1.split("-")[-1]  # '27' 등
+    day_str = date_in_e1.split("-")[-1]
     try:
-        day_str = str(int(day_str))  # '01' -> '1'
+        day_str = str(int(day_str))
     except ValueError:
-        logging.warning(f"[무궁 청라] 일자 추출 실패: {date_in_e1}")
+        logging.warning(f"[무궁 청라] E1({date_in_e1})에서 일자 추출 실패")
         return
 
     date_cells = mugeung_sheet.range('U3:U33')
@@ -542,19 +555,24 @@ def update_revenue_by_day(mugeung_sheet, revenue):
             break
 
     if not found:
-        logging.warning(f"[무궁 청라] U열에서 일자 {day_str} 찾지 못함.")
+        logging.warning(f"[무궁 청라] U열에서 {day_str} 찾지 못함.")
+
 
 ###############################################################################
-# 8. 메인 실행 흐름
+# 9. 메인 실행 흐름
 ###############################################################################
 def main():
     setup_logging('script.log')
 
-    # (1) 환경 변수 읽기
+    # (1) 환경변수에서 쿠팡 ID/비번 & 구글키(Base64)
     coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
 
     # (2) ChromeDriver
     driver = get_chrome_driver(use_profile=False)
+
+    # 미리 None으로 (에러로 인한 except 발생해도 기존 데이터를 보존)
+    all_order_items = []
+    today_revenue = 0
 
     try:
         # (3) 쿠팡이츠 로그인
@@ -567,32 +585,33 @@ def main():
         today_revenue = get_today_revenue(driver)
         logging.info(f"[결과] 오늘 매출액: {today_revenue}")
 
-        # (6) 주문 스크래핑 (무한 페이지)
+        # (6) 주문 스크래핑
         all_order_items = scrape_all_pages_by_buttons(driver)
         logging.info(f"[결과] 수집된 메뉴 아이템 총 {len(all_order_items)}개")
 
     except Exception as e:
+        # 전역 예외: 여기서 all_order_items / today_revenue를 0으로 덮어쓰지 말고,
+        # 로그만 남긴다.
         logging.error(f"에러 발생: {e}")
         traceback.print_exc()
-        all_order_items = []
-        today_revenue = 0
 
     finally:
         driver.quit()
         logging.info("WebDriver 종료")
 
-    # (7) 구글 스프레드시트 처리
+    # 이제 구글 스프레드시트 업데이트
+    # 부분 데이터라도 있으면 반영
     try:
-        # Base64 디코딩하여 gspread.Client 생성
         client = get_gspread_client_from_b64(service_account_json_b64)
-        doc = client.open("청라 일일/월말 정산서")  # 문서 이름
+        doc = client.open("청라 일일/월말 정산서")
         mugeung_sheet = doc.worksheet("무궁 청라")
         jaego_sheet = doc.worksheet("재고")
 
-        # 매출액 업데이트
+        # (a) 매출액 업데이트
         update_revenue_by_day(mugeung_sheet, today_revenue)
 
-        # 재고 업데이트
+        # (b) 재고 업데이트
+        #     아이템별 수량( item_quantity_map ) 구성
         item_cell_map = {
             '육회비빔밥': 'R43',
             '꼬리곰탕': 'G38',
@@ -627,7 +646,6 @@ def main():
             '소성주 750ml': 'AP45'
         }
 
-        # 주문목록 -> {아이템명: 수량} 집계
         item_quantity_map = {}
         for (item_name, qty_text) in all_order_items:
             m = re.search(r"(\d+)", qty_text)
@@ -640,6 +658,7 @@ def main():
     except Exception as e:
         logging.error(f"구글 시트 연동 에러: {e}")
         traceback.print_exc()
+
 
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
