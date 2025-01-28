@@ -5,6 +5,8 @@ import time
 import datetime
 import logging
 import traceback
+import base64
+import json
 
 # -----------------------------
 # Selenium
@@ -53,18 +55,36 @@ def setup_logging(log_filename='script.log'):
     logger.addHandler(file_handler)
 
 ###############################################################################
-# 2. Selenium 드라이버 세팅
+# 2. 환경 변수 & 설정값 불러오기
+###############################################################################
+def get_environment_variables():
+    """
+    필수 환경 변수:
+        - CHENGLA_COUPANG_ID (쿠팡 아이디)
+        - CHENGLA_COUPANG_PW (쿠팡 비밀번호)
+        - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
+    """
+    coupang_id = os.getenv("CHENGLA_COUPANG_ID")
+    coupang_pw = os.getenv("CHENGLA_COUPANG_PW")
+    service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
+
+    if not coupang_id or not coupang_pw:
+        raise ValueError("CHENGLA_COUPANG_ID 혹은 CHENGLA_COUPANG_PW 환경 변수가 설정되지 않았습니다.")
+
+    if not service_account_json_b64:
+        raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경 변수가 설정되지 않았습니다.")
+
+    return coupang_id, coupang_pw, service_account_json_b64
+
+###############################################################################
+# 2-1. Selenium 드라이버 세팅
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     """
     ChromeDriver를 초기화한 뒤, 여러 옵션(봇 차단 방지, 프로필 재사용 등) 적용.
     """
     chrome_options = webdriver.ChromeOptions()
-
-    # 필요하면 헤드리스 모드
-    # chrome_options.add_argument("--headless")
-
-    # User-Agent 변경
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -271,7 +291,6 @@ def get_today_revenue(driver):
 ###############################################################################
 # 6. 주문 목록 스크래핑 (페이지 버튼 이동, 무한)
 ###############################################################################
-
 def expand_and_parse_order(driver, order_index):
     """
     order_index번째 주문의 '펼치기' 버튼을 클릭한 뒤, 상세 파싱.
@@ -297,23 +316,23 @@ def expand_and_parse_order(driver, order_index):
         time.sleep(0.5)
 
         # 클릭 시도
+        expand_btn.click()
+        logging.info(f"{order_index}번째 주문 펼치기 버튼 클릭 성공")
+
+    except (ElementClickInterceptedException, WebDriverException) as e:
+        # 인터셉트나 기타 클릭 오류 -> JS 클릭 재시도
+        logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e}")
+        logging.info("-> JS 클릭 재시도")
         try:
-            expand_btn.click()
-            logging.info(f"{order_index}번째 주문 펼치기 버튼 클릭 성공")
-        except (ElementClickInterceptedException, WebDriverException) as e:
-            # 인터셉트나 기타 클릭 오류 -> JS 클릭
-            logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e}")
-            logging.info("-> JS 클릭 재시도")
-            try:
-                driver.execute_script("arguments[0].click();", expand_btn)
-            except WebDriverException as e2:
-                logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
-                return []
+            driver.execute_script("arguments[0].click();", expand_btn)
+        except WebDriverException as e2:
+            logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
+            return []
 
     except TimeoutException:
         logging.warning(f"{order_index}번째 주문 펼치기 버튼을 찾지 못했습니다.")
         return []
-    except WebDriverException as e:
+    except Exception as e:
         logging.warning(f"{order_index}번째 주문 버튼 대기 중 오류: {e}")
         return []
 
@@ -325,6 +344,8 @@ def parse_expanded_order(driver):
     펼쳐진 주문 섹션에서 '메뉴명, 판매량'을 파싱.
     - 옵션이 줄바꿈(\n) 형태이면 첫 줄만 취함.
     """
+    from selenium.common.exceptions import NoSuchElementException
+
     try:
         expanded_section = driver.find_element(
             By.CSS_SELECTOR, "li.col-12.expanded section.order-details.initial-order-detail"
@@ -427,15 +448,27 @@ def scrape_all_pages_by_buttons(driver):
     return all_data
 
 ###############################################################################
-# 7. Google Sheets 연동 및 데이터 쓰기
+# 7. Google Sheets 연동
 ###############################################################################
-def get_gspread_client(json_key_path):
+def get_gspread_client_from_b64(service_account_json_b64):
+    """
+    Base64로 인코딩된 Google Service Account JSON을 디코딩하여 
+    gspread.Client 인스턴스를 생성.
+    """
+    # 1) base64 디코딩
+    json_bytes = base64.b64decode(service_account_json_b64)
+    # 2) 문자열 변환
+    json_str = json_bytes.decode('utf-8')
+    # 3) JSON 파싱
+    json_keyfile = json.loads(json_str)
+
+    # 구글 스프레드시트 인증
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(json_key_path, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(json_keyfile, scope)
     client = gspread.authorize(creds)
     return client
 
@@ -516,20 +549,25 @@ def update_revenue_by_day(mugeung_sheet, revenue):
 ###############################################################################
 def main():
     setup_logging('script.log')
+
+    # (1) 환경 변수 읽기
+    coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
+
+    # (2) ChromeDriver
     driver = get_chrome_driver(use_profile=False)
 
     try:
-        # 1) 로그인
-        login_coupang_eats(driver, user_id="07043880678", password="Zz1070619!")
+        # (3) 쿠팡이츠 로그인
+        login_coupang_eats(driver, user_id=coupang_id, password=coupang_pw)
 
-        # 2) 오늘/조회
+        # (4) 오늘/조회
         click_today_and_search(driver)
 
-        # 3) 매출액 추출
+        # (5) 매출액 추출
         today_revenue = get_today_revenue(driver)
         logging.info(f"[결과] 오늘 매출액: {today_revenue}")
 
-        # 4) 무한 페이지 스크래핑
+        # (6) 주문 스크래핑 (무한 페이지)
         all_order_items = scrape_all_pages_by_buttons(driver)
         logging.info(f"[결과] 수집된 메뉴 아이템 총 {len(all_order_items)}개")
 
@@ -538,23 +576,23 @@ def main():
         traceback.print_exc()
         all_order_items = []
         today_revenue = 0
+
     finally:
         driver.quit()
         logging.info("WebDriver 종료")
 
-    # 5) 구글 시트
+    # (7) 구글 스프레드시트 처리
     try:
-        client = get_gspread_client(
-            r"C:\Users\day9b\Desktop\naver-place-check\naver-place-check-4bf9d52f8439.json"
-        )
+        # Base64 디코딩하여 gspread.Client 생성
+        client = get_gspread_client_from_b64(service_account_json_b64)
         doc = client.open("청라 일일/월말 정산서")  # 문서 이름
         mugeung_sheet = doc.worksheet("무궁 청라")
         jaego_sheet = doc.worksheet("재고")
 
-        # (a) 무궁 청라: 매출액 갱신
+        # 매출액 업데이트
         update_revenue_by_day(mugeung_sheet, today_revenue)
 
-        # (b) 재고: 아이템 매핑 -> 수량 업데이트
+        # 재고 업데이트
         item_cell_map = {
             '육회비빔밥': 'R43',
             '꼬리곰탕': 'G38',
@@ -589,7 +627,7 @@ def main():
             '소성주 750ml': 'AP45'
         }
 
-        # 스크래핑된 주문 -> {아이템명: 수량} 집계
+        # 주문목록 -> {아이템명: 수량} 집계
         item_quantity_map = {}
         for (item_name, qty_text) in all_order_items:
             m = re.search(r"(\d+)", qty_text)
@@ -597,7 +635,6 @@ def main():
             name_for_map = item_name.strip()
             item_quantity_map[name_for_map] = item_quantity_map.get(name_for_map, 0) + qty_num
 
-        # 업데이트
         update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map)
 
     except Exception as e:
@@ -607,3 +644,4 @@ def main():
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
+
