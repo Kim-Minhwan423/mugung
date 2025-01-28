@@ -223,6 +223,21 @@ def click_today_and_search(driver):
     '오늘' 라디오 버튼 & '조회' 버튼 순차 클릭
     """
     # 오늘 버튼
+    try:
+        today_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((
+                By.CSS_SELECTOR,
+                "#merchant-management > div > div > div.management-scroll > "
+                "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
+                "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters > "
+                "div > div.dropdown-date-select > div.dropdown-range-shortcut > div > div:nth-child(1) > div > label > i"
+            ))
+        )
+        today_button.click()
+        logging.info("오늘 버튼 클릭")
+    except TimeoutException:
+        logging.warning("오늘 버튼을 찾지 못했습니다.")
+
     # 조회 버튼
     try:
         search_button = WebDriverWait(driver, 10).until(
