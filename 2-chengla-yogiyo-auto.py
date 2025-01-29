@@ -157,7 +157,7 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
 
-    time.sleep(3)  # 로그인 처리 대기
+    time.sleep(5)  # 로그인 처리 대기
 
 
 def close_popup_if_exist(driver):
@@ -188,7 +188,7 @@ def go_self_service(driver):
     except TimeoutException:
         logging.warning("셀프서비스 버튼을 찾지 못함")
 
-    time.sleep(3)  # 페이지 로딩 대기
+    time.sleep(5)  # 페이지 로딩 대기
     
 
 def close_popup_if_exist(driver):
