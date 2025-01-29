@@ -17,7 +17,7 @@ jobs:
         shell: cmd  # Windows라면 cmd, Linux면 생략가능
 
       - name: Run Yogiyo Auto Script
-        run: python yogiyo-auto.py
+        run: python 2-chengla-yogiyo-auto.py
         shell: cmd
         env:
           YOGIYO_ID: ${{ secrets.YOGIYO_ID }}
