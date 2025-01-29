@@ -163,9 +163,9 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
 def close_popup_if_exist(driver):
     """
     로그인 후 뜨는 팝업(#modal) 닫기
-    #modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g > rect
+    #modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g
     """
-    popup_close_selector = "#modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g > rect"
+    popup_close_selector = "#modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g"
     try:
         close_btn = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
