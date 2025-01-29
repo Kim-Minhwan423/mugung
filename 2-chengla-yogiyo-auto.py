@@ -188,7 +188,7 @@ def go_self_service(driver):
     except TimeoutException:
         logging.warning("셀프서비스 버튼을 찾지 못함")
 
-    time.sleep(3)  # 페이지 로딩 대기
+    time.sleep(30)  # 페이지 로딩 대기
 
 
 def go_order_history(driver):
