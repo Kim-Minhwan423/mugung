@@ -168,10 +168,10 @@ def close_popup_if_exist(driver):
     로그인 후 뜨는 팝업(#portal-root 등등) 닫기
     예시 CSS: #portal-root > div > ...
     """
-    popup_close_selector = "#modal > div > div > div.sc-f54b6194-2.ebuwdu > div > div.sc-5a86aec3-5.cazgkz > button"
+    popup_close_xpath = '//*[@id="modal"]/div/div/div[1]/svg0'
     try:
         close_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
+            EC.element_to_be_clickable((By.X_path, popup_close_xpath))
         )
         close_btn.click()
         logging.info("팝업 닫기 완료")
