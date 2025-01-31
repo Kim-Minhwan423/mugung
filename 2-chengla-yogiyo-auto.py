@@ -7,6 +7,8 @@ import logging
 import traceback
 import base64
 import json
+import uuid        # [추가]
+import tempfile    # [추가]
 
 # -----------------------------
 # Selenium
@@ -28,6 +30,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Google Sheets
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+
 
 ###############################################################################
 # 1. 로깅 설정 (예시)
@@ -75,14 +78,14 @@ def get_environment_variables():
 
 
 ###############################################################################
-# 3. Chrome 드라이버 세팅
+# 3. Chrome 드라이버 세팅 (고유 경로 프로필 사용 예시)
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     """
     ChromeDriver 설정
     """
     chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")  # 필요 시 활성화
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -92,14 +95,16 @@ def get_chrome_driver(use_profile=False):
     )
 
     if use_profile:
-        user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
-        if os.path.exists(user_data_dir):
-            chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-            chrome_options.add_argument("--profile-directory=Default")
-            logging.info("기존 Chrome 프로필 재사용 중...")
-        else:
-            logging.warning("지정한 프로필 경로가 존재하지 않습니다. 새 프로필이 사용됩니다.")
+        # 매 실행마다 임시폴더에 고유 폴더 생성
+        unique_id = uuid.uuid4()
+        user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
+        os.makedirs(user_data_dir, exist_ok=True)
 
+        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+        # 예: chrome_options.add_argument("--profile-directory=Default")
+        logging.info(f"[use_profile=True] 고유 Chrome 프로필 경로: {user_data_dir}")
+
+    # 일반 옵션들
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
@@ -110,6 +115,7 @@ def get_chrome_driver(use_profile=False):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
+    # 웹드라이버 티 안 나게
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {
@@ -126,7 +132,6 @@ def get_chrome_driver(use_profile=False):
 ###############################################################################
 # 4. 요기요 로그인 → 팝업 닫기 → 셀프서비스 → 주문내역 진입
 ###############################################################################
-
 def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     """
     1) https://ceo.yogiyo.co.kr/login
@@ -160,39 +165,8 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
 
 def close_popup_if_exist(driver):
     """
-    로그인 후 뜨는 팝업(#modal) 닫기
-    #modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g > rect
-    """
-    popup_close_selector = "#modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g > rect"
-    try:
-        close_btn = WebDriverWait(driver, 50).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
-        )
-        close_btn.click()
-        logging.info("팝업 닫기 완료")
-    except TimeoutException:
-        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
-
-
-def go_self_service(driver):
-    """
-    #__next > div > div.sc-59da853b-0.bPawwk > div > div.sc-6e45a28a-7.ftRjve > div.sc-6e45a28a-5.bZYsNC > div.sc-629951e4-0.juVipU.sc-629951e4-1.dAmZVk > div > div.sc-746bb6d2-0.eIrARL > button
-    """
-    self_service_btn = "#__next > div > div.sc-59da853b-0.bPawwk > div > div.sc-6e45a28a-7.ftRjve > div.sc-6e45a28a-5.bZYsNC > div.sc-629951e4-0.juVipU.sc-629951e4-1.dAmZVk > div > div.sc-746bb6d2-0.eIrARL > button"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, self_service_btn)))
-        driver.find_element(By.CSS_SELECTOR, self_service_btn).click()
-        logging.info("셀프서비스 버튼 클릭")
-    except TimeoutException:
-        logging.warning("셀프서비스 버튼을 찾지 못함")
-
-    time.sleep(5)  # 페이지 로딩 대기
-    
-
-def close_popup_if_exist(driver):
-    """
-    로그인 후 뜨는 팝업(#modal) 닫기
-    #portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg
+    로그인 후 뜨는 팝업(#portal-root 등등) 닫기
+    예시 CSS: #portal-root > div > ...
     """
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
     try:
@@ -205,10 +179,24 @@ def close_popup_if_exist(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 
+def go_self_service(driver):
+    """
+    셀프서비스 버튼 클릭
+    """
+    self_service_btn = "#__next > div > div.sc-59da853b-0.bPawwk > div > div.sc-6e45a28a-7.ftRjve > div.sc-6e45a28a-5.bZYsNC > div.sc-629951e4-0.juVipU.sc-629951e4-1.dAmZVk > div > div.sc-746bb6d2-0.eIrARL > button"
+    try:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, self_service_btn)))
+        driver.find_element(By.CSS_SELECTOR, self_service_btn).click()
+        logging.info("셀프서비스 버튼 클릭")
+    except TimeoutException:
+        logging.warning("셀프서비스 버튼을 찾지 못함")
+
+    time.sleep(5)  # 페이지 로딩 대기
+
+
 def go_order_history(driver):
     """
-    주문내역 메뉴: 
-    #root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu > div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button:nth-child(1)
+    주문내역 메뉴 클릭
     """
     order_btn_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu > div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button:nth-child(1)"
     try:
@@ -224,16 +212,16 @@ def go_order_history(driver):
 def select_daily_range(driver):
     """
     날짜 필드 클릭 → '일별' shortcut 선택
-    날짜 필드: 
-      #common-layout-wrapper-id > ... > input
-    일별 shortcut:
-      div:nth-child(2) (예: 1=전체, 2=일별, 3=주별, 4=월별 등)
     """
-    date_field_selector = "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw > div.react-datepicker-wrapper > div > div > div > div.CustomTextField__Left-sc-1m4c99t-2.eZjLyv > input"
-    shortcut_daily_selector = "div:nth-child(2)"  # 이건 react-datepicker 팝업 내 children(1=전체,2=일별,...)
-
+    date_field_selector = (
+        "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div "
+        "> div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo "
+        "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB "
+        "> div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
+        "> div.react-datepicker-wrapper > div > div > div > div.CustomTextField__Left-sc-1m4c99t-2.eZjLyv > input"
+    )
     try:
-        # 1) 날짜 필드 클릭
+        # 날짜 필드 클릭
         date_field = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, date_field_selector))
         )
@@ -241,11 +229,11 @@ def select_daily_range(driver):
         logging.info("날짜 필드 클릭")
         time.sleep(1)
 
-        # 2) 팝업 뜨면 '일별' 선택
-        #   (정확한 셀렉터는 팝업의 구조에 따라 다를 수 있음)
+        # 팝업에서 '일별' 버튼 클릭 (예시 셀렉터)
         daily_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 
-               "div.react-datepicker__tab-loop .getCustomCalendarCotainer__OptionBox-sc-1tsrb16-3.eBJNps div.getCustomCalendarCotainer__ShortcutList-sc-1tsrb16-0.UPVGG div:nth-child(2)"
+            EC.element_to_be_clickable((By.CSS_SELECTOR,
+                "div.react-datepicker__tab-loop .getCustomCalendarCotainer__OptionBox-sc-1tsrb16-3.eBJNps "
+                "div.getCustomCalendarCotainer__ShortcutList-sc-1tsrb16-0.UPVGG div:nth-child(2)"
             ))
         )
         daily_btn.click()
@@ -263,7 +251,8 @@ def main():
     # 환경 변수(아이디/비번) 가져오기
     yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
 
-    driver = get_chrome_driver(use_profile=False)
+    # use_profile=True 로 하면 고유 경로 프로필을 생성해 사용
+    driver = get_chrome_driver(use_profile=True)
 
     try:
         # 1) 로그인
@@ -281,8 +270,8 @@ def main():
         # 5) 날짜 필드 클릭 → '일별' shortcut
         select_daily_range(driver)
 
-        # 이제 '일별' 옵션이 설정된 상태
-        # TODO: 여기서 날짜를 세부적으로 설정하거나, 주문 목록을 스크래핑 등
+        # TODO: 여기서 날짜를 세부적으로 설정하거나, 주문 목록을 스크래핑 등등
+        # ...
 
     except Exception as e:
         logging.error(f"에러 발생: {e}")
