@@ -130,7 +130,7 @@ class SeleniumDriverManager:
         
         # (필요 시) 헤드리스 모드
         if self.headless:
-            #options.add_argument("--headless")
+            options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -269,7 +269,7 @@ def login_and_close_popup(driver, wait, username, password):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
 
-    popup_close_selector = "body > div.bsds-portal > div > section > footer > div > button"
+    popup_close_selector = "#\:rp\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
     try:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
