@@ -3,6 +3,7 @@ name: Chengla EasyPOS
 on:
   repository_dispatch:
     types: [run-chengla-easypos]  # 트리거 타입 정의
+  workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
 jobs:
   run-script:
