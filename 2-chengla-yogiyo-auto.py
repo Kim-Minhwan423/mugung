@@ -192,7 +192,21 @@ def go_self_service(driver):
         logging.warning("셀프서비스 버튼을 찾지 못함")
 
     time.sleep(5)  # 페이지 로딩 대기
-
+    
+def close_popup_if_exist(driver):
+    """
+    로그인 후 뜨는 팝업(#portal-root 등등) 닫기
+    예시 CSS: #portal-root > div > ...
+    """
+    popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
+    try:
+        close_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
+        )
+        close_btn.click()
+        logging.info("팝업 닫기 완료")
+    except TimeoutException:
+        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 def go_order_history(driver):
     """
