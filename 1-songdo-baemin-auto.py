@@ -269,7 +269,7 @@ def login_and_close_popup(driver, wait, username, password):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
 
-    popup_close_Xpath = "//*[@id=":rp:"]/div[2]/div/button[2]/span/span"
+    popup_close_Xpath = '//*[@id=":rp:"]/div[2]/div/button[2]/span/span'
     try:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
