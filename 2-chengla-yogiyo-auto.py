@@ -82,7 +82,7 @@ def get_chrome_driver(use_profile=False):
     ChromeDriver 설정
     """
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -165,7 +165,7 @@ def close_popup_if_exist(driver):
     """
     popup_close_selector = "#modal > div > div > div.sc-f54b6194-1.fCrjsm > svg > g > rect"
     try:
-        close_btn = WebDriverWait(driver, 10).until(
+        close_btn = WebDriverWait(driver, 50).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
         )
         close_btn.click()
