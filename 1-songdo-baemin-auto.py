@@ -271,12 +271,12 @@ def login_and_close_popup(driver, wait, username, password):
 
     popup_close_Xpath = '//*[@id=":rp:"]/div[2]/div/button[2]/span/span'
     try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
+        # By.XPATH 로 바꾸고 popup_close_Xpath 변수를 사용합니다.
+        wait.until(EC.element_to_be_clickable((By.XPATH, popup_close_Xpath)))
+        driver.find_element(By.XPATH, popup_close_Xpath).click()
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("닫을 팝업이 없음 (스킵)")
-
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
