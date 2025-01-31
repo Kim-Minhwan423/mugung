@@ -3,6 +3,7 @@ name: Chengla Coupang
 on:
   repository_dispatch:
     types: [run-chengla-coupang]  # 원하는 이벤트 타입
+  workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
 jobs:
   run-script:
