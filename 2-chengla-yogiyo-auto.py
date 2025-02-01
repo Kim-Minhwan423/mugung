@@ -204,7 +204,7 @@ def select_daily_range(driver):
         "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div "
         "> div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div "
         "> div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
-        "> div > div > div > div > div.CustomTextField__Left-sc-1m4c99t-2.eZjLyv"
+        "> div.react-datepicker-wrapper > div > div > div > div.CustomTextField__Right-sc-1m4c99t-3.iVfYjE > div > svg > g > rect"
     )
     try:
         # 날짜 필드 클릭
