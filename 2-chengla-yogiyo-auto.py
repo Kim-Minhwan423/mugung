@@ -207,7 +207,7 @@ def get_ten_rows_popup_data(driver):
             "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
             "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
             f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i}) > "
-            "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTjo > div"
+            "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTjo"
         )
         try:
             row_elem = WebDriverWait(driver, 3).until(
