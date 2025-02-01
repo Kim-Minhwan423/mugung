@@ -150,9 +150,8 @@ def close_popup_if_exist(driver):
 
 def go_store_selector(driver):
     store_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.StoreSelector__Wrapper-sc-1rowjsb-15.lkBMGb"
+        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
+        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div > div > div.StoreSelector__StoreSelectorRightLayout-sc-1rowjsb-12.gWIocW > button > svg > g > rect"
     )
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
@@ -164,9 +163,8 @@ def go_store_selector(driver):
 
 def go_chengla_selector(driver):
     chengla_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG "
-        "> div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
+        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
+        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
     )
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
@@ -175,6 +173,18 @@ def go_chengla_selector(driver):
     except TimeoutException:
         logging.warning("무궁 청라점 버튼을 찾지 못함")
     time.sleep(3)
+
+
+def close_popup_if_exist(driver):
+    popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
+    try:
+        close_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
+        )
+        close_btn.click()
+        logging.info("팝업 닫기 완료")
+    except TimeoutException:
+        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 def go_order_history(driver):
     order_btn_selector = (
