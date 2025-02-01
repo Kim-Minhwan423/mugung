@@ -173,19 +173,20 @@ def go_chengla_selector(driver):
     time.sleep(3)  # 화면 로딩 대기
 
 def go_order_history(driver):
-    order_btn_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu "
-        "> div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button.LNB__MenuButton-sc-1eyat45-3.flLQfy"
-    )
+    """
+    주문내역 메뉴 클릭
+    """
+    order_btn_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
+    "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu "
+    "> div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button.LNB__MenuButton-sc-1eyat45-3.flLQfy"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_btn_selector)))
         driver.find_element(By.CSS_SELECTOR, order_btn_selector).click()
         logging.info("주문내역 버튼 클릭")
     except TimeoutException:
         logging.warning("주문내역 버튼을 찾지 못함")
-    time.sleep(3)
-
+    time.sleep(3)  # 주문내역 화면 로딩 대기
+    
 ###############################################################################
 # 5. 주문 상세 정보 추출 (주문금액 및 품목명/수량)
 ###############################################################################
