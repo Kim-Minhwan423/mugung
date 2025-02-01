@@ -244,13 +244,10 @@ def main():
         # 2) 팝업 닫기
         close_popup_if_exist(driver)
 
-        # 3) 셀프서비스 진입
-        go_self_service(driver)
-
-        # 4) 주문내역 진입
+        # 3) 주문내역 진입
         go_order_history(driver)
 
-        # 5) 날짜 필드 클릭 → '일별' shortcut
+        # 4) 날짜 필드 클릭 → '일별' shortcut
         select_daily_range(driver)
 
         # TODO: 여기서 날짜를 세부적으로 설정하거나, 주문 목록을 스크래핑 등등
