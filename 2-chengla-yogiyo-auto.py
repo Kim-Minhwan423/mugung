@@ -403,7 +403,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 ###############################################################################
 def main():
     setup_logging("script.log")
-    yogiyo_id, yogiyo_pw, service_account_json_b64, spreadsheet_id = get_environment_variables()
+    yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     driver = get_chrome_driver(use_profile=True)
     try:
         # 1. 로그인 및 팝업/페이지 이동
