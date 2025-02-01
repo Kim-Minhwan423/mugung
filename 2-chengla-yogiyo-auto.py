@@ -262,26 +262,25 @@ def extract_order_details(driver):
     
     return total_fee, products
 
-
 def process_orders_for_today(driver):
     """
-    주문 목록 페이지에서 날짜 셀의 텍스트가 오늘 날짜(월.일 형식, 예: 02.01)와 일치하는 주문 셀을
-    하나씩 클릭하여 팝업으로부터 판매 총 금액 및 품목 데이터를 추출합니다.
-    
-    또한, 페이지 하단의 페이지 네비게이션(li:nth-child(2), li:nth-child(3) 등)을 통해
-    다음 페이지가 존재하면 계속해서 데이터를 가져옵니다.
+    주문 목록 페이지에서 각 주문의 날짜 정보를 절대 XPath를 사용해 추출합니다.
+    각 주문의 날짜 정보는 다음과 같이 구성되어 있습니다.
+      - 첫 번째 줄: 날짜(예: "02.01(토)") → 여기서 "02.01"만 추출
+      - 두 번째 줄: 시간(예: "오전 09:45:30") → 필요시 추가 처리 가능
+    오늘 날짜(월.일 형식, 예: "02.01")와 비교하여 일치하는 주문에 대해 팝업을 열어 데이터를 추출합니다.
     """
     aggregated_total = 0
     aggregated_products = {}
-    
+
     # 오늘 날짜를 MM.DD 형식으로 생성 (예: "02.01")
     today_str = datetime.datetime.now().strftime("%m.%d")
     logging.info(f"오늘 날짜 (MM.DD): {today_str}")
-    
+
     page = 1
     while True:
         logging.info(f"페이지 {page} 처리 시작")
-        # 주문 테이블의 모든 행(tr) 선택
+        # 주문 테이블의 모든 행(tr) 선택 (현재 페이지의 주문 수 파악)
         orders_rows_selector = (
             "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
             "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
@@ -296,32 +295,45 @@ def process_orders_for_today(driver):
         except TimeoutException:
             logging.warning("주문 테이블을 찾지 못함")
             break
-        
-        logging.info(f"페이지 {page}의 주문 건수: {len(orders)}")
-        
-        # 각 주문 행에 대해 절대 XPath를 사용하여 날짜 추출
+
+        total_orders = len(orders)
+        logging.info(f"페이지 {page}의 주문 건수: {total_orders}")
+
+        # 각 주문 행에 대해 절대 XPath를 사용하여 날짜 정보 추출
         for i in range(1, total_orders + 1):
             try:
-                xpath_date = f'//*[@id="common-layout-wrapper-id"]/div[2]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div'
-                date_text = driver.find_element(By.XPATH, xpath_date).text.strip()  # 예: "02.01(토)"
-                match = re.match(r"(\d{2}\.\d{2})", date_text)
+                # 전체 날짜/시간 정보를 포함하는 요소의 XPath
+                order_date_full_xpath = (
+                    f'//*[@id="common-layout-wrapper-id"]/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div'
+                )
+                order_date_full_text = driver.find_element(By.XPATH, order_date_full_xpath).text.strip()
+                # 예: "02.01(토)\n오전 09:45:30"
+                lines = order_date_full_text.splitlines()
+                if not lines:
+                    logging.warning(f"주문 {i} 날짜 정보가 비어 있음")
+                    continue
+                # 첫 번째 줄: 날짜 (월.일(요일))
+                date_line = lines[0].strip()  # 예: "02.01(토)"
+                # 정규표현식으로 "MM.DD"만 추출
+                match = re.match(r"(\d{2}\.\d{2})", date_line)
                 if match:
                     order_date = match.group(1)
                 else:
-                    logging.warning(f"날짜 형식 불일치: {date_text}")
+                    logging.warning(f"주문 {i} 날짜 형식 불일치: {date_line}")
                     continue
 
                 logging.info(f"주문 {i}의 날짜: {order_date}")
-
-                # 오늘 날짜와 일치하는 주문이면 진행
+                # 오늘 날짜와 일치하는 경우에만 처리
                 if order_date != today_str:
                     continue
 
-                # 주문 행 클릭 (절대 XPath를 사용해 주문 행 전체 선택)
-                xpath_order_row = f'//*[@id="common-layout-wrapper-id"]/div[2]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]'
-                order_row_elem = driver.find_element(By.XPATH, xpath_order_row)
+                # 주문 행 전체 XPath
+                order_row_xpath = (
+                    f'//*[@id="common-layout-wrapper-id"]/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]'
+                )
+                order_row_elem = driver.find_element(By.XPATH, order_row_xpath)
                 driver.execute_script("arguments[0].scrollIntoView(true);", order_row_elem)
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath_order_row)))
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, order_row_xpath)))
                 order_row_elem.click()
                 logging.info(f"주문 {i} (날짜: {order_date}) 클릭")
                 time.sleep(2)  # 팝업 로딩 대기
@@ -344,8 +356,8 @@ def process_orders_for_today(driver):
             except Exception as e:
                 logging.error(f"주문 {i} 처리 오류: {e}")
                 continue
-        
-        # 페이지 하단의 페이지 네비게이션을 확인하여 다음 페이지가 있는지 체크
+
+        # 페이지 하단의 페이지 네비게이션을 확인하여 다음 페이지로 이동
         try:
             pagination_container_selector = (
                 "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
@@ -356,7 +368,6 @@ def process_orders_for_today(driver):
             pagination_ul = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, pagination_container_selector))
             )
-            # 다음 페이지 버튼: li:nth-child(현재 페이지 + 1)
             next_page_selector = f"li:nth-child({page+1})"
             next_page_elem = pagination_ul.find_element(By.CSS_SELECTOR, next_page_selector)
             driver.execute_script("arguments[0].scrollIntoView(true);", next_page_elem)
@@ -365,12 +376,12 @@ def process_orders_for_today(driver):
             )
             next_page_elem.click()
             logging.info(f"페이지 {page+1}로 이동")
-            time.sleep(2)  # 페이지 전환 대기
+            time.sleep(2)
             page += 1
         except Exception:
             logging.info("더 이상 다음 페이지가 없거나 이동에 실패")
             break
-    
+
     return aggregated_total, aggregated_products
 
 ###############################################################################
