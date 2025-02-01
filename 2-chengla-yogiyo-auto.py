@@ -189,7 +189,8 @@ def go_order_history(driver):
     
 ###############################################################################
 # 5. 주문 상세 정보 추출 (주문금액 및 품목명/수량)
-###############################################################################def get_ten_rows_popup_data(driver):
+###############################################################################
+def get_ten_rows_popup_data(driver):
     """
     주문내역 페이지에서 1~10번째 행(tr:nth-child(1) ~ tr:nth-child(10))을 순회하며:
       1) 각 행을 클릭 → 팝업 띄우기
@@ -206,7 +207,7 @@ def go_order_history(driver):
             "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
             "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
             f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i}) > "
-            "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTjo > div > svg > g > rect"
+            "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTjo > div > svg > g"
         )
         try:
             row_elem = WebDriverWait(driver, 3).until(
@@ -217,7 +218,7 @@ def go_order_history(driver):
             row_elem.click()
             time.sleep(1)  # 팝업 열림 대기 (네트워크 상황에 맞춰 조절 가능)
         except TimeoutException:
-            logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가. (주문 건수 부족 등)")
+            logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가")
             continue
         except Exception as e:
             logging.error(f"{i}번째 행 클릭 중 오류: {e}")
@@ -408,7 +409,7 @@ def main():
         go_order_history(driver)
         
         # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
-        get_first_10_rows_text(driver)
+        get_ten_rows_popup_data(driver)
         
         # 5. Google Sheets 업데이트 (일일 정산 및 재고)
     
