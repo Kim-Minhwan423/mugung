@@ -324,6 +324,7 @@ def main():
         go_order_history(driver)
         
         # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
+        get_first_10_rows_text(driver)
         
         # 5. Google Sheets 업데이트 (일일 정산 및 재고)
     
