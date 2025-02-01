@@ -563,7 +563,7 @@ def main():
             '카스 500ml': 'BC43',
             '테라 500ml': 'BC44',
             '켈리 500ml': 'BC45',
-            '소성주 750ml': 'AP45'
+            '소성주 750ml': 'AR45'
         }
 
         item_quantity_map = {}
