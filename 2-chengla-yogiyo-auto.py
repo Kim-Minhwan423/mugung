@@ -195,7 +195,7 @@ def go_chengla_selector(driver):
     "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG "
     "> div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
+        We출bDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
         driver.find_element(By.CSS_SELECTOR, chengla_selector).click()
         logging.info("무궁 청라점 버튼 클릭")
     except TimeoutException:
@@ -218,6 +218,146 @@ def go_order_history(driver):
 
     time.sleep(3)  # 주문내역 화면 로딩 대기
 
+###############################################################################
+# 5. 주문 금액, 품목 정보 추
+###############################################################################
+def extract_order_details(driver):
+    """
+    모달에서 주문 금액과 품목 정보를 추출하는 함수
+    """
+    try:
+        # 주문 금액 추출 (예시 셀렉터)
+        fee_selector = (
+            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+            "div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
+        )
+        order_fee = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
+        ).text
+
+        # 품목 정보 추출 (동적 개수)
+        # 공통 부모 셀렉터를 사용해 모든 품목 리스트를 가져옵니다.
+        products_parent_selector = (
+            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+            "div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU"
+        )
+        product_elements = driver.find_elements(By.CSS_SELECTOR, products_parent_selector)
+        products = []
+        for product in product_elements:
+            try:
+                # 예시: 첫번째 span 요소에 품목명이 있고, 필요시 주문갯수도 같이 가져온다면 추가 셀렉터로 추출합니다.
+                product_name = product.find_element(
+                    By.CSS_SELECTOR,
+                    "div > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+                ).text
+                # 만약 주문갯수를 별도로 추출해야 한다면 아래와 같이 셀렉터 추가
+                # product_qty = product.find_element(By.CSS_SELECTOR, "적절한_주문갯수_셀렉터").text
+                products.append(product_name)  # 또는 (product_name, product_qty)
+            except Exception as e:
+                logging.warning(f"품목 정보 추출 중 오류: {e}")
+        return order_fee, products
+
+    except Exception as e:
+        logging.error(f"주문 상세 정보 추출 오류: {e}")
+        return None, []
+
+
+def process_orders_on_page(driver, current_page):
+    """
+    현재 페이지 내의 모든 주문을 순회하며 상세 정보를 추출하는 함수
+    """
+    # 주문 목록 셀렉터 (페이지마다 최대 10건이 있음)
+    orders_selector = (
+        "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
+        "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
+        "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
+        "div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr"
+    )
+    try:
+        # 모든 주문 행들을 가져옵니다.
+        orders = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, orders_selector))
+        )
+    except TimeoutException:
+        logging.warning("주문 목록을 찾지 못함")
+        return
+
+    logging.info(f"페이지 {current_page}에 {len(orders)}건의 주문 발견")
+
+    # 각 주문을 순차적으로 처리합니다.
+    for idx, order in enumerate(orders, start=1):
+        try:
+            # 주문 클릭 시 동적 요소가 변경되므로, 주문 목록을 재조회하거나, 해당 요소가 클릭 가능하도록 보장해야 합니다.
+            driver.execute_script("arguments[0].scrollIntoView(true);", order)
+            order.click()
+            logging.info(f"페이지 {current_page} 주문 {idx} 클릭")
+            time.sleep(2)  # 모달 열림 대기
+
+            # 모달에서 주문 상세 정보 추출
+            fee, products = extract_order_details(driver)
+            if fee:
+                logging.info(f"페이지 {current_page} 주문 {idx}: 주문금액={fee}, 품목={products}")
+            else:
+                logging.warning(f"페이지 {current_page} 주문 {idx}: 상세 정보 추출 실패")
+
+            # 모달 닫기 (닫기 버튼 셀렉터)
+            close_modal_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
+            WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, close_modal_selector))
+            ).click()
+            logging.info(f"페이지 {current_page} 주문 {idx} 모달 닫기")
+            time.sleep(1)  # 모달 닫힘 대기
+
+        except Exception as e:
+            logging.error(f"페이지 {current_page} 주문 {idx} 처리 중 오류: {e}")
+            continue
+
+
+def go_to_next_page(driver, current_page):
+    """
+    페이징 버튼을 이용해 다음 페이지로 이동하는 함수  
+    (예시에서는 li 태그의 텍스트가 페이지 번호와 일치한다고 가정)
+    """
+    pagination_selector = (
+        "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
+        "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
+        "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
+        "div.Pagination__Container-sc-iw43f5-3.jMWkBM > ul > li"
+    )
+    try:
+        pages = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, pagination_selector))
+        )
+        next_page = None
+        for page in pages:
+            # 페이지 번호가 현재 페이지보다 1 큰 버튼을 찾습니다.
+            if page.text.strip() == str(current_page + 1):
+                next_page = page
+                break
+        if next_page:
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_page)
+            next_page.click()
+            logging.info(f"페이지 {current_page + 1}로 이동")
+            time.sleep(3)  # 새 페이지 로딩 대기
+            return True
+        else:
+            logging.info("더 이상의 페이지가 없음")
+            return False
+    except Exception as e:
+        logging.error(f"페이지 이동 중 오류: {e}")
+        return False
+
+
+def process_all_order_pages(driver):
+    """
+    전체 주문 내역 페이지를 순회하며 각 주문의 정보를 추출하는 함수
+    """
+    current_page = 1
+    while True:
+        process_orders_on_page(driver, current_page)
+        if not go_to_next_page(driver, current_page):
+            break
+        current_page += 1
 
 ###############################################################################
 # 메인 실행 흐름 예시
@@ -245,8 +385,9 @@ def main():
         # 4) 주문내역 진입
         go_order_history(driver)
 
-        # TODO: 여기서 날짜를 세부적으로 설정하거나, 주문 목록을 스크래핑 등등
-        # ...
+        # 5) 주문금액, 품목명과 주문갯수 확인
+        extract_order_details(driver)
+
 
     except Exception as e:
         logging.error(f"에러 발생: {e}")
