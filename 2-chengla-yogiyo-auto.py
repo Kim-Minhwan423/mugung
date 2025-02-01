@@ -110,7 +110,7 @@ def get_chrome_driver(use_profile=False):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1580,960")
+    chrome_options.add_argument("--window-size=1029,657")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -134,11 +134,11 @@ def get_chrome_driver(use_profile=False):
 ###############################################################################
 def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     """
-    1) https://ceo.yogiyo.co.kr/login
+    1) https://ceo.yogiyo.co.kr/self-service-home/
     2) id, pw 입력
     3) 로그인 버튼
     """
-    driver.get("https://ceo.yogiyo.co.kr/login")
+    driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
     logging.info("요기요 사장님 사이트 로그인 페이지 접속 완료")
 
     # 아이디 입력
@@ -168,36 +168,6 @@ def close_popup_if_exist(driver):
     로그인 후 뜨는 팝업(#portal-root 등등) 닫기
     예시 CSS: #portal-root > div > ...
     """
-    popup_close_xpath = '//*[@id="modal"]/div/div/div[1]/svg0'
-    try:
-        close_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.X_path, popup_close_xpath))
-        )
-        close_btn.click()
-        logging.info("팝업 닫기 완료")
-    except TimeoutException:
-        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
-
-
-def go_self_service(driver):
-    """
-    셀프서비스 버튼 클릭
-    """
-    self_service_btn = "#__next > div > div.sc-59da853b-0.bPawwk > div > div.sc-6e45a28a-7.ftRjve > div.sc-6e45a28a-5.bZYsNC > div.sc-629951e4-0.juVipU.sc-629951e4-1.dAmZVk > div > div.sc-746bb6d2-0.eIrARL > button"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, self_service_btn)))
-        driver.find_element(By.CSS_SELECTOR, self_service_btn).click()
-        logging.info("셀프서비스 버튼 클릭")
-    except TimeoutException:
-        logging.warning("셀프서비스 버튼을 찾지 못함")
-
-    time.sleep(5)  # 페이지 로딩 대기
-    
-def close_popup_if_exist(driver):
-    """
-    로그인 후 뜨는 팝업(#portal-root 등등) 닫기
-    예시 CSS: #portal-root > div > ...
-    """
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
     try:
         close_btn = WebDriverWait(driver, 10).until(
@@ -221,7 +191,6 @@ def go_order_history(driver):
         logging.warning("주문내역 버튼을 찾지 못함")
 
     time.sleep(3)  # 주문내역 화면 로딩 대기
-
 
 def select_daily_range(driver):
     """
