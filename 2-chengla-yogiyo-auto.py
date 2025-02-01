@@ -299,53 +299,50 @@ def process_orders_for_today(driver):
         
         logging.info(f"페이지 {page}의 주문 건수: {len(orders)}")
         
-        # 각 주문 행 처리
-        for index, order_row in enumerate(orders, start=1):
+        # 각 주문 행에 대해 절대 XPath를 사용하여 날짜 추출
+        for i in range(1, total_orders + 1):
             try:
-                # 각 주문 행 내 날짜 셀 선택 (날짜는 "MM.DD(요일)" 형식)
-                date_cell = order_row.find_element(
-                    By.CSS_SELECTOR,
-                    "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTlX > div"
-                )
-                date_text = date_cell.text.strip()  # 예: "02.01(토)"
-                # 정규표현식으로 "MM.DD" 부분만 추출
+                xpath_date = f'//*[@id="common-layout-wrapper-id"]/div[2]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div'
+                date_text = driver.find_element(By.XPATH, xpath_date).text.strip()  # 예: "02.01(토)"
                 match = re.match(r"(\d{2}\.\d{2})", date_text)
                 if match:
                     order_date = match.group(1)
                 else:
                     logging.warning(f"날짜 형식 불일치: {date_text}")
                     continue
-                
-                logging.info(f"주문 {index}의 날짜: {order_date}")
-                
-                # 오늘 날짜와 일치하는 주문인 경우
+
+                logging.info(f"주문 {i}의 날짜: {order_date}")
+
+                # 오늘 날짜와 일치하는 주문이면 진행
                 if order_date != today_str:
                     continue
-                
-                # 주문 행 클릭 (스크롤하여 보이게 한 후 클릭)
-                driver.execute_script("arguments[0].scrollIntoView(true);", order_row)
-                WebDriverWait(driver, 10).until(EC.element_to_be_clickable(order_row))
-                order_row.click()
-                logging.info(f"주문 {index} (날짜: {order_date}) 클릭")
+
+                # 주문 행 클릭 (절대 XPath를 사용해 주문 행 전체 선택)
+                xpath_order_row = f'//*[@id="common-layout-wrapper-id"]/div[2]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]'
+                order_row_elem = driver.find_element(By.XPATH, xpath_order_row)
+                driver.execute_script("arguments[0].scrollIntoView(true);", order_row_elem)
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath_order_row)))
+                order_row_elem.click()
+                logging.info(f"주문 {i} (날짜: {order_date}) 클릭")
                 time.sleep(2)  # 팝업 로딩 대기
-                
+
                 # 팝업에서 상세 정보 추출
                 fee, products = extract_order_details(driver)
                 aggregated_total += fee
                 for prod, qty in products.items():
                     aggregated_products[prod] = aggregated_products.get(prod, 0) + qty
-                
-                # 팝업 닫기 (셀렉터: #portal-root > ... > svg > g > rect)
+
+                # 팝업 닫기
                 close_popup_selector = (
                     "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
                 )
                 WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
                 ).click()
-                logging.info(f"주문 {index} 팝업 닫기 완료")
+                logging.info(f"주문 {i} 팝업 닫기 완료")
                 time.sleep(1)
             except Exception as e:
-                logging.error(f"주문 {index} 처리 오류: {e}")
+                logging.error(f"주문 {i} 처리 오류: {e}")
                 continue
         
         # 페이지 하단의 페이지 네비게이션을 확인하여 다음 페이지가 있는지 체크
