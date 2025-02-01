@@ -178,6 +178,30 @@ def close_popup_if_exist(driver):
     except TimeoutException:
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
+def go_store_selector(driver):
+    store_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
+    "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
+    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.StoreSelector__Wrapper-sc-1rowjsb-15.lkBMGb"
+    try:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
+        driver.find_element(By.CSS_SELECTOR, store_selector).click()
+        logging.info("스토어 셀렉터 버튼 클릭")
+    except TimeoutException:
+        logging.warning("스토어 셀렉터 버튼을 찾지 못함")
+    time.sleep(3)  # 화면 로딩 대기
+
+def go_chengla_selector(driver):
+    chengla_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
+    "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG "
+    "> div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
+    try:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
+        driver.find_element(By.CSS_SELECTOR, store_selector).click()
+        logging.info("무궁 청라점 버튼 클릭")
+    except TimeoutException:
+        logging.warning("무궁 청라점 버튼을 찾지 못함")
+    time.sleep(3)  # 화면 로딩 대기
+
 def go_order_history(driver):
     """
     주문내역 메뉴 클릭
@@ -193,37 +217,6 @@ def go_order_history(driver):
         logging.warning("주문내역 버튼을 찾지 못함")
 
     time.sleep(3)  # 주문내역 화면 로딩 대기
-
-def select_daily_range(driver):
-    """
-    날짜 필드 클릭 → '일별' shortcut 선택
-    """
-    date_field_selector = ("#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw > div > div > div > div > div.CustomTextField__Right-sc-1m4c99t-3.iVfYjE > div > svg > g > rect")
-    try:
-        # 날짜 필드 클릭
-        date_field = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, date_field_selector))
-        )
-        date_field.click()
-        logging.info("날짜 필드 클릭")
-        time.sleep(1)
-
-        # 팝업에서 '일별' 버튼 클릭 (예시 셀렉터)
-        daily_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR,
-                "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div "
-                "> div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo "
-                "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div "
-                "> div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div "
-                "> div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
-                "> div.react-datepicker__tab-loop > div.react-datepicker-popper.custom-popper > div > div "
-                "> div.getCustomCalendarCotainer__OptionBox-sc-1tsrb16-3.eBJNps > div.getCustomCalendarCotainer__ShortcutList-sc-1tsrb16-0.UPVGG > div:nth-child(2)"
-            ))
-        )
-        daily_btn.click()
-        logging.info("일별 shortcut 클릭")
-    except TimeoutException:
-        logging.warning("날짜 필드 or '일별' shortcut을 찾지 못함")
 
 
 ###############################################################################
@@ -245,11 +238,12 @@ def main():
         # 2) 팝업 닫기
         close_popup_if_exist(driver)
 
-        # 3) 주문내역 진입
+        # 3) 청라점 진입
+        go_store_selector(driver)
+        go_chengla_selector(driver)
+        
+        # 4) 주문내역 진입
         go_order_history(driver)
-
-        # 4) 날짜 필드 클릭 → '일별' shortcut
-        select_daily_range(driver)
 
         # TODO: 여기서 날짜를 세부적으로 설정하거나, 주문 목록을 스크래핑 등등
         # ...
