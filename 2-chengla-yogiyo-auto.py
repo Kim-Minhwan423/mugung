@@ -189,14 +189,18 @@ def go_order_history(driver):
     
 ###############################################################################
 # 5. 주문 상세 정보 추출 (주문금액 및 품목명/수량)
-###############################################################################
-def get_first_10_rows_text(driver):
+###############################################################################def get_ten_rows_popup_data(driver):
     """
-    주문내역 페이지에서 tbody 내 1~10번 행의 텍스트를 가져와 출력합니다.
-    날짜 비교 없이 단순히 행 텍스트만 확인하는 예시.
+    주문내역 페이지에서 1~10번째 행(tr:nth-child(1) ~ tr:nth-child(10))을 순회하며:
+      1) 각 행을 클릭 → 팝업 띄우기
+      2) 팝업에서 총 주문금액과 판매 품목(제품명, 수량)을 추출
+      3) 팝업 닫기
+    를 수행하고, 결과를 리스트 형태로 반환합니다.
     """
-    rows_data = {}
+    result_data = []
+
     for i in range(1, 11):
+        # 1) i번째 행 클릭 (팝업 열기)
         row_selector = (
             f"#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
             "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
@@ -204,18 +208,97 @@ def get_first_10_rows_text(driver):
             f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i})"
         )
         try:
-            row_elem = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, row_selector))
+            row_elem = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, row_selector))
             )
-            row_text = row_elem.text.strip()
-            rows_data[i] = row_text
-            logging.info(f"Row {i} text: {row_text}")
+            logging.info(f"--- {i}번째 행 클릭 시도 ---")
+            driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
+            row_elem.click()
+            time.sleep(1)  # 팝업 열림 대기 (네트워크 상황에 맞춰 조절 가능)
         except TimeoutException:
-            logging.warning(f"Row {i} 행을 찾지 못함 (주문 건수가 10개 미만이거나 다른 문제)")
+            logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가. (주문 건수 부족 등)")
+            continue
         except Exception as e:
-            logging.error(f"Row {i} 추출 중 오류: {e}")
-    
-    return rows_data
+            logging.error(f"{i}번째 행 클릭 중 오류: {e}")
+            continue
+
+        # 2) 팝업 내에서 총 주문금액, 판매 품목 추출
+        fee_selector = (
+            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+            "div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
+        )
+        try:
+            fee_elem = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
+            )
+            fee_text = fee_elem.text.strip()
+            fee_clean = re.sub(r"[^\d]", "", fee_text)  # 예: "12,000" -> "12000"
+            fee_value = int(fee_clean) if fee_clean else 0
+            logging.info(f"{i}번째 행 팝업: 추출된 총 주문금액 {fee_value}")
+        except TimeoutException:
+            logging.warning(f"{i}번째 행 팝업: 총 주문금액 요소를 찾지 못함.")
+            fee_value = 0
+        except Exception as e:
+            logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
+            fee_value = 0
+
+        # 판매 품목 추출
+        products = {}
+        j = 1
+        while True:
+            product_selector = (
+                f"#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+                f"div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > "
+                f"div:nth-child({j}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+            )
+            try:
+                product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
+                product_text = product_elem.text.strip()
+                # 수량이 따로 span:nth-child(2)에 있다면, qty_selector를 별도로 구성해서 추출하세요.
+                # 여기서는 예시로 동일한 span에서 숫자를 뽑는다고 가정
+                qty_clean = re.sub(r"[^\d]", "", product_text)
+                product_qty = int(qty_clean) if qty_clean else 1
+
+                # 제품명은 숫자 부분 제외 (필요 시 정규표현식으로 분리)
+                # 여기서는 예시로 "육회비빔밥2" 형태라고 가정했을 때를 처리하는 식
+                # 실제 사이트 구조에 맞추어 수정하세요.
+                name_only = re.sub(r"\d", "", product_text).strip()
+
+                products[name_only] = products.get(name_only, 0) + product_qty
+
+                logging.info(f"{i}번째 행 팝업: j={j}, 상품명={name_only}, 수량={product_qty}")
+                j += 1
+            except NoSuchElementException:
+                # 더 이상 j번째 품목이 없으면 종료
+                logging.info(f"{i}번째 행 팝업: 더 이상 {j}번째 품목이 없음 → 품목 추출 완료")
+                break
+            except Exception as e:
+                logging.error(f"{i}번째 행 팝업: j={j}번째 품목 추출 중 오류: {e}")
+                break
+
+        # 3) 팝업 닫기
+        close_popup_selector = (
+            "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
+        )
+        try:
+            close_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
+            )
+            close_btn.click()
+            logging.info(f"{i}번째 행 팝업 닫기 완료")
+            time.sleep(1)
+        except Exception as e:
+            logging.error(f"{i}번째 행 팝업 닫기 중 오류: {e}")
+
+        # 결과 저장
+        row_data = {
+            "row_index": i,
+            "fee": fee_value,
+            "products": products
+        }
+        result_data.append(row_data)
+
+    return result_data
 
 ###############################################################################
 # 6. Google Sheets 업데이트 함수
