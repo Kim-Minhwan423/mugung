@@ -7,8 +7,8 @@ import logging
 import traceback
 import base64
 import json
-import uuid
-import tempfile
+import uuid        # [추가]
+import tempfile    # [추가]
 
 # -----------------------------
 # Selenium
@@ -53,15 +53,14 @@ def setup_logging(log_filename='script.log'):
     logger.addHandler(file_handler)
 
 ###############################################################################
-# 2. 환경 변수 불러오기
+# 2. 환경 변수 불러오기 (서비스 계정 JSON 내부에서 spreadsheet_id 추출)
 ###############################################################################
 def get_environment_variables():
     """
     필수 환경 변수:
-        - YOGIYO_ID (요기요 아이디)
-        - YOGIYO_PW (요기요 비밀번호)
-        - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
-        - SPREADSHEET_ID (Google Spreadsheet ID)
+      - YOGIYO_ID (요기요 아이디)
+      - YOGIYO_PW (요기요 비밀번호)
+      - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON, 내부에 "spreadsheet_id" 포함)
     """
     yogiyo_id = os.getenv("YOGIYO_ID")
     yogiyo_pw = os.getenv("YOGIYO_PW")
@@ -72,14 +71,21 @@ def get_environment_variables():
     if not service_account_json_b64:
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경변수가 설정되지 않았습니다.")
 
-    return yogiyo_id, yogiyo_pw, service_account_json_b64
+    # 서비스 계정 JSON을 디코딩 및 파싱하여 spreadsheet_id 추출
+    service_account_json = base64.b64decode(service_account_json_b64)
+    service_account_info = json.loads(service_account_json)
+    spreadsheet_id = service_account_info.get("spreadsheet_id")
+    if not spreadsheet_id:
+        raise ValueError("서비스 계정 JSON 파일에 'spreadsheet_id' 키가 존재하지 않습니다.")
+    
+    return yogiyo_id, yogiyo_pw, service_account_json_b64, spreadsheet_id
 
 ###############################################################################
 # 3. Chrome 드라이버 세팅 (고유 프로필 사용)
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument("--headless")  # 필요시 주석 해제
+    # chrome_options.add_argument("--headless")  # 필요시 주석 해제
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -275,17 +281,15 @@ def process_orders_for_today(driver):
 
     for idx, order_row in enumerate(orders, start=1):
         try:
-            # 각 주문 행에서 주문시간 셀 추출 (주어진 CSS 셀렉터 참고)
+            # 각 주문 행에서 주문시간 셀 추출
             order_time_elem = order_row.find_element(
                 By.CSS_SELECTOR,
                 "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTlX"
             )
             order_time_text = order_time_elem.text.strip()
-            # 주문시간이 단순히 일(day)만 표시된다면
             try:
                 order_day = int(order_time_text)
             except Exception:
-                # 만약 "YYYY-MM-DD HH:MM" 형식이면
                 order_datetime = datetime.datetime.strptime(order_time_text, "%Y-%m-%d %H:%M")
                 order_day = order_datetime.day
 
@@ -324,7 +328,8 @@ def update_google_sheets(total_order_amount, aggregated_products):
     - "청라 일일/월말 정산서" 시트의 "무궁 청라" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
-    service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
+    # 서비스 계정 JSON에서 spreadsheet_id는 이미 추출된 값 사용
+    _, _, service_account_json_b64, spreadsheet_id = get_environment_variables()
     service_account_json = base64.b64decode(service_account_json_b64)
     service_account_info = json.loads(service_account_json)
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -403,7 +408,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 ###############################################################################
 def main():
     setup_logging("script.log")
-    yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
+    yogiyo_id, yogiyo_pw, service_account_json_b64, spreadsheet_id = get_environment_variables()
     driver = get_chrome_driver(use_profile=True)
     try:
         # 1. 로그인 및 팝업/페이지 이동
