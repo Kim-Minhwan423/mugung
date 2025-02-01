@@ -201,9 +201,10 @@ def select_daily_range(driver):
     date_field_selector = (
         "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div "
         "> div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo "
-        "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB "
-        "> div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
-        "> div.react-datepicker-wrapper > div > div > div > div.CustomTextField__Left-sc-1m4c99t-2.eZjLyv > input"
+        "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div "
+        "> div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div "
+        "> div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
+        "> div > div > div > div > div.CustomTextField__Left-sc-1m4c99t-2.eZjLyv"
     )
     try:
         # 날짜 필드 클릭
@@ -217,8 +218,13 @@ def select_daily_range(driver):
         # 팝업에서 '일별' 버튼 클릭 (예시 셀렉터)
         daily_btn = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR,
-                "div.react-datepicker__tab-loop .getCustomCalendarCotainer__OptionBox-sc-1tsrb16-3.eBJNps "
-                "div.getCustomCalendarCotainer__ShortcutList-sc-1tsrb16-0.UPVGG div:nth-child(2)"
+                "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div "
+                "> div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo "
+                "> div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div "
+                "> div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div "
+                "> div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw "
+                "> div.react-datepicker__tab-loop > div.react-datepicker-popper.custom-popper > div > div "
+                "> div.getCustomCalendarCotainer__OptionBox-sc-1tsrb16-3.eBJNps > div.getCustomCalendarCotainer__ShortcutList-sc-1tsrb16-0.UPVGG > div:nth-child(2)"
             ))
         )
         daily_btn.click()
