@@ -147,6 +147,10 @@ def close_popup_if_exist(driver):
         logging.info("팝업 닫기 완료")
     except TimeoutException:
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
+        
+def login_yogiyo(driver):
+    driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
+    logging.info("요기요 사장님 사이트 로그인 페이지 접속 완료")
 
 def go_store_selector(driver):
     store_selector = (
