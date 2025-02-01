@@ -324,7 +324,6 @@ def main():
         go_order_history(driver)
         
         # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
-        total_order, product_quantities = process_orders_for_today(driver)
         logging.info(f"오늘 주문 총액: {total_order}, 제품별 수량: {product_quantities}")
         
         # 5. Google Sheets 업데이트 (일일 정산 및 재고)
