@@ -150,9 +150,7 @@ def close_popup_if_exist(driver):
 
 def go_store_selector(driver):
     store_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.StoreSelector__Wrapper-sc-1rowjsb-15.lkBMGb"
+        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div"
     )
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
