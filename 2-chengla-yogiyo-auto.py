@@ -147,15 +147,12 @@ def close_popup_if_exist(driver):
         logging.info("팝업 닫기 완료")
     except TimeoutException:
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
-        
-def login_yogiyo(driver):
-    driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
-    logging.info("요기요 사장님 사이트 로그인 페이지 접속 완료")
 
 def go_store_selector(driver):
     store_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div > div > div.StoreSelector__StoreSelectorRightLayout-sc-1rowjsb-12.gWIocW > button > svg > g > rect"
+        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
+        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
+        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.StoreSelector__Wrapper-sc-1rowjsb-15.lkBMGb"
     )
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
@@ -167,8 +164,9 @@ def go_store_selector(driver):
 
 def go_chengla_selector(driver):
     chengla_selector = (
-        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx > div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-        "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
+        "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
+        "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG "
+        "> div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
     )
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
@@ -177,18 +175,6 @@ def go_chengla_selector(driver):
     except TimeoutException:
         logging.warning("무궁 청라점 버튼을 찾지 못함")
     time.sleep(3)
-
-
-def close_popup_if_exist(driver):
-    popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
-    try:
-        close_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
-        )
-        close_btn.click()
-        logging.info("팝업 닫기 완료")
-    except TimeoutException:
-        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 def go_order_history(driver):
     order_btn_selector = (
@@ -343,7 +329,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scopes)
     gc = gspread.authorize(creds)
     
-    # 스프레드시트 이름을 직접 사용 (spreadsheet_id 필요없음)
+    # 스프레드시트 이름을 직접 사용 (spreadsheet_id 사용 안함)
     sh = gc.open("청라 일일/월말 정산서")
     
     # 1. "무궁 청라" 시트 업데이트 (일일 정산)
@@ -420,18 +406,24 @@ def main():
     yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     driver = get_chrome_driver(use_profile=True)
     try:
-        # 1. 로그인 및 팝업/페이지 이동
+        # 1. 로그인 및 초기 팝업 처리
         login_yogiyo(driver, yogiyo_id, yogiyo_pw)
         close_popup_if_exist(driver)
+        
+        # 2. 다시 홈페이지로 이동 (go_store_selector 전에)
+        driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
+        time.sleep(3)  # 페이지 로딩 대기
+        
+        # 3. 스토어 선택, 청라점 진입 및 주문내역 진입
         go_store_selector(driver)
         go_chengla_selector(driver)
         go_order_history(driver)
         
-        # 2. 오늘 주문 처리 (주문건별 주문금액 및 품목 정보 집계)
+        # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
         total_order, product_quantities = process_orders_for_today(driver)
         logging.info(f"오늘 주문 총액: {total_order}, 제품별 수량: {product_quantities}")
         
-        # 3. Google Sheets 업데이트 (일일 정산 및 재고)
+        # 5. Google Sheets 업데이트 (일일 정산 및 재고)
         update_google_sheets(total_order, product_quantities)
     
     except Exception as e:
