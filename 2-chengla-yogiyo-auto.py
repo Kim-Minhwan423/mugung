@@ -37,14 +37,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-
+    
     # 콘솔 로그
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.INFO)
     stream_formatter = logging.Formatter('%(message)s')
     stream_handler.setFormatter(stream_formatter)
     logger.addHandler(stream_handler)
-
+    
     # 파일 로그
     file_handler = logging.FileHandler(log_filename, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
@@ -53,32 +53,25 @@ def setup_logging(log_filename='script.log'):
     logger.addHandler(file_handler)
 
 ###############################################################################
-# 2. 환경 변수 불러오기 (서비스 계정 JSON 내부에서 spreadsheet_id 추출)
+# 2. 환경 변수 불러오기 (서비스 계정 JSON에서 spreadsheet_id 추출하지 않음)
 ###############################################################################
 def get_environment_variables():
     """
     필수 환경 변수:
       - YOGIYO_ID (요기요 아이디)
       - YOGIYO_PW (요기요 비밀번호)
-      - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON, 내부에 "spreadsheet_id" 포함)
+      - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
     """
     yogiyo_id = os.getenv("YOGIYO_ID")
     yogiyo_pw = os.getenv("YOGIYO_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
-
+    
     if not yogiyo_id or not yogiyo_pw:
         raise ValueError("YOGIYO_ID 혹은 YOGIYO_PW 환경변수가 설정되지 않았습니다.")
     if not service_account_json_b64:
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경변수가 설정되지 않았습니다.")
-
-    # 서비스 계정 JSON을 디코딩 및 파싱하여 spreadsheet_id 추출
-    service_account_json = base64.b64decode(service_account_json_b64)
-    service_account_info = json.loads(service_account_json)
-    spreadsheet_id = service_account_info.get("spreadsheet_id")
-    if not spreadsheet_id:
-        raise ValueError("서비스 계정 JSON 파일에 'spreadsheet_id' 키가 존재하지 않습니다.")
     
-    return yogiyo_id, yogiyo_pw, service_account_json_b64, spreadsheet_id
+    return yogiyo_id, yogiyo_pw, service_account_json_b64
 
 ###############################################################################
 # 3. Chrome 드라이버 세팅 (고유 프로필 사용)
@@ -86,31 +79,31 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
     # chrome_options.add_argument("--headless")  # 필요시 주석 해제
-
+    
     # User-Agent 변경
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/110.0.5481.77 Safari/537.36"
     )
-
+    
     if use_profile:
         unique_id = uuid.uuid4()
         user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
         os.makedirs(user_data_dir, exist_ok=True)
         chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
         logging.info(f"[use_profile=True] 고유 Chrome 프로필 경로: {user_data_dir}")
-
+    
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1029,657")
-
+    
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
-
+    
     # 웹드라이버 탐지 방지 스크립트
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
@@ -127,7 +120,7 @@ def get_chrome_driver(use_profile=False):
 def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
     logging.info("요기요 사장님 사이트 로그인 페이지 접속 완료")
-
+    
     id_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.hruuNe > form > div:nth-child(1) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
     pw_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.hruuNe > form > div:nth-child(2) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
     login_btn_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.hruuNe > form > button"
@@ -215,7 +208,7 @@ def extract_order_details(driver):
         ).text
         fee_clean = re.sub(r"[^\d.]", "", fee_text)
         order_fee = float(fee_clean) if fee_clean else 0.0
-
+        
         # 품목 정보 추출
         products_parent_selector = (
             "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
@@ -240,7 +233,7 @@ def extract_order_details(driver):
                     product_qty = int(qty_clean) if qty_clean else 1
                 except Exception:
                     product_qty = 1
-
+                
                 products[product_name] = products.get(product_name, 0) + product_qty
             except Exception as e:
                 logging.warning("품목 정보 추출 오류: " + str(e))
@@ -259,7 +252,7 @@ def process_orders_for_today(driver):
     """
     total_order_amount = 0.0
     aggregated_products = {}
-
+    
     # 모든 주문 행 선택 (한 페이지 내 최대 10건)
     orders_rows_selector = (
         "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
@@ -274,11 +267,11 @@ def process_orders_for_today(driver):
     except TimeoutException:
         logging.warning("주문 목록을 찾지 못함")
         return total_order_amount, aggregated_products
-
+    
     logging.info(f"총 {len(orders)}건의 주문 발견")
-
+    
     today_day = datetime.datetime.today().day
-
+    
     for idx, order_row in enumerate(orders, start=1):
         try:
             # 각 주문 행에서 주문시간 셀 추출
@@ -292,21 +285,21 @@ def process_orders_for_today(driver):
             except Exception:
                 order_datetime = datetime.datetime.strptime(order_time_text, "%Y-%m-%d %H:%M")
                 order_day = order_datetime.day
-
+            
             if order_day != today_day:
                 continue  # 오늘 주문이 아니라면 건너뛰기
-
+            
             # 오늘 주문인 경우 모달 열기
             driver.execute_script("arguments[0].scrollIntoView(true);", order_row)
             order_row.click()
             logging.info(f"오늘 주문 {idx} 클릭")
             time.sleep(2)  # 모달 열림 대기
-
+            
             fee, products = extract_order_details(driver)
             total_order_amount += fee
             for pname, qty in products.items():
                 aggregated_products[pname] = aggregated_products.get(pname, 0) + qty
-
+            
             # 모달 닫기
             close_modal_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
             WebDriverWait(driver, 10).until(
@@ -317,7 +310,7 @@ def process_orders_for_today(driver):
         except Exception as e:
             logging.error(f"오늘 주문 처리 중 오류 (주문 {idx}): {e}")
             continue
-
+    
     return total_order_amount, aggregated_products
 
 ###############################################################################
@@ -325,18 +318,20 @@ def process_orders_for_today(driver):
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products):
     """
-    - "청라 일일/월말 정산서" 시트의 "무궁 청라" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
+    - "청라 일일/월말 정산서" 스프레드시트의 "무궁 청라" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
-    # 서비스 계정 JSON에서 spreadsheet_id는 이미 추출된 값 사용
-    _, _, service_account_json_b64, spreadsheet_id = get_environment_variables()
+    # 서비스 계정 JSON 디코딩 및 인증
+    yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     service_account_json = base64.b64decode(service_account_json_b64)
     service_account_info = json.loads(service_account_json)
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scopes)
     gc = gspread.authorize(creds)
-    sh = gc.open_by_key(spreadsheet_id)
-
+    
+    # 스프레드시트 이름을 직접 사용 (spreadsheet_id 필요없음)
+    sh = gc.open("청라 일일/월말 정산서")
+    
     # 1. "무궁 청라" 시트 업데이트 (일일 정산)
     sheet_daily = sh.worksheet("무궁 청라")
     date_values = sheet_daily.get("U3:U33")
@@ -352,12 +347,12 @@ def update_google_sheets(total_order_amount, aggregated_products):
         logging.info(f"무궁 청라 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
     else:
         logging.warning("오늘 날짜에 해당하는 셀을 무궁 청라 시트에서 찾지 못함")
-
+    
     # 2. "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
     clear_ranges = ["F38:F45", "Q38:Q45", "AE38:AF45", "AQ38:AQ45", "BB38:BB45"]
     sheet_inventory.batch_clear(clear_ranges)
-
+    
     update_mapping = {
         '육회비빔밥(1인분)': 'Q43', 
         '꼬리곰탕(1인분)': 'F38', 
@@ -391,7 +386,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '켈리': 'BB45', 
         '소성주': 'AQ45'
     }
-
+    
     batch_updates = []
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
@@ -408,7 +403,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 ###############################################################################
 def main():
     setup_logging("script.log")
-    yogiyo_id, yogiyo_pw, service_account_json_b64, spreadsheet_id = get_environment_variables()
+    yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     driver = get_chrome_driver(use_profile=True)
     try:
         # 1. 로그인 및 팝업/페이지 이동
@@ -424,7 +419,7 @@ def main():
         
         # 3. Google Sheets 업데이트 (일일 정산 및 재고)
         update_google_sheets(total_order, product_quantities)
-
+    
     except Exception as e:
         logging.error(f"에러 발생: {e}")
         traceback.print_exc()
