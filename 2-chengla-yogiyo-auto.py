@@ -190,10 +190,10 @@ def go_order_history(driver):
 ###############################################################################
 # 5. 주문 상세 정보 추출 (주문금액 및 품목명/수량)
 ###############################################################################
-def extract_all_order_rows(driver):
+def get_first_10_rows_text(driver):
     """
-    주문 테이블에서 1번부터 10번까지의 행(주문 데이터)을 추출하여 반환합니다.
-    CSS 셀렉터를 사용해 nth-child(i)로 각 행에 접근합니다.
+    주문내역 페이지에서 tbody 내 1~10번 행의 텍스트를 가져와 출력합니다.
+    날짜 비교 없이 단순히 행 텍스트만 확인하는 예시.
     """
     rows_data = {}
     for i in range(1, 11):
@@ -204,15 +204,17 @@ def extract_all_order_rows(driver):
             f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i})"
         )
         try:
-            # 각 주문 행이 로드될 때까지 대기 (최대 5초)
             row_elem = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, row_selector))
             )
-            row_text = row_elem.text
+            row_text = row_elem.text.strip()
             rows_data[i] = row_text
-            logging.info(f"Row {i}: {row_text}")
+            logging.info(f"Row {i} text: {row_text}")
+        except TimeoutException:
+            logging.warning(f"Row {i} 행을 찾지 못함 (주문 건수가 10개 미만이거나 다른 문제)")
         except Exception as e:
-            logging.error(f"Row {i} not found: {e}")
+            logging.error(f"Row {i} 추출 중 오류: {e}")
+    
     return rows_data
 
 ###############################################################################
