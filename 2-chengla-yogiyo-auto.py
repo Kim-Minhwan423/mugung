@@ -198,7 +198,7 @@ def select_daily_range(driver):
     """
     날짜 필드 클릭 → '일별' shortcut 선택
     """
-    date_field_selector = ("#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw > div")
+    date_field_selector = ("#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > div.OrderHistory__FilterContainer-sc-1ccqzi9-4.kpcocB > div > div.DateRangePicker__Container-sc-1kvmudn-0.iLbmAj.OrderHistory__StyledDateRangePicker-sc-1ccqzi9-7.cTvWxw > div > div")
     try:
         # 날짜 필드 클릭
         date_field = WebDriverWait(driver, 10).until(
