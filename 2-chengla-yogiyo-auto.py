@@ -192,126 +192,192 @@ def go_order_history(driver):
 ###############################################################################
 def extract_order_details(driver):
     """
-    모달에서 주문 금액과 각 품목의 이름, 수량을 추출합니다.
+    팝업창에서 판매 총 금액과 판매 품목명 및 갯수를 추출합니다.
+    
+    판매 총 금액은 아래 셀렉터를 사용합니다.
+      #portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > 
+      div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa
+      
+    판매 품목은 i번째 제품마다 다음과 같이 추출합니다.
+      - i번째 제품명: 
+        #portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > 
+        div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > 
+        div:nth-child(i) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)
+      - i번째 수량:
+        #portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > 
+        div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > 
+        div:nth-child(i) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)
     """
+    total_fee = 0
+    products = {}
     try:
-        # 주문금액 추출 (문자열에서 화폐 기호 및 쉼표 제거)
+        # 판매 총 금액 추출 (콤마 제거 후 정수형으로 변환)
         fee_selector = (
             "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
             "div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
         )
-        fee_text = WebDriverWait(driver, 10).until(
+        fee_elem = WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
-        ).text
-        fee_clean = re.sub(r"[^\d.]", "", fee_text)
-        order_fee = float(fee_clean) if fee_clean else 0.0
-        
-        # 품목 정보 추출
-        products_parent_selector = (
-            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
-            "div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU"
         )
-        product_elements = driver.find_elements(By.CSS_SELECTOR, products_parent_selector)
-        products = {}
-        for product in product_elements:
+        fee_text = fee_elem.text  # 예: "123,456"
+        fee_clean = re.sub(r"[^\d]", "", fee_text)  # 숫자만 남김
+        total_fee = int(fee_clean) if fee_clean else 0
+        logging.info(f"추출된 판매 총 금액: {total_fee}")
+        
+        # 판매 품목 데이터 추출: i번째 제품을 순차적으로 확인 (더 이상 없으면 종료)
+        i = 1
+        while True:
             try:
-                # 첫번째 span: 품목명
-                product_name = product.find_element(
-                    By.CSS_SELECTOR,
-                    "div > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
-                ).text
-                # 두번째 span: 수량 (없으면 기본 1)
+                # i번째 제품명 셀렉터
+                product_name_selector = (
+                    f"#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+                    f"div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > "
+                    f"div:nth-child({i}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+                )
+                product_name_elem = driver.find_element(By.CSS_SELECTOR, product_name_selector)
+                product_name = product_name_elem.text.strip()
+                
+                # i번째 수량 셀렉터
+                qty_selector = (
+                    f"#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > div > "
+                    f"div:nth-child(2) > div > div > div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > "
+                    f"div:nth-child({i}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+                )
                 try:
-                    qty_text = product.find_element(
-                        By.CSS_SELECTOR,
-                        "div > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(2)"
-                    ).text
+                    qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
+                    qty_text = qty_elem.text.strip()
                     qty_clean = re.sub(r"[^\d]", "", qty_text)
                     product_qty = int(qty_clean) if qty_clean else 1
                 except Exception:
-                    product_qty = 1
+                    product_qty = 1  # 수량 정보가 없으면 기본값 1
                 
                 products[product_name] = products.get(product_name, 0) + product_qty
-            except Exception as e:
-                logging.warning("품목 정보 추출 오류: " + str(e))
-        return order_fee, products
+                logging.info(f"추출된 품목 {i}: {product_name} - {product_qty}")
+                i += 1
+            except Exception:
+                # 더 이상 i번째 제품이 존재하지 않으면 종료
+                break
     except Exception as e:
-        logging.error("주문 상세 정보 추출 오류: " + str(e))
-        return 0.0, {}
+        logging.error(f"주문 상세 정보 추출 오류: {e}")
+    
+    return total_fee, products
 
-###############################################################################
-# 6. 오늘의 주문만 처리 (주문시간 비교)
-###############################################################################
+
 def process_orders_for_today(driver):
     """
-    주문 목록에서 각 주문의 주문시간을 확인한 후, 오늘 주문인 경우 모달을 열어 상세정보를 추출합니다.
-    오늘 주문들의 총 주문금액과 품목별 수량을 집계하여 반환합니다.
+    주문 목록 페이지에서 날짜 셀의 텍스트가 오늘 날짜(월.일 형식, 예: 02.01)와 일치하는 주문 셀을
+    하나씩 클릭하여 팝업으로부터 판매 총 금액 및 품목 데이터를 추출합니다.
+    
+    또한, 페이지 하단의 페이지 네비게이션(li:nth-child(2), li:nth-child(3) 등)을 통해
+    다음 페이지가 존재하면 계속해서 데이터를 가져옵니다.
     """
-    total_order_amount = 0.0
+    aggregated_total = 0
     aggregated_products = {}
     
-    # 모든 주문 행 선택 (한 페이지 내 최대 10건)
-    orders_rows_selector = (
-        "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
-        "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
-        "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
-        "div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr"
-    )
-    try:
-        orders = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, orders_rows_selector))
+    # 오늘 날짜를 MM.DD 형식으로 생성 (예: "02.01")
+    today_str = datetime.datetime.now().strftime("%m.%d")
+    logging.info(f"오늘 날짜 (MM.DD): {today_str}")
+    
+    page = 1
+    while True:
+        logging.info(f"페이지 {page} 처리 시작")
+        # 주문 테이블의 모든 행(tr) 선택
+        orders_rows_selector = (
+            "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
+            "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
+            "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
+            "div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr"
         )
-    except TimeoutException:
-        logging.warning("주문 목록을 찾지 못함")
-        return total_order_amount, aggregated_products
-    
-    logging.info(f"총 {len(orders)}건의 주문 발견")
-    
-    today_day = datetime.datetime.today().day
-    
-    for idx, order_row in enumerate(orders, start=1):
+
         try:
-            # 각 주문 행에서 주문시간 셀 추출
-            order_time_elem = order_row.find_element(
-                By.CSS_SELECTOR,
-                "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTlX"
+            orders = WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, orders_rows_selector))
             )
-            order_time_text = order_time_elem.text.strip()
+        except TimeoutException:
+            logging.warning("주문 테이블을 찾지 못함")
+            break
+        
+        logging.info(f"페이지 {page}의 주문 건수: {len(orders)}")
+        
+        # 각 주문 행 처리
+        for index, order_row in enumerate(orders, start=1):
             try:
-                order_day = int(order_time_text)
-            except Exception:
-                order_datetime = datetime.datetime.strptime(order_time_text, "%Y-%m-%d %H:%M")
-                order_day = order_datetime.day
-            
-            if order_day != today_day:
-                continue  # 오늘 주문이 아니라면 건너뛰기
-            
-            # 오늘 주문인 경우 모달 열기
-            driver.execute_script("arguments[0].scrollIntoView(true);", order_row)
-            order_row.click()
-            logging.info(f"오늘 주문 {idx} 클릭")
-            time.sleep(2)  # 모달 열림 대기
-            
-            fee, products = extract_order_details(driver)
-            total_order_amount += fee
-            for pname, qty in products.items():
-                aggregated_products[pname] = aggregated_products.get(pname, 0) + qty
-            
-            # 모달 닫기
-            close_modal_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
+                # 각 주문 행 내 날짜 셀 선택 (날짜는 "MM.DD(요일)" 형식)
+                date_cell = order_row.find_element(
+                    By.CSS_SELECTOR,
+                    "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTlX > div"
+                )
+                date_text = date_cell.text.strip()  # 예: "02.01(토)"
+                # 정규표현식으로 "MM.DD" 부분만 추출
+                match = re.match(r"(\d{2}\.\d{2})", date_text)
+                if match:
+                    order_date = match.group(1)
+                else:
+                    logging.warning(f"날짜 형식 불일치: {date_text}")
+                    continue
+                
+                logging.info(f"주문 {index}의 날짜: {order_date}")
+                
+                # 오늘 날짜와 일치하는 주문인 경우
+                if order_date != today_str:
+                    continue
+                
+                # 주문 행 클릭 (스크롤하여 보이게 한 후 클릭)
+                driver.execute_script("arguments[0].scrollIntoView(true);", order_row)
+                WebDriverWait(driver, 10).until(EC.element_to_be_clickable(order_row))
+                order_row.click()
+                logging.info(f"주문 {index} (날짜: {order_date}) 클릭")
+                time.sleep(2)  # 팝업 로딩 대기
+                
+                # 팝업에서 상세 정보 추출
+                fee, products = extract_order_details(driver)
+                aggregated_total += fee
+                for prod, qty in products.items():
+                    aggregated_products[prod] = aggregated_products.get(prod, 0) + qty
+                
+                # 팝업 닫기 (셀렉터: #portal-root > ... > svg > g > rect)
+                close_popup_selector = (
+                    "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
+                )
+                WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
+                ).click()
+                logging.info(f"주문 {index} 팝업 닫기 완료")
+                time.sleep(1)
+            except Exception as e:
+                logging.error(f"주문 {index} 처리 오류: {e}")
+                continue
+        
+        # 페이지 하단의 페이지 네비게이션을 확인하여 다음 페이지가 있는지 체크
+        try:
+            pagination_container_selector = (
+                "#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
+                "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
+                "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
+                "div.Pagination__Container-sc-iw43f5-3.jMWkBM > ul"
+            )
+            pagination_ul = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, pagination_container_selector))
+            )
+            # 다음 페이지 버튼: li:nth-child(현재 페이지 + 1)
+            next_page_selector = f"li:nth-child({page+1})"
+            next_page_elem = pagination_ul.find_element(By.CSS_SELECTOR, next_page_selector)
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_page_elem)
             WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, close_modal_selector))
-            ).click()
-            logging.info(f"오늘 주문 {idx} 모달 닫기")
-            time.sleep(1)
-        except Exception as e:
-            logging.error(f"오늘 주문 처리 중 오류 (주문 {idx}): {e}")
-            continue
+                EC.element_to_be_clickable((By.CSS_SELECTOR, next_page_selector))
+            )
+            next_page_elem.click()
+            logging.info(f"페이지 {page+1}로 이동")
+            time.sleep(2)  # 페이지 전환 대기
+            page += 1
+        except Exception:
+            logging.info("더 이상 다음 페이지가 없거나 이동에 실패")
+            break
     
-    return total_order_amount, aggregated_products
+    return aggregated_total, aggregated_products
 
 ###############################################################################
-# 7. Google Sheets 업데이트 함수
+# 6. Google Sheets 업데이트 함수
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products):
     """
