@@ -326,7 +326,6 @@ def main():
         # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
         
         # 5. Google Sheets 업데이트 (일일 정산 및 재고)
-        update_google_sheets(total_order, product_quantities)
     
     except Exception as e:
         logging.error(f"에러 발생: {e}")
