@@ -205,7 +205,8 @@ def go_order_history(driver):
             f"#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
             "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
             "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
-            f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i})"
+            f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i}) > "
+            "td.Table__Td-sc-s3p2z0-6.PaginationTableBody__CustomTd-sc-17ibl0-3.qnuqu.hylTjo > div > svg"
         )
         try:
             row_elem = WebDriverWait(driver, 3).until(
