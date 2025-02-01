@@ -166,7 +166,7 @@ def go_chengla_selector(driver):
     "> div > div.Container-sc-1snjxcp-0.iEgpIZ > ul > li:nth-child(2) > ul > li"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, chengla_selector)))
-        driver.find_element(By.CSS_SELECTOR, store_selector).click()
+        driver.find_element(By.CSS_SELECTOR, chengla_selector).click()
         logging.info("무궁 청라점 버튼 클릭")
     except TimeoutException:
         logging.warning("무궁 청라점 버튼을 찾지 못함")
