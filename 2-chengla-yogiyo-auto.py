@@ -205,19 +205,14 @@ def get_ten_rows_popup_data(driver):
 
     for i in range(1, 11):
         # 1) i번째 행 클릭 (팝업 열기)
-        row_selector = (
-            f"#common-layout-wrapper-id > div.CommonLayout__Contents-sc-f8yrrc-1.fWTDpk > div > div > "
-            "div.CardListLayout__CardListContainer-sc-26whdp-0.jofZaF.CardListLayout__StyledCardListLayout-sc-26whdp-1.lgKFYo > "
-            "div > div.TitleContentCard__CardContentLayout-sc-1so7oge-0.fwXwFk > div > div > div > "
-            f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i}) > svg"
-        )
+        row_xpath = ("//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[9]/div/svg"{i})
         try:
             row_elem = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, row_selector))
+                EC.element_to_be_clickable((By.XPATH, row_xpath))
             )
             logging.info(f"--- {i}번째 행 클릭 시도 ---")
             driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
-            row_elem.click()
+            row_elem.click()1
             time.sleep(1)  # 팝업 열림 대기 (네트워크 상황에 맞춰 조절 가능)
         except TimeoutException:
             logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가")
