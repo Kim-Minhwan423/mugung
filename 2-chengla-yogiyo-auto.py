@@ -205,7 +205,7 @@ def get_ten_rows_popup_data(driver):
 
     for i in range(1, 11):
         # 1) i번째 행 클릭 (팝업 열기)
-        row_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[9]/div/svg"
+        row_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div/svg"
         try:
             row_elem = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, row_xpath))
