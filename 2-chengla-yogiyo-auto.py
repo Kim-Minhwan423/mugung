@@ -400,10 +400,11 @@ def main():
         login_yogiyo(driver, yogiyo_id, yogiyo_pw)
         close_popup_if_exist(driver)
 
-        # 2. 스토어 선택, 청라점 진입 및 주문내역 진입
+        # 2. 스토어 선택, 청라점 진입 및 주문내역 진입 및 팝업 처리
         go_store_selector(driver)
         go_chengla_selector(driver)
         go_order_history(driver)
+        close_popup_if_exist(driver)
         
         # 3. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
         orders_data = get_ten_rows_popup_data(driver)
