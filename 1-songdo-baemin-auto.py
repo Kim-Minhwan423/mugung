@@ -273,9 +273,9 @@ def login_and_close_popup(driver, wait, username, password):
             logging.info(f"팝업 닫기 중 예외: {ex}")
 
     # Songdo 쪽에서 실제 뜨는 팝업 구조에 맞게 셀렉터 확인 필요
-    popup_close_selector_1 = r"#\:rn\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
-    popup_close_selector_2 = r"#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
-    popup_close_selector_3 = r"#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
+    popup_close_selector_1 = r"#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
+    popup_close_selector_2 = r"#\:rn\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
+    popup_close_selector_3 = r"#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
 
     close_popup(popup_close_selector_1)
     close_popup(popup_close_selector_2)
