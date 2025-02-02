@@ -128,9 +128,9 @@ class SeleniumDriverManager:
     def __enter__(self):
         options = webdriver.ChromeOptions()
         
-         (필요 시) 헤드리스 모드
+        # (필요 시) 헤드리스 모드
         if self.headless:
-        #    options.add_argument("--headless")
+            options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
