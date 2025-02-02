@@ -151,7 +151,7 @@ def close_popup_if_exist(driver):
 def go_store_selector(driver):
     store_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
     "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div> div > div.StoreSelector__StoreSelectorRightLayout-sc-1rowjsb-12.gWIocW"
+    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div> div > div.StoreSelector__StoreSelectorRightLayout-sc-1rowjsb-12.gWIocW > button"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
         driver.find_element(By.CSS_SELECTOR, store_selector).click()
@@ -397,20 +397,16 @@ def main():
         # 1. 로그인 및 초기 팝업 처리
         login_yogiyo(driver, yogiyo_id, yogiyo_pw)
         close_popup_if_exist(driver)
-        
-        # 2. 다시 홈페이지로 이동 (go_store_selector 전에)
-        driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
-        time.sleep(3)  # 페이지 로딩 대기
-        
-        # 3. 스토어 선택, 청라점 진입 및 주문내역 진입
+
+        # 2. 스토어 선택, 청라점 진입 및 주문내역 진입
         go_store_selector(driver)
         go_chengla_selector(driver)
         go_order_history(driver)
         
-        # 4. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
+        # 3. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
         get_ten_rows_popup_data(driver)
         
-        # 5. Google Sheets 업데이트 (일일 정산 및 재고)
+        # 4. Google Sheets 업데이트 (일일 정산 및 재고)
     
     except Exception as e:
         logging.error(f"에러 발생: {e}")
