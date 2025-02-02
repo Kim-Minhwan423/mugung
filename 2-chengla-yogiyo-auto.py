@@ -84,7 +84,7 @@ def get_chrome_driver():
     return driver
 
 ###############################################################################
-# 4. 요기요 로그인 기능 (빠졌던 부분 추가)
+# 4. 요기요 로그인 & 팝업 닫기
 ###############################################################################
 def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
@@ -103,6 +103,17 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 실패")
     time.sleep(5)
+
+def close_popup_if_exist(driver):
+    popup_close_selector = "svg.close-button"
+    try:
+        close_btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
+        )
+        close_btn.click()
+        logging.info("팝업 닫기 완료")
+    except TimeoutException:
+        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 ###############################################################################
 # 5. 주문 정보 추출 및 Google Sheets 업데이트
@@ -154,8 +165,9 @@ def main():
     driver = get_chrome_driver()
     
     try:
-        # 🚀 빠졌던 `login_yogiyo` 함수가 여기에 정상적으로 추가됨
+        # 🚀 로그인 & 팝업 닫기 추가
         login_yogiyo(driver, yogiyo_id, yogiyo_pw)
+        close_popup_if_exist(driver)
 
         # 주문 데이터 가져오기
         orders_data = get_ten_rows_popup_data(driver)
