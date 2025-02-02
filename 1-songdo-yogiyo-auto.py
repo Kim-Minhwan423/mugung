@@ -78,7 +78,7 @@ def get_environment_variables():
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    # chrome_options.add_argument("--headless")  # 필요시 주석 해제
+    chrome_options.add_argument("--headless")  # 필요시 주석 해제
 
     # User-Agent 변경
     chrome_options.add_argument(
