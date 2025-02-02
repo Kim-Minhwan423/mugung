@@ -410,7 +410,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 def main():
     setup_logging("script.log")
     yogiyo_id, yogiyo_pw, _ = get_environment_variables()
-    driver = get_chrome_driver(use_profile=True)
+    driver = get_chrome_driver(use_profile=false)
 
     try:
         # 1. 로그인 및 초기 팝업 처리
