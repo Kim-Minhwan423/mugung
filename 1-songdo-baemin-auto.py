@@ -29,7 +29,6 @@ import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 from oauth2client.service_account import ServiceAccountCredentials
 
-
 ###############################################################################
 # 환경설정 및 상수
 ###############################################################################
@@ -67,7 +66,6 @@ ITEM_TO_CELL = {
     '소성주막걸리': 'AP45'
 }
 
-
 ###############################################################################
 # 로깅 설정
 ###############################################################################
@@ -88,7 +86,6 @@ def setup_logging(log_filename='script.log'):
     file_formatter = logging.Formatter('%(message)s')
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
-
 
 ###############################################################################
 # 환경 변수 & 설정값 불러오기
@@ -111,13 +108,12 @@ def get_environment_variables():
 
     return baemin_id, baemin_pw, service_account_json_b64
 
-
 ###############################################################################
 # Selenium WebDriver 관리 클래스
 ###############################################################################
 class SeleniumDriverManager:
     def __init__(self, headless=True, user_agent=None):
-        #self.headless = headless
+        self.headless = headless
         self.user_agent = user_agent or (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
             " AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -128,9 +124,9 @@ class SeleniumDriverManager:
     def __enter__(self):
         options = webdriver.ChromeOptions()
         
-         #(필요 시) 헤드리스 모드
-        #if self.headless:
-          #  options.add_argument("--headless")
+        # (필요 시) 헤드리스 모드
+        if self.headless:
+            options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -141,10 +137,6 @@ class SeleniumDriverManager:
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
         options.add_argument("--remote-debugging-port=9222")
-        
-        # 예시: user-data-dir (원한다면 사용)
-        # unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
-        # options.add_argument(f"--user-data-dir={unique_dir}")
 
         try:
             self.driver = webdriver.Chrome(
@@ -163,15 +155,11 @@ class SeleniumDriverManager:
             self.driver.quit()
             logging.info("WebDriver 종료")
 
-
 ###############################################################################
 # Google Sheets 관리 클래스
 ###############################################################################
 class GoogleSheetsManager:
     def __init__(self, service_account_json_b64):
-        """
-        :param service_account_json_b64: Base64로 인코딩된 Google Service Account JSON
-        """
         self.service_account_json_b64 = service_account_json_b64
         self.client = None
         self.spreadsheet = None
@@ -183,7 +171,6 @@ class GoogleSheetsManager:
             "https://www.googleapis.com/auth/drive"
         ]
         try:
-            # base64 디코딩
             raw_json = base64.b64decode(self.service_account_json_b64).decode('utf-8')
             creds_dict = json.loads(raw_json)
 
@@ -244,7 +231,6 @@ class GoogleSheetsManager:
             logging.error(f"셀 형식 지정 실패: {e}")
             raise e
 
-
 ###############################################################################
 # 기능별 함수 (배민 사이트 크롤링)
 ###############################################################################
@@ -269,29 +255,31 @@ def login_and_close_popup(driver, wait, username, password):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
 
-    popup_close_selector = "#\:rn\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
-    try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
-        logging.info("팝업 닫기 성공")
-    except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
+    # 팝업 닫기용 함수 (공통 활용)
+    def close_popup(selector):
+        try:
+            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+            driver.find_element(By.CSS_SELECTOR, selector).click()
+            # 팝업/오버레이가 사라질 때까지 대기
+            # (실제 사이트의 오버레이 class나 구조에 맞게 수정 필요)
+            wait.until(EC.invisibility_of_element_located((
+                By.CSS_SELECTOR,
+                r"div.Dialog_b_9yfm_3pnjmu3"  # 예: 배경 오버레이
+            )))
+            logging.info(f"팝업({selector}) 닫기 성공")
+        except TimeoutException:
+            logging.info(f"'{selector}' 팝업이 없음 (스킵)")
+        except Exception as ex:
+            logging.info(f"팝업 닫기 중 예외: {ex}")
 
-    popup_close_selector = "#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
-    try:#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
-        logging.info("팝업 닫기 성공")
-    except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
+    # Songdo 쪽에서 실제 뜨는 팝업 구조에 맞게 셀렉터 확인 필요
+    popup_close_selector_1 = r"#\:rn\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
+    popup_close_selector_2 = r"#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
+    popup_close_selector_3 = r"#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
 
-    popup_close_selector = "#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
-    try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
-        logging.info("팝업 닫기 성공")
-    except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
+    close_popup(popup_close_selector_1)
+    close_popup(popup_close_selector_2)
+    close_popup(popup_close_selector_3)
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
@@ -306,8 +294,6 @@ def navigate_to_order_history(driver, wait):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
 
-    time.sleep(3)
-    
 def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
@@ -324,7 +310,6 @@ def set_daily_filter(driver, wait):
     time.sleep(3)
     logging.info("날짜 필터 '일·주' 적용 완료")
 
-
 def extract_order_summary(driver, wait):
     summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
@@ -332,7 +317,6 @@ def extract_order_summary(driver, wait):
     summary_text = driver.find_element(By.CSS_SELECTOR, summary_selector).text.strip()
     logging.info(f"주문 요약 데이터: {summary_text}")
     return summary_text
-
 
 def extract_sales_details(driver, wait):
     sales_data = {}
@@ -379,6 +363,7 @@ def extract_sales_details(driver, wait):
                         sales_data[cell_address] += qty
                         logging.info(f"[{item_name}] 수량 {qty} → {cell_address}에 누적")
                 except NoSuchElementException:
+                    # 더 이상 아이템이 없으면 내부 루프 탈출
                     break
                 except Exception as e:
                     logging.error(f"판매 상세 추출 중 오류: tr[{details_tr_num}], j={j}, {e}")
@@ -405,7 +390,6 @@ def extract_sales_details(driver, wait):
             break
     
     return sales_data
-
 
 ###############################################################################
 # 메인 함수
@@ -440,8 +424,8 @@ def main():
     sheets_manager = GoogleSheetsManager(service_account_json_b64)
     sheets_manager.authenticate()
     
-    SPREADSHEET_NAME = "송도 일일/월말 정산서"
-    MU_GUNG_SHEET_NAME = "무궁 송도"
+    SPREADSHEET_NAME = "송도 일일/월말 정산서"    # 예: 송도용
+    MU_GUNG_SHEET_NAME = "무궁 송도"            # 예: 송도용 시트
     INVENTORY_SHEET_NAME = "재고"
     
     sheets_manager.open_spreadsheet(SPREADSHEET_NAME)
@@ -460,7 +444,7 @@ def main():
             row_index = day_values.index(day) + 3
             target_cell = f"V{row_index}"
             
-            # 빈 문자열 방지
+            # 금액 문자열에서 숫자만 추출
             digits_only = re.sub(r'[^\d]', '', order_summary)
             if not digits_only:
                 digits_only = "0"
@@ -489,7 +473,6 @@ def main():
         traceback.print_exc()
     
     logging.info("=== 스크립트 종료 ===")
-
 
 if __name__ == "__main__":
     main()
