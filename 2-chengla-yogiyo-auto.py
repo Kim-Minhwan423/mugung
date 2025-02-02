@@ -151,7 +151,7 @@ def close_popup_if_exist(driver):
 def go_store_selector(driver):
     store_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
     "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div"
+    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
         driver.find_element(By.CSS_SELECTOR, store_selector).click()
@@ -178,7 +178,7 @@ def go_order_history(driver):
     """
     order_btn_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
     "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu "
-    "> div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button:nth-child(1)"
+    "> div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button:nth-child(1) > svg"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_btn_selector)))
         driver.find_element(By.CSS_SELECTOR, order_btn_selector).click()
