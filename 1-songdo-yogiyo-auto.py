@@ -92,7 +92,7 @@ def get_chrome_driver(use_profile=False):
         user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
         os.makedirs(user_data_dir, exist_ok=True)
         chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-        logging.info(f"[use_profile=True] 고유 Chrome 프로필 경로: {user_data_dir}")
+        logging.info(f"[use_profile=false] 고유 Chrome 프로필 경로: {user_data_dir}")
 
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
