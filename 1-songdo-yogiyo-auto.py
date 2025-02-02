@@ -389,12 +389,15 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '소성주': 'AQ45'
     }
 
+    # ▶ "0" 대신 빈칸을 입력하도록 변경
     batch_updates = []
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
+        # qty == 0 이면 빈 문자열(''), 그렇지 않으면 qty 값
+        value = "" if qty == 0 else qty  
         batch_updates.append({
             "range": cell,
-            "values": [[qty]]
+            "values": [[value]]
         })
 
     if batch_updates:
