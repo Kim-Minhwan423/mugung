@@ -168,16 +168,6 @@ def go_chengla_selector(driver):
         logging.warning("무궁 청라점 버튼을 찾지 못함")
     time.sleep(3)
 
-def go_order_history(driver):
-    order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, order_btn_xpath)))
-        driver.find_element(By.XPATH, order_btn_xpath).click()
-        logging.info("주문내역 버튼 클릭")
-    except TimeoutException:
-        logging.warning("주문내역 버튼을 찾지 못함")
-    time.sleep(3)
-
 def close_popup_if_exist(driver):
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
     try:
@@ -188,6 +178,17 @@ def close_popup_if_exist(driver):
         logging.info("팝업 닫기 완료")
     except TimeoutException:
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
+    time.sleep(3)
+
+def go_order_history(driver):
+    order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
+    try:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, order_btn_xpath)))
+        driver.find_element(By.XPATH, order_btn_xpath).click()
+        logging.info("주문내역 버튼 클릭")
+    except TimeoutException:
+        logging.warning("주문내역 버튼을 찾지 못함")
+    time.sleep(3)
 
 ###############################################################################
 # 5. 주문 상세 정보 추출 (주문금액 및 품목명/수량)
@@ -403,8 +404,8 @@ def main():
         # 2. 스토어 선택, 청라점 진입 및 주문내역 진입 및 팝업 처리
         go_store_selector(driver)
         go_chengla_selector(driver)
-        go_order_history(driver)
         close_popup_if_exist(driver)
+        go_order_history(driver)
         
         # 3. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
         orders_data = get_ten_rows_popup_data(driver)
