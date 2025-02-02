@@ -149,12 +149,10 @@ def close_popup_if_exist(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
 
 def go_store_selector(driver):
-    store_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-    "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK "
-    "> div.LNB__StoreSelectorWrapper-sc-1eyat45-1.ikrGtG > div > div > div"
+    store_xpath = "//*[@id="root"]/div/div[2]/div[2]/div[1]/div/div"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, store_selector)))
-        driver.find_element(By.CSS_SELECTOR, store_selector).click()
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.Xpath, store_xpath)))
+        driver.find_element(By.Xpath, store_xpath).click()
         logging.info("스토어 셀렉터 버튼 클릭")
     except TimeoutException:
         logging.warning("스토어 셀렉터 버튼을 찾지 못함")
@@ -176,12 +174,10 @@ def go_order_history(driver):
     """
     주문내역 메뉴 클릭
     """
-    order_btn_selector = "#root > div > div.CommonLayout__UnderHeader-sc-f8yrrc-2.feAuQx "
-    "> div.LNB__Container-sc-1eyat45-17.gDEqtO.LNB__StyledLNB-sc-1eyat45-19.PQgEK > div.LNB__ScrollWrapper-sc-1eyat45-16.fHssYu "
-    "> div.LNB__QuickMenu-sc-1eyat45-2.hGHFDR > button:nth-child(1) > svg > path:nth-child(1)"
+    order_btn_xpath= "//*[@id="root"]/div/div[2]/div[2]/div[2]/div[1]/button[1]"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_btn_selector)))
-        driver.find_element(By.CSS_SELECTOR, order_btn_selector).click()
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.Xpath, order_btn_xpath)))
+        driver.find_element(By.Xpath, order_btn_xpath).click()
         logging.info("주문내역 버튼 클릭")
     except TimeoutException:
         logging.warning("주문내역 버튼을 찾지 못함")
