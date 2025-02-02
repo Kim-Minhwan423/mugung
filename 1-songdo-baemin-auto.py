@@ -307,6 +307,8 @@ def navigate_to_order_history(driver, wait):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
 
+    time.sleep(10)
+    
 def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
