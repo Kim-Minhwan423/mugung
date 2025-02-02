@@ -212,7 +212,7 @@ def get_ten_rows_popup_data(driver):
             )
             logging.info(f"--- {i}번째 행 클릭 시도 ---")
             driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
-            row_elem.click()1
+            row_elem.click()
             time.sleep(1)  # 팝업 열림 대기 (네트워크 상황에 맞춰 조절 가능)
         except TimeoutException:
             logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가")
