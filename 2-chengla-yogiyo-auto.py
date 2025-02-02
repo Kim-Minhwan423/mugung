@@ -159,8 +159,8 @@ def go_store_selector(driver):
     time.sleep(3)
 
 def go_chengla_selector(driver):
-    chengla_xpath = "//*[@id="root"]/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
-    try:
+    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
+    try
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, chengla_xpath)))
         driver.find_element(By.XPATH, chengla_xpath).click()
         logging.info("무궁 청라점 선택 완료")
@@ -200,7 +200,7 @@ def get_ten_rows_popup_data(driver):
             f"div.Table__Container-sc-s3p2z0-0.efwKvR > table > tbody > tr:nth-child({i}) > svg"
         )
         try:
-            row_elem = WebDriverWait(driver, 3).until(
+            row_elem = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, row_selector))
             )
             logging.info(f"--- {i}번째 행 클릭 시도 ---")
@@ -220,7 +220,7 @@ def get_ten_rows_popup_data(driver):
             "div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
         )
         try:
-            fee_elem = WebDriverWait(driver, 5).until(
+            fee_elem = WebDriverWait(driver, 10).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
             )
             fee_text = fee_elem.text.strip()
@@ -273,7 +273,7 @@ def get_ten_rows_popup_data(driver):
             "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
         )
         try:
-            close_btn = WebDriverWait(driver, 5).until(
+            close_btn = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
             )
             close_btn.click()
@@ -395,7 +395,18 @@ def main():
         go_order_history(driver)
         
         # 3. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
-        get_ten_rows_popup_data(driver)
+        orders_data = get_ten_rows_popup_data(driver)
+
+        # 총 주문금액 및 품목 집계
+        total_order_amount = sum(order["fee"] for order in orders_data)
+        aggregated_products = {}
+
+        for order in orders_data:
+            for product, qty in order["products"].items():
+                aggregated_products[product] = aggregated_products.get(product, 0) + qty
+
+        # Google Sheets 업데이트 실행
+        update_google_sheets(total_order_amount, aggregated_products)
         
         # 4. Google Sheets 업데이트 (일일 정산 및 재고)
     
