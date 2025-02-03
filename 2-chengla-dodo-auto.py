@@ -137,7 +137,7 @@ def login_dodo(driver, dodo_id, dodo_pw):
         logging.info("로그인 버튼 클릭")
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
-    time.sleep(3)
+    time.sleep(5)
 
 def submit(driver):
     submit_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
@@ -151,7 +151,7 @@ def submit(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(3)
+    time.sleep(5)
     
 def pop_up_close(driver):
     pop_up_close_selector = "#root > div > div > div.page_271am > div.header_10whZ > div.right-grp_gMFbo > div:nth-child(1) > div.speech-bubble-wrapper_1kB-H > div.speech-bubble_bq6wO > div > div.button-container_2DZwH > div"
@@ -165,7 +165,7 @@ def pop_up_close(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(3)
+    time.sleep(5)
     
 def pop_up_close_2(driver):
     pop_up_close_2_selector = "body > div:nth-child(15) > div > div.header_Lt14v > div > button"
@@ -179,7 +179,7 @@ def pop_up_close_2(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(3)
+    time.sleep(5)
     
 def go_usage_selector(driver):
     usage_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.flex-column_1Bf1I > div > ul > li:nth-child(3)"
@@ -189,7 +189,7 @@ def go_usage_selector(driver):
         logging.info("사용 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("사용 메뉴 버튼을 찾지 못함")
-    time.sleep(3)
+    time.sleep(5)
 
 def parse_usage_between_dates(driver, service_account_json_b64):
     """
@@ -294,7 +294,7 @@ def open_anal_selector(driver):
         logging.info("방문 분석 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("방문 분석 메뉴 버튼을 찾지 못함")
-    time.sleep(1)
+    time.sleep(5)
 
 def go_visit_selector(driver):
     visit_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.menu_33KxA > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1)"
