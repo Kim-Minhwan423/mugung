@@ -79,7 +79,7 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
     # 필요 시 무헤드리스 사용하려면 주석 해제
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
 
     # User-Agent (원하시면 조정)
     chrome_options.add_argument(
