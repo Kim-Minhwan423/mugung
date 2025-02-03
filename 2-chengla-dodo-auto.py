@@ -371,6 +371,7 @@ def main():
 
         login_dodo(driver, dodo_id, dodo_pw)
         submit(driver)   # 팝업 닫기
+        pop_up_close(driver)
         go_usage_selector(driver)
         parse_usage_between_dates(driver, service_account_json_b64)
 
