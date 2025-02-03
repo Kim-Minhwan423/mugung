@@ -283,10 +283,18 @@ def login_and_close_popup(driver, wait, username, password):
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+    
+    # 1) 셀렉터가 clickable 상태인지 대기
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
+    
+    # 2) 실제로 요소를 찾음
+    menu_button = driver.find_element(By.CSS_SELECTOR, menu_button_selector)
+    
+    # 3) 찾아온 요소를 클릭
     driver.execute_script("arguments[0].click();", menu_button)
-    logging.info("주문 내역 버튼 클릭 성공")
+    logging.info("주문 내역 메뉴(햄버거 버튼) 클릭 성공")
 
+    # 그 다음 주문내역 진입 버튼 클릭
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
@@ -294,7 +302,7 @@ def navigate_to_order_history(driver, wait):
     date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
-
+    
 def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
