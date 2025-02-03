@@ -137,7 +137,7 @@ def login_dodo(driver, dodo_id, dodo_pw):
         logging.info("로그인 버튼 클릭")
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
-    time.sleep(5)
+    time.sleep(3)
 
 def submit(driver):
     submit_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
@@ -151,7 +151,7 @@ def submit(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(5)
+    time.sleep(3)
     
 def pop_up_close(driver):
     pop_up_close_selector = "#root > div > div > div.page_271am > div.header_10whZ > div.right-grp_gMFbo > div:nth-child(1) > div.speech-bubble-wrapper_1kB-H > div.speech-bubble_bq6wO > div > div.button-container_2DZwH > div"
@@ -165,8 +165,22 @@ def pop_up_close(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(50)
-
+    time.sleep(3)
+    
+def pop_up_close_2(driver):
+    pop_up_close_2_selector = "body > div:nth-child(15) > div > div.header_Lt14v > div > button"
+    try:
+        pop_up_close_2_btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_2_selector))
+        )
+        pop_up_close_2_btn.click()
+        logging.info("팝업 닫기 완료")
+    except TimeoutException:
+        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
+    except Exception as e:
+        logging.warning(f"팝업 닫기 중 예외 발생: {e}")
+    time.sleep(3)
+    
 def go_usage_selector(driver):
     usage_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.flex-column_1Bf1I > div > ul > li:nth-child(3)"
     try:
@@ -175,7 +189,7 @@ def go_usage_selector(driver):
         logging.info("사용 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("사용 메뉴 버튼을 찾지 못함")
-    time.sleep(5)
+    time.sleep(3)
 
 def parse_usage_between_dates(driver, service_account_json_b64):
     """
@@ -263,7 +277,7 @@ def update_usage_in_google_sheet(service_account_json_b64, usage_amount):
     logging.info(f"{cell_to_update} 셀에 사용금액 {usage_amount}원 업데이트 완료.")
 
 def go_report_selector(driver):
-    report_selector = "#root > div > div > div.sidebar_1aM4U > div.sidebar-links_3_XgU > div.link_10seQ.active_3lR3D"
+    report_selector = "#root > div > div > div.sidebar_1aM4U > div.sidebar-links_3_XgU > div:nth-child(4) > i"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, report_selector)))
         driver.find_element(By.CSS_SELECTOR, report_selector).click()
@@ -372,6 +386,7 @@ def main():
         login_dodo(driver, dodo_id, dodo_pw)
         submit(driver)   # 팝업 닫기
         pop_up_close(driver)
+        pop_up_close_2(driver)
         go_usage_selector(driver)
         parse_usage_between_dates(driver, service_account_json_b64)
 
