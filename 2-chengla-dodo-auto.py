@@ -151,6 +151,20 @@ def submit(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
+    time.sleep(5)
+    
+def pop_up_close(driver):
+    pop_up_close_selector = "#root > div > div > div.page_271am > div.header_10whZ > div.right-grp_gMFbo > div:nth-child(1) > div.speech-bubble-wrapper_1kB-H > div.speech-bubble_bq6wO > div > div.button-container_2DZwH > div"
+    try:
+        submit_btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector))
+        )
+        submit_btn.click()
+        logging.info("팝업 닫기 완료")
+    except TimeoutException:
+        logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
+    except Exception as e:
+        logging.warning(f"팝업 닫기 중 예외 발생: {e}")
     time.sleep(50)
 
 def go_usage_selector(driver):
