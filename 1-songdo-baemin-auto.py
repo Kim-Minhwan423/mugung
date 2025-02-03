@@ -277,7 +277,7 @@ def login_and_close_popup(driver, wait, username, password):
     except TimeoutException:
         logging.info("닫을 팝업이 없음 (스킵)")
         
-    popup_close_selector = #\:rr\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3 > span > span"
+    popup_close_selector = r"#\:rr\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3 > span > span"
     try:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
