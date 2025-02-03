@@ -307,6 +307,32 @@ def get_today_visitor_count(driver):
 ###############################################################################
 # 7. 구글 스프레드시트 batch 업데이트
 ###############################################################################
+def get_gspread_client_from_b64(service_account_json_b64):
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+    import base64
+    import json
+    import tempfile
+    import datetime
+
+    # 1) Base64 → JSON
+    service_account_json = base64.b64decode(service_account_json_b64).decode('utf-8')
+
+    # 2) 임시 파일로 저장
+    tmp_credentials_file = "service_account_credentials.json"
+    with open(tmp_credentials_file, "w", encoding="utf-8") as f:
+        f.write(service_account_json)
+
+    # 3) Drive/Sheets 스코프 추가
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = ServiceAccountCredentials.from_json_keyfile_name(tmp_credentials_file, scope)
+    client = gspread.authorize(creds)
+    return client
+
 def batch_update_sheet(service_account_json_b64, usage_sum, visitor_count):
     import datetime
 
