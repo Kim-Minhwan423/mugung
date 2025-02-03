@@ -285,7 +285,7 @@ def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.execute_script("arguments[0].click();", menu_button)
-        logging.info("주문 내역 버튼 클릭 성공")
+    logging.info("주문 내역 버튼 클릭 성공")
 
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
