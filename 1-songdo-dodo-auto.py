@@ -149,7 +149,7 @@ def submit(driver):
         logging.info("팝업이 없거나 이미 닫힘 (submit)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외: {e}")
-    time.sleep(2)
+    time.sleep(5)
 
 def pop_up_close(driver):
     """추가 팝업1 닫기"""
@@ -166,7 +166,7 @@ def pop_up_close(driver):
         logging.info("팝업1 없음(또는 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외: {e}")
-    time.sleep(2)
+    time.sleep(5)
 
 def pop_up_close_2(driver):
     """추가 팝업2 닫기"""
@@ -179,7 +179,7 @@ def pop_up_close_2(driver):
         logging.info("팝업2 없음(또는 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업2 닫기 예외: {e}")
-    time.sleep(2)
+    time.sleep(5)
 
 ###############################################################################
 # 5. 사용 메뉴 & 방문 메뉴
@@ -193,7 +193,7 @@ def go_usage_selector(driver):
         logging.info("사용 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("사용 메뉴 버튼을 찾지 못함")
-    time.sleep(3)
+    time.sleep(5)
 
 def go_report_selector(driver):
     """'분석' 메뉴"""
@@ -204,7 +204,7 @@ def go_report_selector(driver):
         logging.info("분석 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("분석 메뉴 버튼 못찾음")
-    time.sleep(3)
+    time.sleep(5)
 
 def open_anal_selector(driver):
     """'방문 분석' 메뉴 열기"""
@@ -215,7 +215,7 @@ def open_anal_selector(driver):
         logging.info("방문 분석 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("방문 분석 메뉴 버튼 못찾음")
-    time.sleep(3)
+    time.sleep(5)
 
 def go_visit_selector(driver):
     """'방문 현황' 버튼"""
@@ -226,7 +226,7 @@ def go_visit_selector(driver):
         logging.info("방문 현황 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("방문 현황 메뉴 버튼 못찾음")
-    time.sleep(3)
+    time.sleep(5)
 
 def go_today_selector(driver):
     """'오늘' 버튼"""
@@ -237,7 +237,7 @@ def go_today_selector(driver):
         logging.info("오늘 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("오늘 메뉴 버튼 못찾음")
-    time.sleep(3)
+    time.sleep(5)
 
 ###############################################################################
 # 6. 사용금액/방문객 추출 함수 (값만 반환)
