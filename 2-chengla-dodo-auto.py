@@ -30,7 +30,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Google Sheets (gspread, oauth2client)
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
 ###############################################################################
 # 1. 로깅 설정
 ###############################################################################
@@ -248,23 +247,19 @@ def parse_usage_between_dates(driver, service_account_json_b64):
     else:
         logging.info("누적 사용금액이 0원이므로 업데이트 생략.")
 
-def update_usage_in_google_sheet(service_account_json_b64, usage_amount):
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-    import base64
-    import datetime
-
-    service_account_json = base64.b64decode(service_account_json_b64).decode('utf-8')
-    tmp_credentials_file = "service_account_credentials.json"
-    with open(tmp_credentials_file, "w", encoding="utf-8") as f:
-        f.write(service_account_json)
+def get_gspread_client_from_b64(service_account_json_b64):
+    json_bytes = base64.b64decode(service_account_json_b64)
+    json_str = json_bytes.decode('utf-8')
+    json_keyfile = json.loads(json_str)
 
     scope = [
         "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/spreadsheets"
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(tmp_credentials_file, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(json_keyfile, scope)
     client = gspread.authorize(creds)
+    return client
 
     spreadsheet = client.open("청라 일일/월말 정산서")
     worksheet = spreadsheet.worksheet("무궁 청라")
