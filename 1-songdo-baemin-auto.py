@@ -269,7 +269,7 @@ def login_and_close_popup(driver, wait, username, password):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
 
-    popup_close_selector = r"#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
+    popup_close_selector = r"#\:rp\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div > button"
     try:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
@@ -277,7 +277,7 @@ def login_and_close_popup(driver, wait, username, password):
     except TimeoutException:
         logging.info("닫을 팝업이 없음 (스킵)")
         
-    popup_close_selector = r"#\:rr\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3 > span > span"
+    popup_close_selector = r"#\:r14\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
     try:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
