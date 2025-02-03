@@ -151,7 +151,7 @@ def submit(driver):
         logging.info("팝업이 나타나지 않음(혹은 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
-    time.sleep(5)
+    time.sleep(50)
 
 def go_usage_selector(driver):
     usage_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.flex-column_1Bf1I > div > ul > li:nth-child(3)"
