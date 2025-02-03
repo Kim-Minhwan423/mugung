@@ -285,9 +285,9 @@ def go_report_selector(driver):
     except TimeoutException:
         logging.warning("분석 메뉴 버튼을 찾지 못함")
     time.sleep(5)
-
+    
 def open_anal_selector(driver):
-    anal_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.menu_33KxA > div > div:nth-child(2) > div.name_3JWH7.open_DKP_g > i > svg"
+    anal_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.menu_33KxA > div > div:nth-child(2)"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, anal_selector)))
         driver.find_element(By.CSS_SELECTOR, anal_selector).click()
