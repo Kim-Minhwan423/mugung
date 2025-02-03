@@ -151,7 +151,20 @@ def submit(driver):
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
     time.sleep(5)
+    
+def go_usage_selector(driver):
+    usage_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.flex-column_1Bf1I > div > ul > li:nth-child(3)"
+    try:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, usage_selector)))
+        driver.find_element(By.CSS_SELECTOR, usage_selector).click()
+        logging.info("사용 메뉴 진입 버튼 클릭")
+    except TimeoutException:
+        logging.warning("사용 메뉴 버튼을 찾지 못함")
+    time.sleep(5)
 
+
+
+    
 def go_report_selector(driver):
     report_selector = "#root > div > div > div.sidebar_1aM4U > div.sidebar-links_3_XgU > div.link_10seQ.active_3lR3D"
     try:
