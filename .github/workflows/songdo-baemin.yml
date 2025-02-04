@@ -7,7 +7,7 @@ on:
 
 jobs:
   run-script:
-    runs-on: ubuntu-lastest  # 로컬/개인 PC Runner
+    runs-on: ubuntu-latest  # 로컬/개인 PC Runner
 
     steps:
       - name: Check out repository
