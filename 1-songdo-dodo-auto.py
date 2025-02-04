@@ -244,10 +244,9 @@ def go_today_selector(driver):
 ###############################################################################
 def get_today_usage_sum(driver):
     """
-    1) 첫 날짜가 오늘인지 확인
-    2) i=3부터 다음 '날짜' 블록 전까지 사용금액 누적
-    3) 사용금액(정수) 반환
-       (못 찾으면 0)
+    1) 첫 번째 블록이 "오늘"이라는 텍스트를 가지는지 확인
+    2) i=3부터, 다음 블록이 "오늘" 혹은 '날짜'로 표시될 때까지 사용금액 누적
+    3) 사용금액(정수) 반환. (못 찾으면 0)
     """
     import re
     import datetime
@@ -256,31 +255,40 @@ def get_today_usage_sum(driver):
         first_date_xpath = '//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div/div[2]'
         first_date_text = driver.find_element(By.XPATH, first_date_xpath).text.strip()
     except NoSuchElementException:
-        logging.warning("처음 날짜 블록(2) 못 찾음")
+        logging.warning("처음 블록(div/div[2]) 텍스트를 찾을 수 없음. usage=0")
         return 0
     
-    today_str = datetime.datetime.now().strftime("%Y.%m.%d")
-    if first_date_text != today_str:
-        logging.info(f"첫 날짜({first_date_text}) != 오늘({today_str}), usage=0")
+    # "오늘"이라는 단어 포함 여부 확인
+    if "오늘" not in first_date_text:
+        logging.info(f"첫 블록이 '오늘'이 아님('{first_date_text}'). usage=0")
         return 0
     
+    logging.info(f"첫 블록이 오늘이므로 사용금액을 추출합니다. (블록텍스트='{first_date_text}')")
+
     usage_sum = 0
+    # i=3부터 날짜 또는 '오늘'이 등장할 때까지 사용금액 누적
     for i in range(3, 20):
         date_candidate_xpath = f'//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div/div[{i}]'
         try:
             block_text = driver.find_element(By.XPATH, date_candidate_xpath).text.strip()
-            # 날짜 패턴이라면 중단
-            if re.match(r'^\d{4}\.\d{2}\.\d{2}$', block_text):
+
+            # 만약 다음 블록이 또 '오늘'이거나, 날짜(예: 2025.02.08)라면 중단
+            if ("오늘" in block_text) or re.match(r'^\d{4}\.\d{2}\.\d{2}$', block_text):
+                logging.info(f"div[{i}] 블록에서 '오늘' 또는 날짜 발견. 루프 종료.")
                 break
 
+            # 날짜/오늘 블록이 아니라면 → 사용금액 블록으로 가정
             usage_xpath = date_candidate_xpath + '/div[2]/span[1]/span/b'
             usage_text = driver.find_element(By.XPATH, usage_xpath).text.strip()
-            usage_value = re.sub(r'[^\d]', '', usage_text)
+            usage_value = re.sub(r'[^\d]', '', usage_text)  # 숫자만 추출
             usage_sum += int(usage_value or 0)
+
         except NoSuchElementException:
+            # 사용금액 요소를 찾지 못하면 => 다른 블록(날짜/오늘)으로 간주하고 중단
+            logging.info(f"div[{i}] 사용금액 요소를 못 찾음. 루프 종료.")
             break
         except Exception as e:
-            logging.warning(f"사용금액 파싱 예외: {e}")
+            logging.warning(f"div[{i}] 사용금액 파싱 중 예외: {e}")
             break
     
     return usage_sum
