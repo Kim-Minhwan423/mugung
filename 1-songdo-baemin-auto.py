@@ -140,7 +140,7 @@ class SeleniumDriverManager:
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
-        options.add_argument("--remote-debugging-port=9222")
+        #options.add_argument("--remote-debugging-port=9222")
         
         # 예시: user-data-dir (원한다면 사용)
         # unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
