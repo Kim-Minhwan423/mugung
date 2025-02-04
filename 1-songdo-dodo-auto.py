@@ -166,7 +166,7 @@ def pop_up_close(driver):
         logging.info("팝업1 없음(또는 이미 닫힘)")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외: {e}")
-    time.sleep(5)
+    time.sleep(7)
 
 def pop_up_close_2(driver):
     """추가 팝업2 닫기"""
