@@ -7,7 +7,7 @@ on:
 
 jobs:
   run-script:
-    runs-on: ubuntu-latest  # 로컬/개인 PC Runner
+    runs-on: self-hosted  # 로컬/개인 PC Runner
 
     steps:
       - name: Check out repository
@@ -15,11 +15,13 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
-        
+        shell: cmd  # Windows라면 cmd, Linux면 생략가능
+
       - name: Run Baemin Auto Script
         run: python 1-songdo-baemin-auto.py
+        shell: cmd
         env:
           SONGDO_BAEMIN_ID: ${{ secrets.SONGDO_BAEMIN_ID }}
           SONGDO_BAEMIN_PW: ${{ secrets.SONGDO_BAEMIN_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
-        
+          PYTHONIOENCODING: utf-8
