@@ -127,7 +127,7 @@ def login_dodo(driver, dodo_id, dodo_pw):
     login_btn_selector = "#login-form > div.login-form-footer > button"
 
     try:
-        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, id_selector)))
+        WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.CSS_SELECTOR, id_selector)))
         driver.find_element(By.CSS_SELECTOR, id_selector).send_keys(dodo_id)
         logging.info("아이디 입력 완료")
         driver.find_element(By.CSS_SELECTOR, pw_selector).send_keys(dodo_pw)
@@ -142,7 +142,7 @@ def submit(driver):
     """첫 팝업 닫기"""
     submit_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
     try:
-        btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, submit_selector)))
+        btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, submit_selector)))
         btn.click()
         logging.info("기본 팝업 닫기")
     except TimeoutException:
@@ -159,7 +159,7 @@ def pop_up_close(driver):
         "div.speech-bubble_bq6wO > div > div.button-container_2DZwH > div"
     )
     try:
-        btn = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
+        btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
         btn.click()
         logging.info("팝업 닫기 (pop_up_close)")
     except TimeoutException:
@@ -172,7 +172,7 @@ def pop_up_close_2(driver):
     """추가 팝업2 닫기"""
     pop_up_close_2_selector = "body > div:nth-child(15) > div > div.header_Lt14v > div > button"
     try:
-        btn2 = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_2_selector)))
+        btn2 = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_2_selector)))
         btn2.click()
         logging.info("팝업 닫기 (pop_up_close_2)")
     except TimeoutException:
