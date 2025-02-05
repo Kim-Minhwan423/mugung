@@ -245,52 +245,56 @@ def go_today_selector(driver):
 def get_today_usage_sum(driver):
     """
     1) 첫 번째 블록이 "오늘"이라는 텍스트를 가지는지 확인
-    2) i=3부터, 다음 블록이 "오늘" 혹은 '날짜'로 표시될 때까지 사용금액 누적
+       (//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div/div/div[2])
+    2) i=3부터 99까지 순회:
+       - 다음 블록이 'YYYY.MM.DD' 날짜형식이면 중단
+       - 그렇지 않으면 해당 블록의 금액을 누적
     3) 사용금액(정수) 반환. (못 찾으면 0)
     """
     import re
-    import datetime
+    import logging
+    from selenium.common.exceptions import NoSuchElementException
 
+    # 1) "오늘" 텍스트 확인
     try:
-        first_date_xpath = '//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div/div[2]'
-        first_date_text = driver.find_element(By.XPATH, first_date_xpath).text.strip()
+        first_date_xpath = '//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div/div/div[2]'
+        first_date_text = driver.find_element("xpath", first_date_xpath).text.strip()
     except NoSuchElementException:
-        logging.warning("처음 블록(div/div[2]) 텍스트를 찾을 수 없음. usage=0")
+        logging.warning("처음 블록(.../div/div/div/div[2]) 텍스트를 찾을 수 없음. usage=0")
         return 0
-    
-    # "오늘"이라는 단어 포함 여부 확인
+
     if "오늘" not in first_date_text:
         logging.info(f"첫 블록이 '오늘'이 아님('{first_date_text}'). usage=0")
         return 0
-    
-    logging.info(f"첫 블록이 오늘이므로 사용금액을 추출합니다. (블록텍스트='{first_date_text}')")
+
+    logging.info(f"첫 블록이 '오늘'이므로 사용금액을 추출합니다. (블록텍스트='{first_date_text}')")
 
     usage_sum = 0
-    # i=3부터 날짜 또는 '오늘'이 등장할 때까지 사용금액 누적
-    for i in range(3, 20):
-        date_candidate_xpath = f'//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div/div[{i}]'
+    # 2) i = 3부터 99까지 순회
+    for i in range(3, 100):
+        date_candidate_xpath = f'//*[@id="root"]/div/div/div[2]/div[2]/div/div[1]/div/div/div/div[{i}]'
         try:
-            block_text = driver.find_element(By.XPATH, date_candidate_xpath).text.strip()
+            block_text = driver.find_element("xpath", date_candidate_xpath).text.strip()
 
-            # 만약 다음 블록이 또 '오늘'이거나, 날짜(예: 2025.02.08)라면 중단
-            if ("오늘" in block_text) or re.match(r'^\d{4}\.\d{2}\.\d{2}$', block_text):
-                logging.info(f"div[{i}] 블록에서 '오늘' 또는 날짜 발견. 루프 종료.")
+            # 다음 블록이 날짜(YYYY.MM.DD) 형태라면 중단
+            if re.match(r'^\d{4}\.\d{2}\.\d{2}$', block_text):
+                logging.info(f"div[{i}] 블록에서 날짜 발견. 루프 종료.")
                 break
 
-            # 날짜/오늘 블록이 아니라면 → 사용금액 블록으로 가정
+            # 그렇지 않으면 사용금액 블록으로 가정
             usage_xpath = date_candidate_xpath + '/div[2]/span[1]/span/b'
-            usage_text = driver.find_element(By.XPATH, usage_xpath).text.strip()
+            usage_text = driver.find_element("xpath", usage_xpath).text.strip()
             usage_value = re.sub(r'[^\d]', '', usage_text)  # 숫자만 추출
             usage_sum += int(usage_value or 0)
 
         except NoSuchElementException:
-            # 사용금액 요소를 찾지 못하면 => 다른 블록(날짜/오늘)으로 간주하고 중단
-            logging.info(f"div[{i}] 사용금액 요소를 못 찾음. 루프 종료.")
+            # 사용금액 요소를 찾지 못하면 => 날짜(새로운 섹션)으로 간주하고 중단
+            logging.info(f"div[{i}] 사용금액 요소를 찾지 못함. 루프 종료.")
             break
         except Exception as e:
             logging.warning(f"div[{i}] 사용금액 파싱 중 예외: {e}")
             break
-    
+
     return usage_sum
 
 def get_today_visitor_count(driver):
