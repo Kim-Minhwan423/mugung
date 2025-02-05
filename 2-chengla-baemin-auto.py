@@ -268,32 +268,22 @@ def login_and_close_popup(driver, wait, username, password):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
-
-    popup_close_selector = r"#\:rn\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3"
+        
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 button")
     try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
+        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
+        close_btn.click()
         logging.info("팝업 닫기 성공")
     except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
+        logging.info("팝업이 없거나 이미 닫힘")
 
-    popup_close_selector = r"#\:rl\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
+    popup_close_2_selector = ("div[id^='\\:r'] div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0.OverlayFooter_b_9yfm_1slqmfa1 > button")
     try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
+        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_2_selector)))
+        close_btn.click()
         logging.info("팝업 닫기 성공")
     except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
-
-    popup_close_selector = r"#\:rm\: > div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > div"
-    try:
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        driver.find_element(By.CSS_SELECTOR, popup_close_selector).click()
-        logging.info("팝업 닫기 성공")
-    except TimeoutException:
-        logging.info("닫을 팝업이 없음 (스킵)")
-
-
+        logging.info("팝업이 없거나 이미 닫힘")
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
