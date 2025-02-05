@@ -276,6 +276,7 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
+    time.sleep(60)
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
