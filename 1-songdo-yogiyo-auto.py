@@ -91,13 +91,6 @@ def get_chrome_driver(use_profile=False):
         "Chrome/110.0.5481.77 Safari/537.36"
     )
 
-    if use_profile:
-        unique_id = uuid.uuid4()
-        user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
-        os.makedirs(user_data_dir, exist_ok=True)
-        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-        logging.info(f"[use_profile=False] 고유 Chrome 프로필 경로: {user_data_dir}")
-
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
