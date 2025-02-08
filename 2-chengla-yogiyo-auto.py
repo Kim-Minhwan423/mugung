@@ -31,6 +31,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+
 ###############################################################################
 # 1. 로깅 설정
 ###############################################################################
@@ -51,6 +52,7 @@ def setup_logging(log_filename='script.log'):
     file_formatter = logging.Formatter('%(message)s')
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
+
 
 ###############################################################################
 # 2. 환경 변수 불러오기
@@ -73,12 +75,14 @@ def get_environment_variables():
 
     return yogiyo_id, yogiyo_pw, service_account_json_b64
 
+
 ###############################################################################
 # 3. Chrome 드라이버 세팅 (고유 프로필 사용)
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")  # 필요시 주석 해제
+    # 필요 시 headless 모드 주석 해제
+    chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -86,13 +90,6 @@ def get_chrome_driver(use_profile=False):
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/110.0.5481.77 Safari/537.36"
     )
-
-    if use_profile:
-        unique_id = uuid.uuid4()
-        user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
-        os.makedirs(user_data_dir, exist_ok=True)
-        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-        logging.info(f"[use_profile=False] 고유 Chrome 프로필 경로: {user_data_dir}")
 
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
@@ -113,6 +110,7 @@ def get_chrome_driver(use_profile=False):
     )
     logging.info("ChromeDriver 초기화 성공")
     return driver
+
 
 ###############################################################################
 # 4. 요기요 로그인 및 페이지 이동
@@ -137,6 +135,7 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
         logging.warning("로그인 페이지 로딩 Timeout")
     time.sleep(5)
 
+
 def close_popup_if_exist(driver):
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
     try:
@@ -151,6 +150,7 @@ def close_popup_if_exist(driver):
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
     time.sleep(2)
 
+
 def go_store_selector(driver):
     store_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div"
     try:
@@ -161,8 +161,9 @@ def go_store_selector(driver):
         logging.warning("스토어 셀렉터 버튼을 찾지 못함")
     time.sleep(3)
 
+
 def go_chengla_selector(driver):
-    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
+    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, chengla_xpath)))
         driver.find_element(By.XPATH, chengla_xpath).click()
@@ -170,6 +171,7 @@ def go_chengla_selector(driver):
     except TimeoutException:
         logging.warning("무궁 청라점 버튼을 찾지 못함")
     time.sleep(3)
+
 
 def go_order_history(driver):
     order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
@@ -181,6 +183,7 @@ def go_order_history(driver):
         logging.warning("주문내역 버튼을 찾지 못함")
     time.sleep(3)
 
+
 ###############################################################################
 # 5. (필요하면) 상품명 정규화 함수
 ###############################################################################
@@ -191,8 +194,35 @@ def normalize_product_name(product_text):
     """
     return product_text
 
+
 ###############################################################################
-# 6. 주문 상세 정보 추출 (오늘 날짜 기준)
+# 6. 주문 날짜 파싱 헬퍼 함수
+###############################################################################
+def parse_yogiyo_order_date(date_text):
+    """
+    예) "02.06(목) 오후 04:31:59" → '02.06' 부분 파싱 → (month=2, day=6)로 date 객체 생성.
+    시스템의 현재 연도(datetime.date.today().year)를 사용합니다.
+    """
+    import re
+    current_year = datetime.date.today().year
+
+    # 정규표현식 예: '02.06' 형태를 캡처
+    match = re.search(r'(\d{2})\.(\d{2})', date_text)
+    if not match:
+        return None
+
+    month = int(match.group(1))  # '02' -> 2
+    day   = int(match.group(2))  # '06' -> 6
+
+    try:
+        return datetime.date(current_year, month, day)
+    except ValueError:
+        # 잘못된 날짜인 경우
+        return None
+
+
+###############################################################################
+# 7. 주문 상세 정보 추출 (오늘 날짜 기준)
 ###############################################################################
 def get_todays_orders(driver):
     """
@@ -202,33 +232,43 @@ def get_todays_orders(driver):
     을 리스트로 반환.
     """
     result_data = []
-    today_date = datetime.datetime.today().strftime("%Y-%m-%d")  # 현재 날짜 (YYYY-MM-DD 형식)
+    today_date = datetime.date.today()  # date 객체 (예: 2025-02-06)
 
     for i in range(1, 11):  # 최대 10개의 주문 확인 (필요 시 범위 조정)
         # 1) 날짜 정보 가져오기
-        row_date_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div"
+        row_date_xpath = (
+            "//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{}]/td[1]/div".format(i)
+        )
 
         try:
             date_elem = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
             )
-            order_date = date_elem.text.strip()  # 주문 날짜
+            raw_date_text = date_elem.text.strip()
+            # 예: "02.06(목)\n오후 04:31:59" 또는 "02.06(목) 오후 04:31:59"
+
+            parsed_date = parse_yogiyo_order_date(raw_date_text)
+            if not parsed_date:
+                logging.info(f"{i}번째 행: '{raw_date_text}' → 날짜 파싱 실패 → 스킵")
+                continue
+
+            if parsed_date != today_date:
+                logging.info(f"{i}번째 행: {raw_date_text} (파싱결과: {parsed_date}) 오늘 주문 아님 → 스킵")
+                continue
+
         except TimeoutException:
             logging.warning(f"{i}번째 행 날짜를 찾지 못함 → 스킵")
             continue
 
-        # 오늘 날짜와 비교
-        if order_date != today_date:
-            logging.info(f"{i}번째 행: {order_date} 주문은 오늘 주문이 아님 → 스킵")
-            continue
-
         # 2) 오늘 날짜인 경우, 상세보기 팝업 열기
-        row_menu_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[9]"
+        row_menu_xpath = (
+            "//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{}]/td[9]".format(i)
+        )
         try:
             row_elem = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, row_menu_xpath))
             )
-            logging.info(f"--- {i}번째 행 (날짜: {order_date}) 클릭 시도 ---")
+            logging.info(f"--- {i}번째 행 (날짜: {parsed_date}) 클릭 시도 ---")
             driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
             row_elem.click()
             time.sleep(1)  # 팝업 열림 대기
@@ -239,11 +279,11 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 클릭 중 오류: {e}")
             continue
 
-        # 3) 팝업 내에서 총 주문금액 및 품목 추출
-        #    (※ 수수료/배달팁이 포함된 '총 결제금액'이 맞는지, UI 구조에 따라 선택하세요)
+        # 3) 팝업 내에서 총 주문금액 추출 (예: '총 결제금액' 등)
         fee_selector = (
             "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-            "div > div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
+            "div > div:nth-child(1) > div > li > "
+            "div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
         )
         try:
             fee_elem = WebDriverWait(driver, 5).until(
@@ -262,15 +302,14 @@ def get_todays_orders(driver):
 
         # 4) 품목 정보 추출 및 정규화
         products = {}
-        # 여기서는 순차적으로 nth-child()를 탐색하는 로직을 예시로 작성
-        # 실제 UI에 따라 적절히 CSS Selector/XPath를 맞춰주세요
         j = 1
         while True:
             product_selector = (
                 "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
                 "div > div:nth-child(2) > div > div > "
                 "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > "
-                f"div:nth-child({j}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+                f"div:nth-child({j}) > "
+                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
             )
             try:
                 product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
@@ -279,7 +318,7 @@ def get_todays_orders(driver):
                 # 정규화된 상품명 변환
                 normalized_product = normalize_product_name(product_text)
 
-                # (예시) 수량을 텍스트에서 숫자만 추출 → 없는 경우 1로 처리
+                # (예시) 수량 추출: 상품명 텍스트 중 숫자만
                 qty_clean = re.sub(r"[^\d]", "", product_text)
                 product_qty = int(qty_clean) if qty_clean else 1
 
@@ -297,7 +336,7 @@ def get_todays_orders(driver):
                 break
 
         # 5) 팝업 닫기
-        close_popup_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg > g > rect"
+        close_popup_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
         try:
             close_btn = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
@@ -312,8 +351,9 @@ def get_todays_orders(driver):
 
     return result_data
 
+
 ###############################################################################
-# 7. Google Sheets 업데이트 함수
+# 8. Google Sheets 업데이트 함수
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products):
     """
@@ -337,7 +377,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     today_day = str(datetime.datetime.today().day)
     row_index = None
     for i, row in enumerate(date_values, start=3):
-        # row는 [['1'], ['2'], ...] 구조일 수 있으므로 안전하게 확인
+        # row가 [['1'], ['2'], ...] 구조일 수 있으므로 안전하게 확인
         if row and row[0].strip() == today_day:
             row_index = i
             break
@@ -394,7 +434,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
         # qty == 0 이면 빈 문자열(''), 그렇지 않으면 qty 값
-        value = "" if qty == 0 else qty  
+        value = "" if qty == 0 else qty
         batch_updates.append({
             "range": cell,
             "values": [[value]]
@@ -403,7 +443,8 @@ def update_google_sheets(total_order_amount, aggregated_products):
     if batch_updates:
         sheet_inventory.batch_update(batch_updates)
         logging.info("재고 시트 업데이트 완료")
-        
+
+
 ###############################################################################
 # 메인 실행
 ###############################################################################
