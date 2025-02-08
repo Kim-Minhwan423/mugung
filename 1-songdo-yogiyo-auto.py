@@ -82,7 +82,7 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
     # 필요 시 headless 모드 주석 해제
-     chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
