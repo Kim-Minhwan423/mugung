@@ -142,7 +142,7 @@ def submit(driver):
     """첫 팝업 닫기"""
     submit_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
     try:
-        btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, submit_selector)))
+        btn = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, submit_selector)))
         btn.click()
         logging.info("기본 팝업 닫기")
     except TimeoutException:
@@ -159,7 +159,7 @@ def pop_up_close(driver):
         "div.speech-bubble_bq6wO > div > div.button-container_2DZwH > div"
     )
     try:
-        btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
+        btn = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
         btn.click()
         logging.info("팝업 닫기 (pop_up_close)")
     except TimeoutException:
@@ -172,7 +172,7 @@ def pop_up_close_2(driver):
     """추가 팝업2 닫기"""
     pop_up_close_2_selector = "body > div:nth-child(15) > div > div.header_Lt14v > div > button"
     try:
-        btn2 = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_2_selector)))
+        btn2 = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_2_selector)))
         btn2.click()
         logging.info("팝업 닫기 (pop_up_close_2)")
     except TimeoutException:
@@ -188,7 +188,7 @@ def go_usage_selector(driver):
     """'사용' 메뉴 클릭"""
     usage_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.flex-column_1Bf1I > div > ul > li:nth-child(3)"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, usage_selector)))
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, usage_selector)))
         driver.find_element(By.CSS_SELECTOR, usage_selector).click()
         logging.info("사용 메뉴 진입 버튼 클릭")
     except TimeoutException:
@@ -199,7 +199,7 @@ def go_report_selector(driver):
     """'분석' 메뉴"""
     report_selector = "#root > div > div > div.sidebar_1aM4U > div.sidebar-links_3_XgU > div:nth-child(4) > i"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, report_selector)))
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, report_selector)))
         driver.find_element(By.CSS_SELECTOR, report_selector).click()
         logging.info("분석 메뉴 진입 버튼 클릭")
     except TimeoutException:
@@ -210,7 +210,7 @@ def open_anal_selector(driver):
     """'방문 분석' 메뉴 열기"""
     anal_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.menu_33KxA > div > div:nth-child(2)"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, anal_selector)))
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, anal_selector)))
         driver.find_element(By.CSS_SELECTOR, anal_selector).click()
         logging.info("방문 분석 메뉴 진입 버튼 클릭")
     except TimeoutException:
@@ -221,7 +221,7 @@ def go_visit_selector(driver):
     """'방문 현황' 버튼"""
     visit_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.menu_33KxA > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1)"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, visit_selector)))
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, visit_selector)))
         driver.find_element(By.CSS_SELECTOR, visit_selector).click()
         logging.info("방문 현황 메뉴 진입 버튼 클릭")
     except TimeoutException:
@@ -232,7 +232,7 @@ def go_today_selector(driver):
     """'오늘' 버튼"""
     today_selector = "#root > div > div > div.page_271am > div.content_3Ng3n > div > div.page_2JdUB > div.date-range-filter_cI11I > div.btn-group_iydkX.quick-filter_2rcfW > div:nth-child(1)"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, today_selector)))
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, today_selector)))
         driver.find_element(By.CSS_SELECTOR, today_selector).click()
         logging.info("오늘 메뉴 진입 버튼 클릭")
     except TimeoutException:
