@@ -1,0 +1,27 @@
+name: NAVER
+
+on:
+  repository_dispatch:
+    types: [run-NAVER]  # 원하는 이벤트 타입
+  workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
+
+jobs:
+  run-script:
+    runs-on: self-hosted  # 로컬/개인 PC Runner
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        shell: cmd  # Windows라면 cmd, Linux면 생략가능
+
+      - name: Run NAVER
+        run: python NAVER.py
+        shell: cmd
+        env:
+          NAVER_ID: ${{ secrets.NAVER_ID }}
+          NAVER_PW: ${{ secrets.NAVER_PW }}
+          SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+          PYTHONIOENCODING: utf-8
