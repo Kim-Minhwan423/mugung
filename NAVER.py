@@ -133,7 +133,7 @@ def login_naver(driver, user_id, password):
     # 로그인 버튼 클릭
     login_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, "#log\.login")
+            (By.CSS_SELECTOR, r"#log\.login")
         )
     )
     login_button.click()
