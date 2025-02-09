@@ -139,3 +139,41 @@ def login_naver(driver, user_id, password):
     login_button.click()
     logging.info("로그인 버튼 클릭")
     time.sleep(100)  # 페이지 로딩 기다리기
+
+###############################################################################
+# 9. 메인 실행 흐름
+###############################################################################
+def main():
+    setup_logging('script.log')
+
+    naver_id, naver_pw, service_account_json_b64 = get_environment_variables()
+    driver = get_chrome_driver(use_profile=False)
+
+    all_order_items = []
+    today_revenue = 0
+
+    try:
+        # 1) 로그인
+        login_naver(driver, user_id=naver_id, password=naver_pw)
+
+    except Exception as e:
+        logging.error(f"에러 발생: {e}")
+        traceback.print_exc()
+
+    finally:
+        driver.quit()
+        logging.info("WebDriver 종료")
+
+    # 5) 구글 시트
+    try:
+        client = get_gspread_client_from_b64(service_account_json_b64)
+        doc = client.open("청라 일일/월말 정산서")
+        mugeung_sheet = doc.worksheet("무궁 청라")
+        jaego_sheet = doc.worksheet("재고")
+
+    except Exception as e:
+        logging.error(f"구글 시트 연동 에러: {e}")
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main()
