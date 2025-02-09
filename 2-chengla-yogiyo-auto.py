@@ -163,7 +163,7 @@ def go_store_selector(driver):
 
 
 def go_chengla_selector(driver):
-    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
+    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, chengla_xpath)))
         driver.find_element(By.XPATH, chengla_xpath).click()
