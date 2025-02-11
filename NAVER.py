@@ -110,14 +110,22 @@ def get_chrome_driver(use_profile=False):
 # 4. 네이버 로그인 (수정됨)
 ###############################################################################
 def login_naver(driver, user_id, password):
-    driver.get("https://nid.naver.com/nidlogin.login")
-    logging.info("네이버 로그인 페이지 접속 완료")
+    driver.get("https://www.naver.com")
+    logging.info("네이버 페이지 접속 완료")
     time.sleep(3)  # 대기
+    
+    try:        
+        # 로그인 버튼 클릭
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#account > div > a"))
+        )
+        login_button.click()
+        logging.info("로그인 버튼 클릭")
+        time.sleep(5)  # 로그인 처리 대기
 
-    try:
         # 아이디 입력
         username_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#id"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#input_item_id"))
         )
         username_input.click()  # 입력 필드 활성화
         username_input.send_keys(user_id)
@@ -125,7 +133,7 @@ def login_naver(driver, user_id, password):
         time.sleep(1)
 
         # 비밀번호 입력
-        password_input = driver.find_element(By.CSS_SELECTOR, "#pw")
+        password_input = driver.find_element(By.CSS_SELECTOR, "#input_item_pw")
         password_input.click()
         password_input.send_keys(password)
         logging.info("비밀번호 입력 완료")
@@ -133,7 +141,7 @@ def login_naver(driver, user_id, password):
 
         # 로그인 버튼 클릭
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#log\\.login"))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#log\.login"))
         )
         login_button.click()
         logging.info("로그인 버튼 클릭")
