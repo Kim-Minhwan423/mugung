@@ -165,7 +165,7 @@ def update_google_sheets(client):
         sheet = doc.worksheet("무궁 청라")  # 원하는 시트 선택
 
         # 예제 데이터 입력 (추후 크롤링한 데이터 반영)
-        sheet.update("A1", [["업데이트 완료", str(datetime.datetime.now())]])
+        sheet.update("A1", ["업데이트 완료"])
 
         logging.info("Google Sheets 업데이트 완료")
     except Exception as e:
