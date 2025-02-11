@@ -172,16 +172,30 @@ def go_songdo_selector(driver):
         logging.warning("무궁 송도점 버튼을 찾지 못함")
     time.sleep(3)
 
-
 def go_order_history(driver):
     order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, order_btn_xpath)))
-        driver.find_element(By.XPATH, order_btn_xpath).click()
-        logging.info("주문내역 버튼 클릭")
-    except TimeoutException:
-        logging.warning("주문내역 버튼을 찾지 못함")
-    time.sleep(3)
+    
+    # 최대 3번까지 재시도 (페이지 로딩 문제 해결)
+    for attempt in range(3):
+        try:
+            logging.info(f"주문내역 버튼 클릭 시도 ({attempt+1}/3)")
+            
+            # 주문내역 버튼이 나타날 때까지 최대 15초 대기
+            WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, order_btn_xpath)))
+            driver.find_element(By.XPATH, order_btn_xpath).click()
+            logging.info("주문내역 버튼 클릭 완료")
+            time.sleep(3)  # 페이지 전환 대기
+            return  # 성공하면 함수 종료
+
+        except TimeoutException:
+            logging.warning(f"주문내역 버튼을 찾지 못함 (시도 {attempt+1}/3)")
+
+            if attempt < 2:
+                logging.info("페이지를 새로고침 후 다시 시도합니다...")
+                driver.refresh()  # 페이지 새로고침
+                time.sleep(5)  # 새로고침 후 대기
+
+    logging.error("3회 시도 후에도 주문내역 버튼을 찾지 못함 → 스크립트 종료")
 
 
 ###############################################################################
