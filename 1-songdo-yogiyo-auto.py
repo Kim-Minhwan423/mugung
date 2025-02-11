@@ -227,7 +227,6 @@ def normalize_product_name(product_text):
     else:
         return product_text.strip()
 
-
 ###############################################################################
 # 6. 주문 날짜 파싱 헬퍼 함수
 ###############################################################################
@@ -453,6 +452,9 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '소성주': 'AQ45'
     }
 
+    # 디버깅용 로그: aggregated_products 내용 확인
+    logging.info(f"[DEBUG] 최종 aggregated_products: {aggregated_products}")
+
     batch_updates = []
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
@@ -466,6 +468,10 @@ def update_google_sheets(total_order_amount, aggregated_products):
     if batch_updates:
         sheet_inventory.batch_update(batch_updates)
         logging.info("재고 시트 업데이트 완료")
+
+        # ▼ 업데이트 후 셀값을 다시 읽어와 디버깅
+        debug_val = sheet_inventory.acell("F42").value
+        logging.info(f"[DEBUG] F42 셀 값: {debug_val}")
 
 ###############################################################################
 # 메인 실행
@@ -495,6 +501,9 @@ def main():
         for order in orders_data:
             for product, qty in order["products"].items():
                 aggregated_products[product] = aggregated_products.get(product, 0) + qty
+
+        # (디버깅) 주문 데이터 확인
+        logging.info(f"[DEBUG] orders_data: {orders_data}")
 
         # 4. Google Sheets 업데이트
         update_google_sheets(total_order_amount, aggregated_products)
