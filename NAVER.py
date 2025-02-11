@@ -104,7 +104,7 @@ def login_naver(driver, user_id, password):
     try:
         # ✅ 로그인 버튼 클릭 (수정된 선택자 사용)
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "a#gnb_login_button"))
+            EC.element_to_be_clickable((By.XPATH, "//*[@id="account"]/div/a"))
         )
         login_button.click()
         logging.info("로그인 버튼 클릭")
