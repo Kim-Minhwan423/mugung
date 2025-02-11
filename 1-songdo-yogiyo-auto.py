@@ -213,16 +213,20 @@ def go_order_history(driver):
 def normalize_product_name(product_text):
     """
     제품명과 수량 정보를 정규화하고, 앞뒤 공백을 제거합니다.
+    전각 괄호 -> 반각 괄호 치환
     """
-    # 'x' 로 나누어, 제품명과 수량을 각각 strip_whitespace 처리
+    # 전각 괄호를 반각으로 교체
+    product_text = product_text.replace("（", "(").replace("）", ")")
+    
+    # 'x'로 구분해 제품명 / 수량 분리
     parts = product_text.split('x')
     if len(parts) == 2:
-        product_name = strip_whitespace(parts[0])
-        quantity = strip_whitespace(parts[1])
+        product_name = parts[0].strip()
+        quantity = parts[1].strip()
         return f"{product_name} x {quantity}"
     else:
-        product_name = strip_whitespace(product_text)
-        return product_name
+        return product_text.strip()
+
 
 ###############################################################################
 # 6. 주문 날짜 파싱 헬퍼 함수
