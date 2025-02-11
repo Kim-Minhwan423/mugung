@@ -330,15 +330,15 @@ def get_todays_orders(driver):
             )
             try:
                 product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
-                product_text = product_elem.text.strip()
+                product_name = product_elem.text.strip()
 
                 # 배달요금 같은 불필요한 항목 제외
-                if "배달요금" in product_text:
+                if "배달요금" in product_name:
                     j += 1
                     continue
 
                 normalized_product = normalize_product_name(product_text)
-                match = re.search(r"x\s*(\d+)", product_text)
+                match = re.search(r"x\s*(\d+)", product_name)
                 product_qty = int(match.group(1)) if match else 1
 
                 products[normalized_product] = products.get(normalized_product, 0) + product_qty
