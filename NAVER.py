@@ -47,12 +47,6 @@ def setup_logging(log_filename='script.log'):
 # 2. 환경 변수 불러오기 (NAVER + GOOGLE SHEETS)
 ###############################################################################
 def get_environment_variables():
-    """
-    필수 환경 변수:
-        - NAVER_ID (네이버 아이디)
-        - NAVER_PW (네이버 비밀번호)
-        - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
-    """
     naver_id = os.getenv("NAVER_ID")
     naver_pw = os.getenv("NAVER_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
@@ -67,11 +61,10 @@ def get_environment_variables():
 ###############################################################################
 # 3. Chrome 드라이버 설정
 ###############################################################################
-def get_chrome_driver(use_profile=False):
+def get_chrome_driver():
     chrome_options = webdriver.ChromeOptions()
     #chrome_options.add_argument("--headless")  # 화면 없이 실행하려면 활성화
 
-    # User-Agent 변경
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -101,45 +94,45 @@ def get_chrome_driver(use_profile=False):
     return driver
 
 ###############################################################################
-# 4. 네이버 로그인 (수정됨)
+# 4. 네이버 로그인 (CSS 선택자 수정)
 ###############################################################################
 def login_naver(driver, user_id, password):
     driver.get("https://www.naver.com")
     logging.info("네이버 페이지 접속 완료")
-    time.sleep(3)  # 대기
-    
-    try:        
-        # 로그인 버튼 클릭
+    time.sleep(3)
+
+    try:
+        # ✅ 로그인 버튼 클릭 (수정된 선택자 사용)
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href*='nid.naver.com']"))
+            EC.element_to_be_clickable((By.LINK_TEXT, "로그인"))
         )
         login_button.click()
         logging.info("로그인 버튼 클릭")
-        time.sleep(5)  # 로그인 페이지 로딩 대기
+        time.sleep(5)  
 
-        # 아이디 입력
+        # ✅ 아이디 입력
         username_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#id"))
         )
-        username_input.click()  # 입력 필드 활성화
+        username_input.click()
         username_input.send_keys(user_id)
         logging.info("아이디 입력 완료")
         time.sleep(1)
 
-        # 비밀번호 입력
+        # ✅ 비밀번호 입력
         password_input = driver.find_element(By.CSS_SELECTOR, "#pw")
         password_input.click()
         password_input.send_keys(password)
         logging.info("비밀번호 입력 완료")
         time.sleep(1)
 
-        # 로그인 버튼 클릭
+        # ✅ 로그인 버튼 클릭 (이스케이프 수정)
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#log\.login"))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, r"#log\.login"))
         )
         login_button.click()
         logging.info("로그인 버튼 클릭")
-        time.sleep(5)  # 로그인 처리 대기
+        time.sleep(5)
 
     except Exception as e:
         logging.error(f"로그인 중 오류 발생: {e}")
@@ -159,14 +152,14 @@ def get_gspread_client_from_b64(service_account_json_b64):
     return gspread.authorize(credentials)
 
 ###############################################################################
-# 6. 네이버에서 특정 키워드 순위 검색 후 Google Sheets에 입력
+# 6. Google Sheets 업데이트 (업데이트 시간 추가)
 ###############################################################################
 def update_google_sheets(client):
     try:
         doc = client.open("청라 일일/월말 정산서")
-        sheet = doc.worksheet("무궁 청라")  # 원하는 시트 선택
+        sheet = doc.worksheet("무궁 청라")
 
-        # 예제 데이터 입력 (업데이트 시간 기록)
+        # ✅ 업데이트 시간 기록
         sheet.update("A26", [["업데이트 완료", str(datetime.datetime.now())]])
 
         logging.info("Google Sheets 업데이트 완료")
@@ -181,16 +174,16 @@ def main():
     setup_logging('script.log')
 
     naver_id, naver_pw, service_account_json_b64 = get_environment_variables()
-    driver = get_chrome_driver(use_profile=False)
+    driver = get_chrome_driver()
 
     try:
-        # 1) 네이버 로그인
+        # ✅ 네이버 로그인 (수정된 코드 적용)
         login_naver(driver, user_id=naver_id, password=naver_pw)
 
-        # 2) Google Sheets 인증
+        # ✅ Google Sheets 인증
         client = get_gspread_client_from_b64(service_account_json_b64)
 
-        # 3) 데이터 크롤링 후 Google Sheets 업데이트 (추후 확장 가능)
+        # ✅ Google Sheets 업데이트
         update_google_sheets(client)
 
     except Exception as e:
