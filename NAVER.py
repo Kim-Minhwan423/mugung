@@ -1,6 +1,5 @@
 import os
 import sys
-import re
 import time
 import datetime
 import logging
@@ -10,12 +9,7 @@ import json
 
 # Selenium
 from selenium import webdriver
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException,
-    WebDriverException,
-    ElementClickInterceptedException
-)
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
@@ -117,15 +111,15 @@ def login_naver(driver, user_id, password):
     try:        
         # 로그인 버튼 클릭
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#account > div > a"))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href*='nid.naver.com']"))
         )
         login_button.click()
         logging.info("로그인 버튼 클릭")
-        time.sleep(5)  # 로그인 처리 대기
+        time.sleep(5)  # 로그인 페이지 로딩 대기
 
         # 아이디 입력
         username_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#input_item_id"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "#id"))
         )
         username_input.click()  # 입력 필드 활성화
         username_input.send_keys(user_id)
@@ -133,7 +127,7 @@ def login_naver(driver, user_id, password):
         time.sleep(1)
 
         # 비밀번호 입력
-        password_input = driver.find_element(By.CSS_SELECTOR, "#input_item_pw")
+        password_input = driver.find_element(By.CSS_SELECTOR, "#pw")
         password_input.click()
         password_input.send_keys(password)
         logging.info("비밀번호 입력 완료")
@@ -172,8 +166,8 @@ def update_google_sheets(client):
         doc = client.open("청라 일일/월말 정산서")
         sheet = doc.worksheet("무궁 청라")  # 원하는 시트 선택
 
-        # 예제 데이터 입력 (추후 크롤링한 데이터 반영)
-        sheet.update("A1", ["업데이트 완료"])
+        # 예제 데이터 입력 (업데이트 시간 기록)
+        sheet.update("A26", [["업데이트 완료", str(datetime.datetime.now())]])
 
         logging.info("Google Sheets 업데이트 완료")
     except Exception as e:
