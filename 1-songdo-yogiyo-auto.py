@@ -36,7 +36,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 ###############################################################################
 def strip_whitespace(data):
     """
-    입력 데이터가 문자열, 딕셔너리, 리스트인 경우 앞뒤 공백을 재귀적으로 제거합니다.
+    입력 데이터가 문자열, 딕셔너리, 리스트인 경우
+    재귀적으로 앞뒤 공백을 제거합니다.
     """
     if isinstance(data, str):
         return data.strip()
@@ -213,7 +214,7 @@ def normalize_product_name(product_text):
     """
     제품명과 수량 정보를 정규화하고, 앞뒤 공백을 제거합니다.
     """
-    # 'strip_whitespace' 함수를 사용하여 앞뒤 공백 제거
+    # 'x' 로 나누어, 제품명과 수량을 각각 strip_whitespace 처리
     parts = product_text.split('x')
     if len(parts) == 2:
         product_name = strip_whitespace(parts[0])
@@ -228,16 +229,15 @@ def normalize_product_name(product_text):
 ###############################################################################
 def parse_yogiyo_order_date(date_text):
     """
-    예) "02.06(목) 오후 04:31:59" → '02.06' 부분 파싱 → (month=2, day=6)로 date 객체 생성.
-    시스템의 현재 연도(datetime.date.today().year)를 사용합니다.
+    예) "02.06(목) 오후 04:31:59"
+     -> '02.06' 부분만 파싱해 date 객체 생성 (year는 현재 연도).
     """
     current_year = datetime.date.today().year
     match = re.search(r'(\d{2})\.(\d{2})', date_text)
     if not match:
         return None
-
     month = int(match.group(1))
-    day   = int(match.group(2))
+    day = int(match.group(2))
     try:
         return datetime.date(current_year, month, day)
     except ValueError:
@@ -248,16 +248,16 @@ def parse_yogiyo_order_date(date_text):
 ###############################################################################
 def get_todays_orders(driver):
     """
-    주문내역 페이지에서 오늘 날짜의 주문만 가져와서
-    - 총 주문금액
+    오늘 날짜의 주문만 가져와서,
+    - 총 주문금액 (fee)
     - 판매 품목(제품명, 수량)
-    을 리스트로 반환.
+    을 딕셔너리로 리턴.
     """
     result_data = []
     today_date = datetime.date.today()
 
-    for i in range(1, 11):  # 최대 10개의 주문 확인 (필요 시 범위 조정)
-        # 1) 날짜 정보 가져오기
+    for i in range(1, 11):  # 최대 10개의 주문 확인
+        # (1) 주문 날짜 확인
         row_date_xpath = (
             "//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{}]/td[1]/div".format(i)
         )
@@ -270,14 +270,15 @@ def get_todays_orders(driver):
             if not parsed_date:
                 logging.info(f"{i}번째 행: '{raw_date_text}' → 날짜 파싱 실패 → 스킵")
                 continue
+
             if parsed_date != today_date:
-                logging.info(f"{i}번째 행: {raw_date_text} (파싱결과: {parsed_date}) 오늘 주문 아님 → 스킵")
+                logging.info(f"{i}번째 행: {raw_date_text} (파싱결과: {parsed_date}) → 오늘 주문 아님 → 스킵")
                 continue
         except TimeoutException:
             logging.warning(f"{i}번째 행 날짜를 찾지 못함 → 스킵")
             continue
 
-        # 2) 오늘 날짜인 경우, 상세보기 팝업 열기
+        # (2) 해당 주문행 클릭하여 팝업 열기
         row_menu_xpath = (
             "//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{}]/td[9]".format(i)
         )
@@ -290,13 +291,13 @@ def get_todays_orders(driver):
             row_elem.click()
             time.sleep(1)  # 팝업 열림 대기
         except TimeoutException:
-            logging.warning(f"{i}번째 행을 찾지 못하거나 클릭 불가")
+            logging.warning(f"{i}번째 행 클릭 불가")
             continue
         except Exception as e:
             logging.error(f"{i}번째 행 클릭 중 오류: {e}")
             continue
 
-        # 3) 팝업 내에서 총 주문금액 추출 (예: '총 결제금액')
+        # (3) 총 주문금액 추출
         fee_selector = (
             "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
             "div > div:nth-child(1) > div > li > "
@@ -307,17 +308,17 @@ def get_todays_orders(driver):
                 EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
             )
             fee_text = fee_elem.text.strip()
-            fee_clean = re.sub(r"[^\d]", "", fee_text)
+            fee_clean = re.sub(r"[^\d]", "", fee_text)  # 숫자만 추출
             fee_value = int(fee_clean) if fee_clean else 0
             logging.info(f"{i}번째 행 팝업: 추출된 총 주문금액 {fee_value}")
         except TimeoutException:
-            logging.warning(f"{i}번째 행 팝업: 총 주문금액 요소를 찾지 못함.")
+            logging.warning(f"{i}번째 행 팝업: 총 주문금액 요소 찾지 못함")
             fee_value = 0
         except Exception as e:
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
 
-        # 4) 품목 정보 추출 및 정규화
+        # (4) 품목 정보 추출
         products = {}
         j = 1
         while True:
@@ -330,28 +331,28 @@ def get_todays_orders(driver):
             )
             try:
                 product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
-                product_name = product_elem.text.strip()
+                product_text = product_elem.text.strip()
 
-                # 배달요금 같은 불필요한 항목 제외
-                if "배달요금" in product_name:
+                # '배달요금' 같은 항목은 스킵
+                if "배달요금" in product_text:
                     j += 1
                     continue
 
                 normalized_product = normalize_product_name(product_text)
-                match = re.search(r"x\s*(\d+)", product_name)
+                match = re.search(r"x\s*(\d+)", product_text)
                 product_qty = int(match.group(1)) if match else 1
 
                 products[normalized_product] = products.get(normalized_product, 0) + product_qty
-                logging.info(f"{i}번째 행 팝업: j={j}, 정규화된 상품명={normalized_product}, 수량={product_qty}")
+                logging.info(f"{i}번째 행 팝업: j={j}, 품명={normalized_product}, 수량={product_qty}")
                 j += 1
             except NoSuchElementException:
                 logging.info(f"{i}번째 행 팝업: 더 이상 {j}번째 품목이 없음 → 품목 추출 완료")
                 break
             except Exception as e:
-                logging.error(f"{i}번째 행 팝업: j={j}번째 품목 추출 중 오류: {e}")
+                logging.error(f"{i}번째 행 팝업: j={j}번째 품목 추출 오류: {e}")
                 break
 
-        # 5) 팝업 닫기
+        # (5) 팝업 닫기
         close_popup_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
         try:
             close_btn = WebDriverWait(driver, 5).until(
@@ -361,9 +362,14 @@ def get_todays_orders(driver):
             logging.info(f"{i}번째 행 팝업 닫기 완료")
             time.sleep(1)
         except Exception as e:
-            logging.error(f"{i}번째 행 팝업 닫기 중 오류: {e}")
+            logging.error(f"{i}번째 행 팝업 닫기 오류: {e}")
 
-        result_data.append({"row_index": i, "fee": fee_value, "products": products})
+        # result_data에 해당 주문 정보 저장
+        result_data.append({
+            "row_index": i,
+            "fee": fee_value,
+            "products": products
+        })
 
     return result_data
 
@@ -375,6 +381,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     - "송도 일일/월말 정산서" 스프레드시트의 "무궁 송도" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
+    # 1) 구글 인증
     yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     service_account_json = base64.b64decode(service_account_json_b64)
     service_account_info = json.loads(service_account_json)
@@ -382,11 +389,12 @@ def update_google_sheets(total_order_amount, aggregated_products):
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scopes)
     gc = gspread.authorize(creds)
 
+    # 2) 스프레드시트 열기
     sh = gc.open("송도 일일/월말 정산서")
 
-    # 1. "무궁 송도" 시트 업데이트 (일일 정산)
+    # 2-1) "무궁 송도" 시트에서 오늘 날짜에 해당하는 행에 총 주문액 업데이트
     sheet_daily = sh.worksheet("무궁 송도")
-    date_values = sheet_daily.get("U3:U33")
+    date_values = sheet_daily.get("U3:U33")  # 날짜가 들어있는 범위
     today_day = str(datetime.datetime.today().day)
     row_index = None
     for i, row in enumerate(date_values, start=3):
@@ -401,11 +409,12 @@ def update_google_sheets(total_order_amount, aggregated_products):
     else:
         logging.warning("오늘 날짜에 해당하는 셀을 무궁 송도 시트에서 찾지 못함")
 
-    # 2. "재고" 시트 업데이트
+    # 2-2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
     clear_ranges = ["F38:F45", "Q38:Q45", "AE38:AF45", "AQ38:AQ45", "BB38:BB45"]
     sheet_inventory.batch_clear(clear_ranges)
 
+    # 품목명→셀 위치 매핑
     update_mapping = {
         '육회비빔밥(1인분)': 'Q43',
         '꼬리곰탕(1인분)': 'F38',
@@ -443,6 +452,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     batch_updates = []
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
+        # 0이면 빈 칸(''), 아니면 해당 수량
         value = "" if qty == 0 else qty
         batch_updates.append({
             "range": cell,
@@ -466,22 +476,23 @@ def main():
         login_yogiyo(driver, yogiyo_id, yogiyo_pw)
         close_popup_if_exist(driver)
 
-        # 2. 스토어 선택, 송도점 진입 및 주문내역 진입
+        # 2. 스토어 선택 → 송도점 진입 → 주문내역 진입
         go_store_selector(driver)
         go_songdo_selector(driver)
-        close_popup_if_exist(driver)
+        close_popup_if_exist(driver)  # 팝업이 있을 수 있으므로 한 번 더 시도
         go_order_history(driver)
 
-        # 3. 오늘 주문 처리 (주문금액 및 품목 정보 집계)
+        # 3. 오늘 날짜의 주문내역 수집
         orders_data = get_todays_orders(driver)
         total_order_amount = sum(order["fee"] for order in orders_data)
 
+        # 3-1. 전체 상품 집계
         aggregated_products = {}
         for order in orders_data:
             for product, qty in order["products"].items():
                 aggregated_products[product] = aggregated_products.get(product, 0) + qty
 
-        # 4. Google Sheets 업데이트 (일일 정산 및 재고)
+        # 4. Google Sheets 업데이트
         update_google_sheets(total_order_amount, aggregated_products)
 
     except Exception as e:
