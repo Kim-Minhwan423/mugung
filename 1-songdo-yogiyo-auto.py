@@ -31,6 +31,21 @@ from webdriver_manager.chrome import ChromeDriverManager
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+###############################################################################
+# 0. 공백 제거를 위한 함수
+###############################################################################
+def strip_whitespace(data):
+    """
+    입력 데이터가 문자열, 딕셔너리, 리스트인 경우 앞뒤 공백을 재귀적으로 제거합니다.
+    """
+    if isinstance(data, str):
+        return data.strip()
+    elif isinstance(data, dict):
+        return {k.strip(): strip_whitespace(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [strip_whitespace(element) for element in data]
+    else:
+        return data
 
 ###############################################################################
 # 1. 로깅 설정
@@ -53,7 +68,6 @@ def setup_logging(log_filename='script.log'):
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-
 ###############################################################################
 # 2. 환경 변수 불러오기
 ###############################################################################
@@ -74,7 +88,6 @@ def get_environment_variables():
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경변수가 설정되지 않았습니다.")
 
     return yogiyo_id, yogiyo_pw, service_account_json_b64
-
 
 ###############################################################################
 # 3. Chrome 드라이버 세팅 (고유 프로필 사용)
@@ -111,7 +124,6 @@ def get_chrome_driver(use_profile=False):
     logging.info("ChromeDriver 초기화 성공")
     return driver
 
-
 ###############################################################################
 # 4. 요기요 로그인 및 페이지 이동
 ###############################################################################
@@ -135,7 +147,6 @@ def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
         logging.warning("로그인 페이지 로딩 Timeout")
     time.sleep(5)
 
-
 def close_popup_if_exist(driver):
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
     try:
@@ -150,7 +161,6 @@ def close_popup_if_exist(driver):
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
     time.sleep(2)
 
-
 def go_store_selector(driver):
     store_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div"
     try:
@@ -160,7 +170,6 @@ def go_store_selector(driver):
     except TimeoutException:
         logging.warning("스토어 셀렉터 버튼을 찾지 못함")
     time.sleep(3)
-
 
 def go_songdo_selector(driver):
     songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
@@ -197,17 +206,22 @@ def go_order_history(driver):
 
     logging.error("3회 시도 후에도 주문내역 버튼을 찾지 못함 → 스크립트 종료")
 
-
 ###############################################################################
-# 5. (필요하면) 상품명 정규화 함수
+# 5. 상품명 정규화 함수 (앞뒤 공백 제거 포함)
 ###############################################################################
 def normalize_product_name(product_text):
     """
-    필요한 경우, 상품명에 대한 커스텀 처리를 수행할 수 있습니다.
-    여기서는 일단 원본 텍스트 그대로 반환.
+    제품명과 수량 정보를 정규화하고, 앞뒤 공백을 제거합니다.
     """
-    return product_text
-
+    # 'strip_whitespace' 함수를 사용하여 앞뒤 공백 제거
+    parts = product_text.split('x')
+    if len(parts) == 2:
+        product_name = strip_whitespace(parts[0])
+        quantity = strip_whitespace(parts[1])
+        return f"{product_name} x {quantity}"
+    else:
+        product_name = strip_whitespace(product_text)
+        return product_name
 
 ###############################################################################
 # 6. 주문 날짜 파싱 헬퍼 함수
@@ -217,23 +231,17 @@ def parse_yogiyo_order_date(date_text):
     예) "02.06(목) 오후 04:31:59" → '02.06' 부분 파싱 → (month=2, day=6)로 date 객체 생성.
     시스템의 현재 연도(datetime.date.today().year)를 사용합니다.
     """
-    import re
     current_year = datetime.date.today().year
-
-    # 정규표현식 예: '02.06' 형태를 캡처
     match = re.search(r'(\d{2})\.(\d{2})', date_text)
     if not match:
         return None
 
-    month = int(match.group(1))  # '02' -> 2
-    day   = int(match.group(2))  # '06' -> 6
-
+    month = int(match.group(1))
+    day   = int(match.group(2))
     try:
         return datetime.date(current_year, month, day)
     except ValueError:
-        # 잘못된 날짜인 경우
         return None
-
 
 ###############################################################################
 # 7. 주문 상세 정보 추출 (오늘 날짜 기준)
@@ -246,30 +254,25 @@ def get_todays_orders(driver):
     을 리스트로 반환.
     """
     result_data = []
-    today_date = datetime.date.today()  # date 객체 (예: 2025-02-06)
+    today_date = datetime.date.today()
 
     for i in range(1, 11):  # 최대 10개의 주문 확인 (필요 시 범위 조정)
         # 1) 날짜 정보 가져오기
         row_date_xpath = (
             "//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{}]/td[1]/div".format(i)
         )
-
         try:
             date_elem = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
             )
             raw_date_text = date_elem.text.strip()
-            # 예: "02.06(목)\n오후 04:31:59" 또는 "02.06(목) 오후 04:31:59"
-
             parsed_date = parse_yogiyo_order_date(raw_date_text)
             if not parsed_date:
                 logging.info(f"{i}번째 행: '{raw_date_text}' → 날짜 파싱 실패 → 스킵")
                 continue
-
             if parsed_date != today_date:
                 logging.info(f"{i}번째 행: {raw_date_text} (파싱결과: {parsed_date}) 오늘 주문 아님 → 스킵")
                 continue
-
         except TimeoutException:
             logging.warning(f"{i}번째 행 날짜를 찾지 못함 → 스킵")
             continue
@@ -293,7 +296,7 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 클릭 중 오류: {e}")
             continue
 
-        # 3) 팝업 내에서 총 주문금액 추출 (예: '총 결제금액' 등)
+        # 3) 팝업 내에서 총 주문금액 추출 (예: '총 결제금액')
         fee_selector = (
             "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
             "div > div:nth-child(1) > div > li > "
@@ -304,7 +307,7 @@ def get_todays_orders(driver):
                 EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
             )
             fee_text = fee_elem.text.strip()
-            fee_clean = re.sub(r"[^\d]", "", fee_text)  # 숫자만 추출
+            fee_clean = re.sub(r"[^\d]", "", fee_text)
             fee_value = int(fee_clean) if fee_clean else 0
             logging.info(f"{i}번째 행 팝업: 추출된 총 주문금액 {fee_value}")
         except TimeoutException:
@@ -313,7 +316,7 @@ def get_todays_orders(driver):
         except Exception as e:
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
-            
+
         # 4) 품목 정보 추출 및 정규화
         products = {}
         j = 1
@@ -332,17 +335,13 @@ def get_todays_orders(driver):
                 # 배달요금 같은 불필요한 항목 제외
                 if "배달요금" in product_text:
                     j += 1
-                    continue  # 다음 품목으로 건너뛰기
+                    continue
 
-                # 정규화된 상품명 변환
                 normalized_product = normalize_product_name(product_text)
-
-                # 'x' 이후의 숫자만 수량으로 인식
                 match = re.search(r"x\s*(\d+)", product_text)
                 product_qty = int(match.group(1)) if match else 1
 
                 products[normalized_product] = products.get(normalized_product, 0) + product_qty
-
                 logging.info(f"{i}번째 행 팝업: j={j}, 정규화된 상품명={normalized_product}, 수량={product_qty}")
                 j += 1
             except NoSuchElementException:
@@ -368,7 +367,6 @@ def get_todays_orders(driver):
 
     return result_data
 
-
 ###############################################################################
 # 8. Google Sheets 업데이트 함수
 ###############################################################################
@@ -377,7 +375,6 @@ def update_google_sheets(total_order_amount, aggregated_products):
     - "송도 일일/월말 정산서" 스프레드시트의 "무궁 송도" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
-    # 서비스 계정 JSON 디코딩 및 인증
     yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
     service_account_json = base64.b64decode(service_account_json_b64)
     service_account_info = json.loads(service_account_json)
@@ -385,7 +382,6 @@ def update_google_sheets(total_order_amount, aggregated_products):
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scopes)
     gc = gspread.authorize(creds)
 
-    # 스프레드시트 이름을 직접 사용 (spreadsheet_id 대신)
     sh = gc.open("송도 일일/월말 정산서")
 
     # 1. "무궁 송도" 시트 업데이트 (일일 정산)
@@ -394,7 +390,6 @@ def update_google_sheets(total_order_amount, aggregated_products):
     today_day = str(datetime.datetime.today().day)
     row_index = None
     for i, row in enumerate(date_values, start=3):
-        # row가 [['1'], ['2'], ...] 구조일 수 있으므로 안전하게 확인
         if row and row[0].strip() == today_day:
             row_index = i
             break
@@ -411,7 +406,6 @@ def update_google_sheets(total_order_amount, aggregated_products):
     clear_ranges = ["F38:F45", "Q38:Q45", "AE38:AF45", "AQ38:AQ45", "BB38:BB45"]
     sheet_inventory.batch_clear(clear_ranges)
 
-    # 품목명 → 시트 셀 위치
     update_mapping = {
         '육회비빔밥(1인분)': 'Q43',
         '꼬리곰탕(1인분)': 'F38',
@@ -446,11 +440,9 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '소성주': 'AQ45'
     }
 
-    # ▶ "0" 대신 빈칸을 입력하도록 변경
     batch_updates = []
     for product, cell in update_mapping.items():
         qty = aggregated_products.get(product, 0)
-        # qty == 0 이면 빈 문자열(''), 그렇지 않으면 qty 값
         value = "" if qty == 0 else qty
         batch_updates.append({
             "range": cell,
@@ -460,7 +452,6 @@ def update_google_sheets(total_order_amount, aggregated_products):
     if batch_updates:
         sheet_inventory.batch_update(batch_updates)
         logging.info("재고 시트 업데이트 완료")
-
 
 ###############################################################################
 # 메인 실행
@@ -485,7 +476,6 @@ def main():
         orders_data = get_todays_orders(driver)
         total_order_amount = sum(order["fee"] for order in orders_data)
 
-        # 모든 상품들을 합산하여 집계
         aggregated_products = {}
         for order in orders_data:
             for product, qty in order["products"].items():
@@ -501,7 +491,5 @@ def main():
         driver.quit()
         logging.info("WebDriver 종료")
 
-
 if __name__ == "__main__":
     main()
-
