@@ -315,18 +315,21 @@ def get_todays_orders(driver):
                 product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
                 product_text = product_elem.text.strip()
 
+                # 배달요금 같은 불필요한 항목 제외
+                if "배달요금" in product_text:
+                    j += 1
+                    continue  # 다음 품목으로 건너뛰기
+
                 # 정규화된 상품명 변환
                 normalized_product = normalize_product_name(product_text)
 
-                # (예시) 수량 추출: 상품명 텍스트 중 숫자만
-                qty_clean = re.sub(r"[^\d]", "", product_text)
-                product_qty = int(qty_clean) if qty_clean else 1
+                # 'x' 이후의 숫자만 수량으로 인식
+                match = re.search(r"x\s*(\d+)", product_text)
+                product_qty = int(match.group(1)) if match else 1
 
                 products[normalized_product] = products.get(normalized_product, 0) + product_qty
 
-                logging.info(
-                    f"{i}번째 행 팝업: j={j}, 정규화된 상품명={normalized_product}, 수량={product_qty}"
-                )
+                logging.info(f"{i}번째 행 팝업: j={j}, 정규화된 상품명={normalized_product}, 수량={product_qty}")
                 j += 1
             except NoSuchElementException:
                 logging.info(f"{i}번째 행 팝업: 더 이상 {j}번째 품목이 없음 → 품목 추출 완료")
