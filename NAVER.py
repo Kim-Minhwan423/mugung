@@ -134,6 +134,19 @@ def login_naver(driver, user_id, password):
         logging.info("로그인 버튼 클릭")
         time.sleep(5)
 
+        try:
+            captcha_text = driver.find_element(By.XPATH, "//*[contains(text(), '자동입력 방지')]")
+            if captcha_text:
+                # 4-1) 사용자에게 캡차 해결을 요청
+                logging.info("캡차(자동입력 방지 문자 또는 퀴즈)가 발견되었습니다. 사용자 입력 대기 중...")
+                input("브라우저에서 캡차/퀴즈를 직접 해결한 뒤 엔터를 눌러주세요...")
+                logging.info("사용자 입력 완료, 로그인 절차 이어서 진행...")
+        except NoSuchElementException:
+            logging.info("캡차(퀴즈) 없음. 로그인 계속 진행합니다.")
+
+        time.sleep(3)
+        # 여기서부터 로그인 성공 후 로직 진행...
+
     except Exception as e:
         logging.error(f"로그인 중 오류 발생: {e}")
         traceback.print_exc()
