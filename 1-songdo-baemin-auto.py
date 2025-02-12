@@ -264,10 +264,6 @@ def login_and_close_popup(driver, wait, username, password):
     login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
-    
-    menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
-    logging.info("로그인 성공")
 
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0.OverlayFooter_b_qmgb_1slqmfa1 > div.Flex_c_qbca_bbdidai.Flex_c_qbca_bbdidak.Flex_c_qbca_bbdida2 > div > button")
     try:
