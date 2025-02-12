@@ -179,6 +179,7 @@ def main():
     try:
         # ✅ 네이버 로그인 (수정된 코드 적용)
         login_naver(driver, user_id=naver_id, password=naver_pw)
+        driver.save_screenshot("full_screenshot.png")
 
         # ✅ Google Sheets 인증
         client = get_gspread_client_from_b64(service_account_json_b64)
