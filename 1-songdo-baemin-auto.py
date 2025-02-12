@@ -268,8 +268,8 @@ def login_and_close_popup(driver, wait, username, password):
     menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
     logging.info("로그인 성공")
-        
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0 > div > div")
+
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0.OverlayFooter_b_qmgb_1slqmfa1 > div.Flex_c_qbca_bbdidai.Flex_c_qbca_bbdidak.Flex_c_qbca_bbdida2 > div > button")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
@@ -294,7 +294,7 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업이 없거나 이미 닫힘")
 
 def navigate_to_order_history(driver, wait):
-    menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
+    menu_button_selector = "#root > div > div.Container_c_qbca_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
     
