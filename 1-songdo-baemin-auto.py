@@ -265,6 +265,7 @@ def login_and_close_popup(driver, wait, username, password):
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
 
+    time.sleep(100)
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0.OverlayFooter_b_qmgb_1slqmfa1 > div.Flex_c_qbca_bbdidai.Flex_c_qbca_bbdidak.Flex_c_qbca_bbdida2 > div > button")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
