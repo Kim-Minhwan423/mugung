@@ -264,12 +264,8 @@ def login_and_close_popup(driver, wait, username, password):
     login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
-    
-    menu_button_selector = "#root > div > div.Container_c_9rpk_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1)"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
-    logging.info("로그인 성공")
         
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 button")
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0.OverlayFooter_b_qmgb_1slqmfa1 > div.Flex_c_qbca_bbdidai.Flex_c_qbca_bbdidak.Flex_c_qbca_bbdida2 > div > button")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
@@ -277,9 +273,17 @@ def login_and_close_popup(driver, wait, username, password):
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
 
-    popup_close_2_selector = ("div[id^='\\:r'] div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0.OverlayFooter_b_9yfm_1slqmfa1 > button")
+    popup_close_2_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayFooter_b_qmgb_1slqmfa0.OverlayFooter_b_qmgb_1slqmfa1 > div.Flex_c_qbca_bbdidai.Flex_c_qbca_bbdidak.Flex_c_qbca_bbdida2 > div > button")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_2_selector)))
+        close_btn.click()
+        logging.info("팝업 닫기 성공")
+    except TimeoutException:
+        logging.info("팝업이 없거나 이미 닫힘")
+        
+    popup_close_3_selector = ("div[id^='\\:r'] div.Container_c_9rpk_1utdzds5.OverlayFooter_b_9yfm_1slqmfa0 > div > button.TextButton_b_9yfm_1j0jumh3.c_9rpk_13ysz3p2.c_9rpk_13ysz3p0.TextButton_b_9yfm_1j0jumh6.TextButton_b_9yfm_1j0jumhb.c_9rpk_13c33de3")
+    try:
+        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_3_selector)))
         close_btn.click()
         logging.info("팝업 닫기 성공")
     except TimeoutException:
