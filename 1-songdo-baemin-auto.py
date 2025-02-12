@@ -289,6 +289,7 @@ def login_and_close_popup(driver, wait, username, password):
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
 
+
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_qbca_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
