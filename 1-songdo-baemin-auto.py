@@ -136,7 +136,7 @@ class SeleniumDriverManager:
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=1180,980")
+        options.add_argument("--window-size=1130,980")
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
