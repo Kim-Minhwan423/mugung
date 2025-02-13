@@ -321,7 +321,7 @@ def set_daily_filter(driver, wait):
 
 
 def extract_order_summary(driver, wait):
-    summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div:nth-child(2) > span.TotalSummary-module__SysK > b"
+    summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
     
     summary_text = driver.find_element(By.CSS_SELECTOR, summary_selector).text.strip()
@@ -336,7 +336,7 @@ def extract_sales_details(driver, wait):
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
             order_button_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
-            
+                                   
             if order_num != 1:
                 try:
                     order_button = driver.find_element(By.XPATH, order_button_xpath)
@@ -344,7 +344,7 @@ def extract_sales_details(driver, wait):
                     wait.until(
                         EC.presence_of_element_located(
                             (By.XPATH, f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]')
-                        )
+                        )                
                     )
                 except NoSuchElementException:
                     logging.debug(f"주문 tr[{order_num}] 버튼 없음, 스킵")
