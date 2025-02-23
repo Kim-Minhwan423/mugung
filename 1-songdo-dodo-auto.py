@@ -78,8 +78,7 @@ def get_environment_variables():
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    # 필요 시 무헤드리스 사용하려면 주석 해제
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new")
 
     # User-Agent (원하시면 조정)
     chrome_options.add_argument(
@@ -87,13 +86,6 @@ def get_chrome_driver(use_profile=False):
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/110.0.5481.77 Safari/537.36"
     )
-
-    if use_profile:
-        unique_id = uuid.uuid4()
-        user_data_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{unique_id}")
-        os.makedirs(user_data_dir, exist_ok=True)
-        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-        logging.info(f"[use_profile={use_profile}] 고유 Chrome 프로필 경로: {user_data_dir}")
 
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
