@@ -5,44 +5,44 @@ on:
     types: [run-chengla-coupang]  # 원하는 이벤트 타입
   workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
-#jobs:
- # run-script:
-  #  runs-on: ubuntu-latest
-
 jobs:
   run-script:
-    runs-on: self-hosted  # 로컬/개인 PC Runner
+    runs-on: ubuntu-latest
+
+#jobs:
+ # run-script:
+  #  runs-on: self-hosted  # 로컬/개인 PC Runner
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
-#      - name: Set up Python
- #       uses: actions/setup-python@v4
-  #      with:
-   #       python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    #  - name: Install Dependencies
-     #   run: |
-      #    python -m pip install --upgrade pip
-       #   pip install -r requirements.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-        shell: cmd  # Windows라면 cmd, Linux면 생략가능
-
-#      - name: Run Coupang Auto Script
- #       run: python 2-chengla-coupang-auto.py
-  #      env:
-   #       CHENGLA_COUPANG_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
-    #      CHENGLA_COUPANG_PW: ${{ secrets.CHENGLA_COUPANG_PW }}
-     #     SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+#      - name: Install dependencies
+ #       run: pip install -r requirements.txt
+  #      shell: cmd  # Windows라면 cmd, Linux면 생략가능
 
       - name: Run Coupang Auto Script
         run: python 2-chengla-coupang-auto.py
-        shell: cmd
         env:
           CHENGLA_COUPANG_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
           CHENGLA_COUPANG_PW: ${{ secrets.CHENGLA_COUPANG_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
-          PYTHONIOENCODING: utf-8
+
+   #   - name: Run Coupang Auto Script
+    #    run: python 2-chengla-coupang-auto.py
+     #   shell: cmd
+      #  env:
+       #   CHENGLA_COUPANG_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
+        #  CHENGLA_COUPANG_PW: ${{ secrets.CHENGLA_COUPANG_PW }}
+         # SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
+          #PYTHONIOENCODING: utf-8
