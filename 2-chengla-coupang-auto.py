@@ -69,7 +69,7 @@ def get_environment_variables():
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -167,10 +167,10 @@ def login_coupang_eats(driver, user_id, password):
         )
         popup_close2.click()
         logging.info("팝업2 닫기 완료")
-        time.sleep(2)
+        time.sleep(200)
     except TimeoutException:
         logging.info("팝업2가 나타나지 않아 스킵")
-
+        
     # 팝업 3
     try:
         popup_close3 = WebDriverWait(driver, 10).until(
