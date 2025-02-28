@@ -167,7 +167,7 @@ def login_coupang_eats(driver, user_id, password):
         )
         popup_close2.click()
         logging.info("팝업2 닫기 완료")
-        time.sleep(200)
+        time.sleep(2)
     except TimeoutException:
         logging.info("팝업2가 나타나지 않아 스킵")
         
