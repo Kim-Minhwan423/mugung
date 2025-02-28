@@ -69,7 +69,7 @@ def get_environment_variables():
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-   # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -141,14 +141,14 @@ def login_coupang_eats(driver, user_id, password):
     )
     login_button.click()
     logging.info("로그인 버튼 클릭")
-    time.sleep(300)  # 페이지 로딩 기다리기
+    time.sleep(3)  # 페이지 로딩 기다리기
 
     # 팝업 1
     try:
         popup_close1 = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button"
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.e3bhtdc15.css-sovg90.e1gf2dph0 > div > div > div > button"
             ))
         )
         popup_close1.click()
@@ -162,7 +162,7 @@ def login_coupang_eats(driver, user_id, password):
         popup_close2 = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button"
             ))
         )
         popup_close2.click()
@@ -170,6 +170,20 @@ def login_coupang_eats(driver, user_id, password):
         time.sleep(2)
     except TimeoutException:
         logging.info("팝업2가 나타나지 않아 스킵")
+
+    # 팝업 3
+    try:
+        popup_close3 = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((
+                By.CSS_SELECTOR,
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
+            ))
+        )
+        popup_close2.click()
+        logging.info("팝업3 닫기 완료")
+        time.sleep(2)
+    except TimeoutException:
+        logging.info("팝업3가 나타나지 않아 스킵")
 
     # 매출관리 버튼
     try:
