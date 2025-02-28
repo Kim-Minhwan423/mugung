@@ -185,7 +185,7 @@ def login_coupang_eats(driver, user_id, password):
                 "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
             ))
         )
-        popup_close2.click()
+        popup_close3.click()
         logging.info("팝업3 닫기 완료")
         time.sleep(2)
     except TimeoutException:
