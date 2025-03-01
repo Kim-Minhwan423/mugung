@@ -117,7 +117,7 @@ def get_environment_variables():
 ###############################################################################
 class SeleniumDriverManager:
     def __init__(self, headless=True, user_agent=None):
-        self.headless = headless
+       # self.headless = headless
         self.user_agent = user_agent or (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
             " AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -129,8 +129,8 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # (필요 시) 헤드리스 모드
-        if self.headless:
-            options.add_argument("--headless")
+        #if self.headless:
+         #   options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -264,6 +264,7 @@ def login_and_close_popup(driver, wait, username, password):
     login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
+    time.sleep(200)
 
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_qbca_1utdzds5.OverlayHeader_b_qmgb_5xyph30.c_qbca_13c33de0 > div.OverlayHeader_b_qmgb_5xyph31.c_qbca_13c33de0.c_qbca_13ysz3p2.c_qbca_13ysz3p0 > div:nth-child(1) > button")
     try:
