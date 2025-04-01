@@ -281,6 +281,8 @@ def navigate_to_order_history(driver, wait):
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.MenuList-module__lZzf.LNB-module__foKc > ul:nth-child(10) > a:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
+
+    time.sleep(3)
     
     date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
