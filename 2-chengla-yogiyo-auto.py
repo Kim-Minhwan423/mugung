@@ -480,10 +480,6 @@ def main():
         close_popup_if_exist(driver)
         go_order_history(driver)
 
-        # 3. 오늘의 주문내역 수집
-        orders_data = get_todays_orders(driver)
-        total_order_amount = sum(order["fee"] for order in orders_data)
-
         # 3-1. 전체 상품 집계
         aggregated_products = {}
         for order in orders_data:
