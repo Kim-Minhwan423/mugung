@@ -95,7 +95,7 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
     # 필요 시 headless 모드 주석 해제
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -479,6 +479,10 @@ def main():
         go_chengla_selector(driver)
         close_popup_if_exist(driver)
         go_order_history(driver)
+
+        # 3. 오늘의 주문내역 수집
+        orders_data = get_todays_orders(driver)
+        total_order_amount = sum(order["fee"] for order in orders_data)
 
         # 3-1. 전체 상품 집계
         aggregated_products = {}
