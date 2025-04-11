@@ -321,8 +321,8 @@ def get_todays_orders(driver):
                 f"div:nth-child({j}) > "
                 "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
             )
-            try:
-                product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
+            try:                
+                product_elem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, product_selector)))
                 product_text = product_elem.text.strip()
 
                 # '배달요금' 같은 불필요 항목은 스킵
