@@ -281,7 +281,7 @@ def get_todays_orders(driver):
             logging.info(f"--- {i}번째 행 (날짜: {parsed_date}) 클릭 시도 ---")
             driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
             row_elem.click()
-            time.sleep(1)  # 팝업 열림 대기
+            time.sleep(3)  # 팝업 열림 대기
         except TimeoutException:
             logging.warning(f"{i}번째 행 클릭 불가")
             continue
@@ -322,9 +322,9 @@ def get_todays_orders(driver):
                 "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
             )
             try:
-                product_elem = driver.find_element(By.CSS_SELECTOR, product_selector)
+                product_elem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, product_selector)))
                 product_text = product_elem.text.strip()
-
+                
                 # '배달요금' 같은 불필요 항목은 스킵
                 if "배달요금" in product_text:
                     j += 1
