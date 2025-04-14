@@ -317,9 +317,9 @@ def get_todays_orders(driver):
             product_selector = (
                 "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
                 "div > div:nth-child(2) > div > div > "
-                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-10.gEOrSU > "
+                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ > "
                 f"div:nth-child({j}) > "
-                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-14.jDwgnm > span:nth-child(1)"
+                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > span:nth-child(1)"
             )
             try:                
                 product_elem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, product_selector)))
