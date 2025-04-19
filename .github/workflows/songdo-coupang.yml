@@ -2,7 +2,7 @@ name: Songdo Coupang
 
 on:
   repository_dispatch:
-    types: [run-coupang-baemin]  # 원하는 이벤트 타입
+    types: [run-songdo-coupang]  # 원하는 이벤트 타입
   workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
         shell: cmd  # Windows라면 cmd, Linux면 생략가능
 
       - name: Run Coupang Auto Script
-        run: python 1-coupang-baemin-auto.py
+        run: python 1-songdo-coupang-auto.py
         shell: cmd
         env:
           SONGDO_COUPANG_ID: ${{ secrets.SONGDO_COUPANG_ID }}
