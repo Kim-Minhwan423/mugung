@@ -92,7 +92,7 @@ def get_chrome_driver(use_profile=False):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1280,960")
+    chrome_options.add_argument("--window-size=1200,960")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -148,7 +148,7 @@ def login_coupang_eats(driver, user_id, password):
         popup_close1 = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-ojiw4b.e1vv5nda2 > div.css-6pkrax.e1vv5nda0 > button.button.button-size--default.button--defaultOutlined.ad-cancel-btn"
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.e3bhtdc15.css-sovg90.e1gf2dph0 > div > div > div > button"
             ))
         )
         popup_close1.click()
