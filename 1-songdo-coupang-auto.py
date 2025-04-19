@@ -98,7 +98,7 @@ def get_chrome_driver(use_profile=False):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1270,960")
+    chrome_options.add_argument("--window-size=1280,960")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
