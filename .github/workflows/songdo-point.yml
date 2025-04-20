@@ -1,8 +1,8 @@
-name: Songdo Dodo
+name: Songdo Point
 
 on:
   repository_dispatch:
-    types: [run-songdo-dodo]  # 원하는 이벤트 타입
+    types: [run-songdo-point]  # 원하는 이벤트 타입
   workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
 jobs:
@@ -23,9 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Dodo Auto Script
-        run: python 1-songdo-dodo-auto.py
+      - name: Run Point Auto Script
+        run: python 1-songdo-point-auto.py
         env:
-          SONGDO_DODO_ID: ${{ secrets.SONGDO_DODO_ID }}
-          SONGDO_DODO_PW: ${{ secrets.SONGDO_DODO_PW }}
+          SONGDO_POINT_ID: ${{ secrets.SONGDO_POINT_ID }}
+          SONGDO_POINT_PW: ${{ secrets.SONGDO_POINT_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
