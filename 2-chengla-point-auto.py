@@ -134,11 +134,11 @@ def pop_up_close(driver):
     """팝업 닫기"""
     pop_up_close_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
     try:
-        btn = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, submit_selector)))
+        btn = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
         btn.click()
         logging.info("기본 팝업 닫기")
     except TimeoutException:
-        logging.info("팝업이 없거나 이미 닫힘 (submit)")
+        logging.info("팝업이 없거나 이미 닫힘")
     except Exception as e:
         logging.warning(f"팝업 닫기 중 예외: {e}")
     time.sleep(5)
@@ -153,13 +153,13 @@ def get_today_visitor_count(driver):
         el = driver.find_element(By.CSS_SELECTOR, visit_selector)
         text = el.text.strip()
         visit_value = re.sub(r'[^\d]', '', text)
-        return int(visit_value or X)
+        return int(visit_value or -1)
     except NoSuchElementException:
-        logging.warning("방문고객 정보 못 찾음, X로 처리")
-        return X
+        logging.warning("방문고객 정보 못 찾음, -1로 처리")
+        return -1
     except Exception as e:
         logging.error(f"방문객 파싱 에러: {e}")
-        return X
+        return -1
 
 ###############################################################################
 # 6. 사용 메뉴
@@ -187,13 +187,13 @@ def get_today_usage_sum(driver):
         el = driver.find_element(By.CSS_SELECTOR, usage_selector)
         text = el.text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
-        return int(usage_value or X)
+        return int(usage_value or -1)
     except NoSuchElementException:
         logging.warning("방문고객 정보 못 찾음, X로 처리")
-        return X
+        return -1
     except Exception as e:
         logging.error(f"방문객 파싱 에러: {e}")
-        return X
+        return -1
 
 ###############################################################################
 # 7. 구글 스프레드시트 batch 업데이트
