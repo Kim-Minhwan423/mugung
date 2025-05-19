@@ -184,7 +184,7 @@ def main():
         spreadsheet = client.open("청라 일일/월말 정산서")  # 스프레드시트 이름
 
         sheet_inventory = spreadsheet.worksheet("재고")    # '재고' 시트 선택
-        sheet_report = spreadsheet.worksheet("무궁 청라")  # '무궁 청라' 시트 선택
+        sheet_report = spreadsheet.worksheet("청라")  # '청라' 시트 선택
 
         # ================================
         # 2. Chrome WebDriver 실행
@@ -458,9 +458,9 @@ def main():
         time.sleep(2)
 
         # ================================================
-        # 10. 데이터 추출 및 스프레드시트 업데이트 ("무궁 청라" 시트)
+        # 10. 데이터 추출 및 스프레드시트 업데이트 ("청라" 시트)
         # ================================================
-        # '무궁 청라' 시트 업데이트를 위한 요청 리스트
+        # '청라' 시트 업데이트를 위한 요청 리스트
         requests = []
 
         # 카드 매출
@@ -614,13 +614,13 @@ def main():
             print(f"[ERROR] 전체 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # "무궁 청라" 시트의 특정 범위를 먼저 비웁니다.
+        # "청라" 시트의 특정 범위를 먼저 비웁니다.
         ranges_report_clear = ["E3", "E5", "E6", "D30", "E30"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
-            print("[INFO] '무궁 청라' 시트 초기화 완료.")
+            print("[INFO] '청라' 시트 초기화 완료.")
         except Exception as e:
-            print(f"[ERROR] '무궁 청라' 시트 초기화 실패: {e}")
+            print(f"[ERROR] '청라' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
         # 숫자 형식 설정을 위한 요청 추가
@@ -657,16 +657,16 @@ def main():
         # 모든 요청을 하나의 리스트로 합칩니다.
         all_requests = requests + number_format_requests
 
-        # "무궁 청라" 시트 배치 업데이트 수행
+        # "청라" 시트 배치 업데이트 수행
         if all_requests:
             try:
                 body = {
                     "requests": all_requests
                 }
                 sheet_report.spreadsheet.batch_update(body)
-                print("[INFO] '무궁 청라' 시트 배치 업데이트 및 형식 적용 완료.")
+                print("[INFO] '청라' 시트 배치 업데이트 및 형식 적용 완료.")
             except Exception as e:
-                print(f"[ERROR] '무궁 청라' 시트 배치 업데이트 실패: {e}")
+                print(f"[ERROR] '청라' 시트 배치 업데이트 실패: {e}")
                 traceback.print_exc()
 
     except Exception as e:
