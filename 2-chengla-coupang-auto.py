@@ -475,14 +475,14 @@ def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
 def update_revenue_by_day(mugeung_sheet, revenue):
     date_in_e1 = mugeung_sheet.acell('E1').value
     if not date_in_e1:
-        logging.warning("[무궁 청라] E1에 날짜가 없습니다.")
+        logging.warning("[청라] E1에 날짜가 없습니다.")
         return
 
     day_str = date_in_e1.split("-")[-1]
     try:
         day_str = str(int(day_str))
     except ValueError:
-        logging.warning(f"[무궁 청라] E1({date_in_e1})에서 일자 추출 실패.")
+        logging.warning(f"[청라] E1({date_in_e1})에서 일자 추출 실패.")
         return
 
     date_cells = mugeung_sheet.range('U3:U33')
@@ -491,12 +491,12 @@ def update_revenue_by_day(mugeung_sheet, revenue):
         if cell.value == day_str:
             row_num = cell.row
             mugeung_sheet.update_cell(row_num, 24, revenue)
-            logging.info(f"[무궁 청라] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
+            logging.info(f"[청라] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
             found = True
             break
 
     if not found:
-        logging.warning(f"[무궁 청라] U열에서 일자 {day_str}를 찾지 못했습니다.")
+        logging.warning(f"[청라] U열에서 일자 {day_str}를 찾지 못했습니다.")
 
 ###############################################################################
 # 9. 메인 실행 흐름
@@ -537,7 +537,7 @@ def main():
     try:
         client = get_gspread_client_from_b64(service_account_json_b64)
         doc = client.open("청라 일일/월말 정산서")
-        mugeung_sheet = doc.worksheet("무궁 청라")
+        mugeung_sheet = doc.worksheet("청라")
         jaego_sheet = doc.worksheet("재고")
 
         # 매출액
