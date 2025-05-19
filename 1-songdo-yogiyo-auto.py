@@ -176,9 +176,9 @@ def go_songdo_selector(driver):
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, songdo_xpath)))
         driver.find_element(By.XPATH, songdo_xpath).click()
-        logging.info("무궁 송도점 선택 완료")
+        logging.info("송도점 선택 완료")
     except TimeoutException:
-        logging.warning("무궁 송도점 버튼을 찾지 못함")
+        logging.warning("송도점 버튼을 찾지 못함")
     time.sleep(3)
 
 def go_order_history(driver):
@@ -373,7 +373,7 @@ def get_todays_orders(driver):
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products):
     """
-    - "송도 일일/월말 정산서" 스프레드시트의 "무궁 송도" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
+    - "송도 일일/월말 정산서" 스프레드시트의 "송도" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
     yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
@@ -385,8 +385,8 @@ def update_google_sheets(total_order_amount, aggregated_products):
 
     sh = gc.open("송도 일일/월말 정산서")
 
-    # 1) "무궁 송도" 시트: 총 주문금액 업데이트
-    sheet_daily = sh.worksheet("무궁 송도")
+    # 1) "송도" 시트: 총 주문금액 업데이트
+    sheet_daily = sh.worksheet("송도")
     date_values = sheet_daily.get("U3:U33")
     today_day = str(datetime.datetime.today().day)
     row_index = None
@@ -398,9 +398,9 @@ def update_google_sheets(total_order_amount, aggregated_products):
     if row_index:
         cell = f"W{row_index}"
         sheet_daily.update_acell(cell, total_order_amount)
-        logging.info(f"무궁 송도 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
+        logging.info(f"송도 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
     else:
-        logging.warning("오늘 날짜에 해당하는 셀을 무궁 송도 시트에서 찾지 못함")
+        logging.warning("오늘 날짜에 해당하는 셀을 송도 시트에서 찾지 못함")
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
