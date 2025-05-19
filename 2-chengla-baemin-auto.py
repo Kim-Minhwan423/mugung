@@ -422,7 +422,7 @@ def main():
     sheets_manager.authenticate()
     
     SPREADSHEET_NAME = "청라 일일/월말 정산서"
-    MU_GUNG_SHEET_NAME = "무궁 청라"
+    MU_GUNG_SHEET_NAME = "청라"
     INVENTORY_SHEET_NAME = "재고"
     
     sheets_manager.open_spreadsheet(SPREADSHEET_NAME)
