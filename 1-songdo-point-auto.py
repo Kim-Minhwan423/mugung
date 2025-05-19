@@ -230,7 +230,7 @@ def batch_update_sheet(service_account_json_b64, usage_sum, visitor_count):
     # 1) gspread client
     client = get_gspread_client_from_b64(service_account_json_b64)
     spreadsheet = client.open("송도 일일/월말 정산서")
-    worksheet = spreadsheet.worksheet("무궁 송도")
+    worksheet = spreadsheet.worksheet("송도")
 
     # 2) 날짜에 따른 행
     today_day = datetime.datetime.now().day
