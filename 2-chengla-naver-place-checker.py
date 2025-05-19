@@ -32,7 +32,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
 client = gspread.authorize(creds)
 
 spreadsheet = client.open("청라 일일/월말 정산서")
-sheet = spreadsheet.worksheet("체험단&예약")
+sheet = spreadsheet.worksheet("예약&마케팅")
 
 # --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
 options = webdriver.ChromeOptions()
