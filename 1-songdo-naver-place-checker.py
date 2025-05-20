@@ -147,7 +147,6 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
     return None
 
 # --- Batch Update ---
-# --- Batch Update ---
 start_row = 55
 end_row = 80
 column_rank = 4
