@@ -149,7 +149,7 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
 # --- Batch Update ---
 start_row = 55
 end_row = 80
-column_rank = 4
+column_rank = 5
 update_data = []
 
 for i, keyword in enumerate(keywords, start=start_row):
@@ -165,11 +165,11 @@ for i, keyword in enumerate(keywords, start=start_row):
         print(f"🚨 '{keyword}' 처리 중 오류: {str(e)}")
         update_data.append([f"오류: {str(e)}"])
 
-update_range = f"D{start_row}:D{end_row}"  # D열만 업데이트
+update_range = f"E{start_row}:E{end_row}"  # E열만 업데이트
 
 try:
     sheet.update(range_name=update_range, values=update_data)
-    print("✅ Google Sheets에 순위 업데이트 완료 (D열만)")
+    print("✅ Google Sheets에 순위 업데이트 완료 (E열만)")
 except Exception as e:
     print(f"🚨 배치 업데이트 중 오류 발생: {e}")
 
