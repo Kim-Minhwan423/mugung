@@ -150,7 +150,6 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
 start_row = 55
 end_row = 80
 column_rank = 4
-column_keyword = 5
 update_data = []
 
 for i, keyword in enumerate(keywords, start=start_row):
@@ -158,19 +157,19 @@ for i, keyword in enumerate(keywords, start=start_row):
         rank = get_place_rank(keyword)
         if rank:
             print(f"✅ '{keyword}'의 순위는 {rank}")
-            update_data.append([rank, keyword])
+            update_data.append([rank])
         else:
             print(f"🚨 '{keyword}'의 순위를 찾지 못했습니다.")
-            update_data.append(["검색결과없음", keyword])
+            update_data.append(["검색결과없음"])
     except Exception as e:
         print(f"🚨 '{keyword}' 처리 중 오류: {str(e)}")
-        update_data.append(["오류 발생", keyword])
+        update_data.append([f"오류: {str(e)}"])
 
-update_range = f"D{start_row}:E{end_row}"
+update_range = f"D{start_row}:D{end_row}"  # D열만 업데이트
 
 try:
     sheet.update(range_name=update_range, values=update_data)
-    print("✅ Google Sheets에 배치 업데이트 완료")
+    print("✅ Google Sheets에 순위 업데이트 완료 (D열만)")
 except Exception as e:
     print(f"🚨 배치 업데이트 중 오류 발생: {e}")
 
