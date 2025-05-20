@@ -129,8 +129,8 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # (필요 시) 헤드리스 모드
-        if self.headless:
-            options.add_argument("--headless")
+       # if self.headless:
+        #    options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -280,6 +280,8 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
+
+time.sleep(50)
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_b149_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
