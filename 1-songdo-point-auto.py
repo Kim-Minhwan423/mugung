@@ -124,7 +124,7 @@ def login_point(driver, point_id, point_pw):
 # 5. 포인트 적립&사용 조회
 ###############################################################################
 def go_visitor_usage_selector(driver):
-    visitor_usage_selector = "body > div > div.nav-container > div.nav-tabs > div > div.nav-item.active"
+    visitor_usage_selector = "body > div > div.nav-container > div.nav-tabs > div > div.nav-item.active > a > i"
     try:
         WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, visitor_usage_selector)))
         driver.find_element(By.CSS_SELECTOR, visitor_usage_selector).click()
