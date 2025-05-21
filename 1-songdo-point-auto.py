@@ -124,14 +124,14 @@ def login_point(driver, point_id, point_pw):
 # 5. 포인트 적립&사용 조회
 ###############################################################################
 def go_visitor_usage_selector(driver):
-    visitor_usage_selector = "body > div > div.nav-container > div.nav-tabs > div > div.nav-item.active > a > i"
+    visitor_usage_xpath = "/html/body/div/div[2]/div[1]/div/div[3]/a"
     try:
-        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, visitor_usage_selector)))
-        driver.find_element(By.CSS_SELECTOR, visitor_usage_selector).click()
+        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, visitor_usage_xpath)))
+        driver.find_element(By.XPATH, visitor_usage_xpath).click()
         logging.info("포인트 적립&사용 조회 메뉴 진입 버튼 클릭")
     except TimeoutException:
         logging.warning("포인트 적립&사용 조회 메뉴 버튼을 찾지 못함")
-    time.sleep(5)
+    time.sleep(3)
 
     today_selector = "#periodFilter > option:nth-child(2)"
     try:
