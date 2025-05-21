@@ -120,23 +120,11 @@ def login_point(driver, point_id, point_pw):
         logging.warning("로그인 페이지 로딩 Timeout")
     time.sleep(5)
 
-def pop_up_close(driver):
-    pop_up_close_selector = "body > div > div > div > div:nth-child(2) > form > div > button"
-    try:
-        btn = WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, pop_up_close_selector)))
-        btn.click()
-        logging.info("기본 팝업 닫기")
-    except TimeoutException:
-        logging.info("팝업이 없거나 이미 닫힘")
-    except Exception as e:
-        logging.warning(f"팝업 닫기 중 예외: {e}")
-    time.sleep(5)
-
 ###############################################################################
 # 5. 포인트 적립&사용 조회
 ###############################################################################
 def go_visitor_usage_selector(driver):
-    visitor_usage_selector = "body > div > div.nav-container > div.nav-tabs > div > div.nav-item.active > a"
+    visitor_usage_selector = "body > div > div.nav-container > div.nav-tabs > div > div.nav-item.active"
     try:
         WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, visitor_usage_selector)))
         driver.find_element(By.CSS_SELECTOR, visitor_usage_selector).click()
@@ -233,7 +221,6 @@ def main():
         driver = get_chrome_driver(use_profile=False)
 
         login_point(driver, point_id, point_pw)
-        pop_up_close(driver)
 
         go_visitor_usage_selector(driver)
         usage = get_today_usage(driver)
