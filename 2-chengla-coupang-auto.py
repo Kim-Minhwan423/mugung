@@ -148,7 +148,7 @@ def login_coupang_eats(driver, user_id, password):
         popup_close1 = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.e3bhtdc15.css-sovg90.e1gf2dph0 > div > div > div > button"
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370"
             ))
         )
         popup_close1.click()
