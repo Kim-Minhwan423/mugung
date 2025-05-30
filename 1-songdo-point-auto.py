@@ -142,9 +142,10 @@ def go_visitor_usage_selector(driver):
         logging.warning("오늘 메뉴 버튼을 찾지 못함")
 
 def get_today_usage(driver):
+    usage_xpath = "//*[@id="filteredUsedValue"]"
     try:
-        usage_selector = "#filteredUsedValue"
-        el = driver.find_element(By.CSS_SELECTOR, usage_selector)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, usage_xpath)))
+        el = driver.find_element(By.Xpath, usage_xpath)
         text = el.text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
         return int(usage_value or -1)
@@ -156,11 +157,10 @@ def get_today_usage(driver):
         return -1
 
 def get_today_saved_count(driver):
+    status_xpath = "//*[@id="filteredCustomersValue"]"
     try:
-        status_selector = "#filteredCustomersValue"
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, status_selector)))
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, status_xpath)))
         text = driver.find_element(By.CSS_SELECTOR, status_selector).text.strip()
-
         match = re.search(r'(\d+)\s*개\s*결과', text)
         if match:
             saved_count = int(match.group(1))
