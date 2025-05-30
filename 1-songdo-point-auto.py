@@ -142,7 +142,7 @@ def go_visitor_usage_selector(driver):
         logging.warning("오늘 메뉴 버튼을 찾지 못함")
 
 def get_today_usage(driver):
-    usage_xpath = "//*[@id="filteredUsedValue"]"
+    usage_xpath = '//*[@id="filteredUsedValue"]'
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, usage_xpath)))
         el = driver.find_element(By.Xpath, usage_xpath)
@@ -157,7 +157,7 @@ def get_today_usage(driver):
         return -1
 
 def get_today_saved_count(driver):
-    status_xpath = "//*[@id="filteredCustomersValue"]"
+    status_xpath = '//*[@id="filteredCustomersValue"]'
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, status_xpath)))
         text = driver.find_element(By.CSS_SELECTOR, status_selector).text.strip()
