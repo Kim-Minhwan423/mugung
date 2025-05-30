@@ -142,12 +142,10 @@ def go_visitor_usage_selector(driver):
         logging.warning("오늘 메뉴 버튼을 찾지 못함")
 
 def get_today_usage(driver):
-    usage_xpath = '//*[@id="filteredUsedValue"]'
+    usage_selector = "#filteredUsedValue"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, usage_xpath)))
-        text = driver.find_element(By.XPATH, usage_xpath).text.strip()
-        logging.info(f"[디버그] 사용금액 텍스트: '{text}'")
-
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, usage_selector)))
+        text = driver.find_element(By.CSS_SELECTOR, usage_selector).text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
         logging.info(f"오늘 사용금액: {usage_value}")
         return int(usage_value) if usage_value else -1
@@ -193,7 +191,7 @@ def get_gspread_client_from_b64(service_account_json_b64):
     client = gspread.authorize(creds)
     return client
 
-def batch_update_sheet(service_account_json_b64, usage, visitor_count):
+def batch_update_sheet(service_account_json_b64, usage_value, visitor_count):
     client = get_gspread_client_from_b64(service_account_json_b64)
     spreadsheet = client.open("송도 일일/월말 정산서")
     worksheet = spreadsheet.worksheet("송도")
@@ -205,11 +203,11 @@ def batch_update_sheet(service_account_json_b64, usage, visitor_count):
     ai_cell = f"AI{row_index}"
 
     updates = [
-        {"range": ak_cell, "values": [[usage]]},
+        {"range": ak_cell, "values": [[usage_value]]},
         {"range": ai_cell, "values": [[visitor_count]]}
     ]
     worksheet.batch_update(updates)
-    logging.info(f"배치 업데이트 완료: {ak_cell}={usage}, {ai_cell}={visitor_count}")
+    logging.info(f"배치 업데이트 완료: {ak_cell}={usage_value}, {ai_cell}={visitor_count}")
 
 ###############################################################################
 # 메인 실행
@@ -224,10 +222,10 @@ def main():
         login_point(driver, point_id, point_pw)
 
         go_visitor_usage_selector(driver)
-        usage = get_today_usage(driver)
+        usage_value = get_today_usage(driver)
         visitor_count = get_today_saved_count(driver)
 
-        batch_update_sheet(service_account_json_b64, usage, visitor_count)
+        batch_update_sheet(service_account_json_b64, usage_value, visitor_count)
 
     except Exception as e:
         logging.error(f"스크립트 실행 중 에러: {e}")
