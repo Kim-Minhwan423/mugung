@@ -145,7 +145,7 @@ def get_today_usage(driver):
     usage_xpath = '//*[@id="filteredUsedValue"]'
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, usage_xpath)))
-        el = driver.find_element(By.Xpath, usage_xpath)
+        el = driver.find_element(By.XPATH, usage_xpath)  # 오타 수정
         text = el.text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
         return int(usage_value or -1)
@@ -160,7 +160,7 @@ def get_today_saved_count(driver):
     status_xpath = '//*[@id="filteredCustomersValue"]'
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, status_xpath)))
-        text = driver.find_element(By.CSS_SELECTOR, status_selector).text.strip()
+        text = driver.find_element(By.XPATH, status_xpath).text.strip()  # 변수명 오류 수정
         match = re.search(r'(\d+)\s*개\s*결과', text)
         if match:
             saved_count = int(match.group(1))
@@ -172,6 +172,7 @@ def get_today_saved_count(driver):
     except Exception as e:
         logging.error(f"적립건수 파싱 오류: {e}")
         return -1
+
 
 ###############################################################################
 # 6. Google Sheets 업데이트
