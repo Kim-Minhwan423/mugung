@@ -145,14 +145,14 @@ def get_today_usage(driver):
     usage_xpath = '//*[@id="filteredUsedValue"]'
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, usage_xpath)))
-        text = driver.find_element(By.XPATH, usage_xpath).text.strip() 
-        logging.info(f"[디버그] 적립건수 텍스트: '{text}'")
+        text = driver.find_element(By.XPATH, usage_xpath).text.strip()
+        logging.info(f"[디버그] 사용금액 텍스트: '{text}'")
 
         usage_value = re.sub(r'[^\d]', '', text)
-        logging.info(f"오늘 적립건수: {usage_count}")
-        return usage_count
+        logging.info(f"오늘 사용금액: {usage_value}")
+        return int(usage_value) if usage_value else -1
     except Exception as e:
-        logging.error(f"적립건수 파싱 오류: {e}")
+        logging.error(f"사용금액 파싱 오류: {e}")
         return -1
 
 def get_today_saved_count(driver):
