@@ -142,36 +142,35 @@ def go_visitor_usage_selector(driver):
         logging.warning("오늘 메뉴 버튼을 찾지 못함")
 
 def get_today_usage(driver):
+    usage_selector = "#filteredUsedValue"
     try:
-        usage_selector = "#filteredUsedValue"
-        el = driver.find_element(By.CSS_SELECTOR, usage_selector)
-        text = el.text.strip()
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.CSS_SELECTOR, usage_selector).text.strip() != ''
+        )
+        text = driver.find_element(By.CSS_SELECTOR, usage_selector).text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
-        return int(usage_value or -1)
-    except NoSuchElementException:
-        logging.warning("사용금액 정보 못 찾음, -1로 처리")
-        return -1
+        logging.info(f"오늘 사용금액: {usage_value}")
+        return int(usage_value) if usage_value else -1
     except Exception as e:
-        logging.error(f"사용금액 파싱 에러: {e}")
+        logging.error(f"사용금액 파싱 오류: {e}")
         return -1
 
 def get_today_saved_count(driver):
+    status_xpath = '//*[@id="filteredCustomersValue"]'
     try:
-        status_selector = "#filteredCustomersValue"
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, status_selector)))
-        text = driver.find_element(By.CSS_SELECTOR, status_selector).text.strip()
-
-        match = re.search(r'(\d+)\s*개\s*결과', text)
-        if match:
-            saved_count = int(match.group(1))
-            logging.info(f"오늘 적립건수: {saved_count}")
-            return saved_count
-        else:
-            logging.warning("적립건수 텍스트에서 숫자 추출 실패")
-            return -1
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, status_xpath).text.strip() != ''
+        )
+        text = driver.find_element(By.XPATH, status_xpath).text.strip()
+        logging.info(f"[디버그] 적립건수 텍스트: '{text}'")
+        saved_count = int(re.sub(r'[^\d]', '', text))
+        logging.info(f"오늘 적립건수: {saved_count}")
+        return saved_count
     except Exception as e:
         logging.error(f"적립건수 파싱 오류: {e}")
         return -1
+
+
 
 ###############################################################################
 # 6. Google Sheets 업데이트
@@ -192,7 +191,7 @@ def get_gspread_client_from_b64(service_account_json_b64):
     client = gspread.authorize(creds)
     return client
 
-def batch_update_sheet(service_account_json_b64, usage, visitor_count):
+def batch_update_sheet(service_account_json_b64, usage_value, visitor_count):
     client = get_gspread_client_from_b64(service_account_json_b64)
     spreadsheet = client.open("청라 일일/월말 정산서")
     worksheet = spreadsheet.worksheet("청라")
@@ -204,11 +203,11 @@ def batch_update_sheet(service_account_json_b64, usage, visitor_count):
     ai_cell = f"AI{row_index}"
 
     updates = [
-        {"range": ak_cell, "values": [[usage]]},
+        {"range": ak_cell, "values": [[usage_value]]},
         {"range": ai_cell, "values": [[visitor_count]]}
     ]
     worksheet.batch_update(updates)
-    logging.info(f"배치 업데이트 완료: {ak_cell}={usage}, {ai_cell}={visitor_count}")
+    logging.info(f"배치 업데이트 완료: {ak_cell}={usage_value}, {ai_cell}={visitor_count}")
 
 ###############################################################################
 # 메인 실행
@@ -223,10 +222,10 @@ def main():
         login_point(driver, point_id, point_pw)
 
         go_visitor_usage_selector(driver)
-        usage = get_today_usage(driver)
+        usage_value = get_today_usage(driver)
         visitor_count = get_today_saved_count(driver)
 
-        batch_update_sheet(service_account_json_b64, usage, visitor_count)
+        batch_update_sheet(service_account_json_b64, usage_value, visitor_count)
 
     except Exception as e:
         logging.error(f"스크립트 실행 중 에러: {e}")
