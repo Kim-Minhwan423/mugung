@@ -143,7 +143,7 @@ def go_visitor_usage_selector(driver):
 
 def get_today_usage(driver):
     try:
-        usage_selector = "body > div > div.nav-container > div.main-tab-content > div.summary-cards > div:nth-child(3) > div.card-content > div.card-value"
+        usage_selector = "#filteredUsedValue"
         el = driver.find_element(By.CSS_SELECTOR, usage_selector)
         text = el.text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
@@ -157,7 +157,7 @@ def get_today_usage(driver):
 
 def get_today_saved_count(driver):
     try:
-        status_selector = "#filterStatusText"
+        status_selector = "#filteredCustomersValue"
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, status_selector)))
         text = driver.find_element(By.CSS_SELECTOR, status_selector).text.strip()
 
