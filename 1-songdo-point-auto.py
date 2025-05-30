@@ -144,7 +144,9 @@ def go_visitor_usage_selector(driver):
 def get_today_usage(driver):
     usage_selector = "#filteredUsedValue"
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, usage_selector)))
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.CSS_SELECTOR, usage_selector).text.strip() != ''
+        )
         text = driver.find_element(By.CSS_SELECTOR, usage_selector).text.strip()
         usage_value = re.sub(r'[^\d]', '', text)
         logging.info(f"오늘 사용금액: {usage_value}")
@@ -156,20 +158,18 @@ def get_today_usage(driver):
 def get_today_saved_count(driver):
     status_xpath = '//*[@id="filteredCustomersValue"]'
     try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, status_xpath)))
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, status_xpath).text.strip() != ''
+        )
         text = driver.find_element(By.XPATH, status_xpath).text.strip()
         logging.info(f"[디버그] 적립건수 텍스트: '{text}'")
-
-        if not text:
-            logging.warning("적립건수 텍스트가 비어 있음")
-            return -1
-
         saved_count = int(re.sub(r'[^\d]', '', text))
         logging.info(f"오늘 적립건수: {saved_count}")
         return saved_count
     except Exception as e:
         logging.error(f"적립건수 파싱 오류: {e}")
         return -1
+
 
 
 ###############################################################################
