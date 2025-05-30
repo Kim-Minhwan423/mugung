@@ -162,6 +162,10 @@ def get_today_saved_count(driver):
         text = driver.find_element(By.XPATH, status_xpath).text.strip()
         logging.info(f"[디버그] 적립건수 텍스트: '{text}'")
 
+        if not text:
+            logging.warning("적립건수 텍스트가 비어 있음")
+            return -1
+
         saved_count = int(re.sub(r'[^\d]', '', text))
         logging.info(f"오늘 적립건수: {saved_count}")
         return saved_count
