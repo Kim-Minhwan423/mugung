@@ -14,8 +14,8 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-        shell: cmd  # Windows라면 cmd, Linux면 생략가능
+        run: python -m pip install -r requirements.txt
+        shell: cmd
 
       - name: Run Baemin Auto Script
         run: python 1-songdo-baemin-auto.py
