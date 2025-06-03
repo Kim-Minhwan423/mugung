@@ -31,29 +31,32 @@ json_path = "/tmp/keyfile.json"
 creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
 client = gspread.authorize(creds)
 
-spreadsheet = client.open("송도 일일/월말 정산서")
+spreadsheet = client.open("송도 일일/월말 정산서")  # 🔄 문서명 변경됨
 sheet = spreadsheet.worksheet("예약&마케팅")
 
-# --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
+# --- 헤드리스 모드 + 설정 조정 ---
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")
+options.add_argument("--headless=new")  # 새로운 headless 모드
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
+options.add_argument("--disable-software-rasterizer")
+options.add_argument("--remote-debugging-port=9222")
 options.add_argument("--lang=ko-KR")
 options.add_argument("--window-size=1920,1080")
 options.add_argument(f"user-agent={user_agent}")
+options.page_load_strategy = 'eager'  # 페이지 로딩 전략 간소화
 
 driver = webdriver.Chrome(
     service=Service(ChromeDriverManager().install()),
     options=options
 )
+driver.set_page_load_timeout(40)
 
-keywords = sheet.col_values(2)[54:80]
+keywords = [kw.strip() for kw in sheet.col_values(2)[54:80] if kw.strip()]
 real_places = []
 
 def robust_scroll():
-    """ 스크롤을 반복하여 검색 결과를 최대로 로드 """
     try:
         scroll_container = driver.find_element(By.XPATH, "//*[@id='_pcmap_list_scroll_container']")
     except NoSuchElementException:
@@ -79,12 +82,11 @@ def robust_scroll():
 
         previous_count = current_count
         attempts += 1
-        time.sleep(3)  # 스크롤 후 3초 대기
+        time.sleep(1.5)
 
     return scroll_container.find_elements(By.CSS_SELECTOR, "li.UEzoS.rTjJo")
 
 def go_to_next_page(page_idx):
-    """ 페이지 버튼 클릭 후 대기 """
     try:
         WebDriverWait(driver, 5).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.zRM9F > a"))
@@ -93,14 +95,13 @@ def go_to_next_page(page_idx):
 
         if page_idx < len(buttons):
             driver.execute_script("arguments[0].click();", buttons[page_idx])
-            time.sleep(5)
+            time.sleep(3)
         else:
             print(f"🚨 page_idx={page_idx}가 버튼 범위 밖입니다.")
     except Exception as e:
         print(f"🚨 다음 페이지 이동 실패: {e}")
 
 def get_places_from_page():
-    """ robust_scroll() 실행 후 광고 제외한 플레이스 목록 저장 """
     place_elements = robust_scroll()
 
     for place in place_elements:
@@ -108,18 +109,17 @@ def get_places_from_page():
             name = place.find_element(By.CSS_SELECTOR, "span.TYaxT").text.strip()
             if not name:
                 continue
-            if "cZnHG" not in place.get_attribute("class"):  # 광고 제외
+            if "cZnHG" not in place.get_attribute("class"):
                 if name not in real_places:
                     real_places.append(name)
         except Exception:
             continue
 
-def get_place_rank(keyword, target_place="무궁 송도점"):
-    """ 특정 키워드에 대한 네이버 플레이스 순위 조회 """
+def get_place_rank(keyword, target_place="무궁 송도점"):  # 🔄 타겟명 변경
     real_places.clear()
     driver.get(f"https://map.naver.com/v5/search/{keyword}")
 
-    time.sleep(7)  # 초기 로딩 시간을 더 길게 설정
+    time.sleep(5)
 
     try:
         WebDriverWait(driver, 20).until(
@@ -129,7 +129,7 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
         driver.switch_to.frame(iframe)
     except TimeoutException:
         print(f"🚨 '{keyword}' 검색 실패: 페이지 로딩 시간 초과")
-        return None
+        return "로딩실패"
 
     try:
         page_buttons = driver.find_elements(By.CSS_SELECTOR, "div.zRM9F > a")
@@ -148,7 +148,6 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
 
 # --- Batch Update ---
 start_row = 55
-end_row = 80
 column_rank = 5
 update_data = []
 
@@ -158,6 +157,8 @@ for i, keyword in enumerate(keywords, start=start_row):
         if rank:
             print(f"✅ '{keyword}'의 순위는 {rank}")
             update_data.append([rank])
+        elif rank == "로딩실패":
+            update_data.append(["로딩실패"])
         else:
             print(f"🚨 '{keyword}'의 순위를 찾지 못했습니다.")
             update_data.append(["검색결과없음"])
@@ -165,7 +166,8 @@ for i, keyword in enumerate(keywords, start=start_row):
         print(f"🚨 '{keyword}' 처리 중 오류: {str(e)}")
         update_data.append([f"오류: {str(e)}"])
 
-update_range = f"E{start_row}:E{end_row}"  # E열만 업데이트
+end_row = start_row + len(update_data) - 1
+update_range = f"E{start_row}:E{end_row}"
 
 try:
     sheet.update(range_name=update_range, values=update_data)
