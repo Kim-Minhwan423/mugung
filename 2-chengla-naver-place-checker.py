@@ -34,22 +34,26 @@ client = gspread.authorize(creds)
 spreadsheet = client.open("청라 일일/월말 정산서")
 sheet = spreadsheet.worksheet("예약&마케팅")
 
-# --- 헤드리스 모드 + 한국어/ko-KR 설정 ---
+# --- 헤드리스 모드 + 설정 조정 ---
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")
+options.add_argument("--headless=new")  # 새로운 headless 모드
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
+options.add_argument("--disable-software-rasterizer")
+options.add_argument("--remote-debugging-port=9222")
 options.add_argument("--lang=ko-KR")
 options.add_argument("--window-size=1920,1080")
 options.add_argument(f"user-agent={user_agent}")
+options.page_load_strategy = 'eager'  # 페이지 로딩 전략 간소화
 
 driver = webdriver.Chrome(
     service=Service(ChromeDriverManager().install()),
     options=options
 )
+driver.set_page_load_timeout(40)
 
-keywords = sheet.col_values(2)[54:80]
+keywords = [kw.strip() for kw in sheet.col_values(2)[54:80] if kw.strip()]
 real_places = []
 
 def robust_scroll():
@@ -79,7 +83,7 @@ def robust_scroll():
 
         previous_count = current_count
         attempts += 1
-        time.sleep(3)
+        time.sleep(1.5)
 
     return scroll_container.find_elements(By.CSS_SELECTOR, "li.UEzoS.rTjJo")
 
@@ -93,7 +97,7 @@ def go_to_next_page(page_idx):
 
         if page_idx < len(buttons):
             driver.execute_script("arguments[0].click();", buttons[page_idx])
-            time.sleep(5)
+            time.sleep(3)
         else:
             print(f"🚨 page_idx={page_idx}가 버튼 범위 밖입니다.")
     except Exception as e:
@@ -119,7 +123,7 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
     real_places.clear()
     driver.get(f"https://map.naver.com/v5/search/{keyword}")
 
-    time.sleep(7)  # 초기 로딩 시간 증가
+    time.sleep(5)
 
     try:
         WebDriverWait(driver, 20).until(
@@ -129,7 +133,7 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
         driver.switch_to.frame(iframe)
     except TimeoutException:
         print(f"🚨 '{keyword}' 검색 실패: 페이지 로딩 시간 초과")
-        return None
+        return "로딩실패"
 
     try:
         page_buttons = driver.find_elements(By.CSS_SELECTOR, "div.zRM9F > a")
@@ -148,7 +152,6 @@ def get_place_rank(keyword, target_place="무궁 청라점"):
 
 # --- Batch Update ---
 start_row = 55
-end_row = 80
 column_rank = 5
 update_data = []
 
@@ -158,6 +161,8 @@ for i, keyword in enumerate(keywords, start=start_row):
         if rank:
             print(f"✅ '{keyword}'의 순위는 {rank}")
             update_data.append([rank])
+        elif rank == "로딩실패":
+            update_data.append(["로딩실패"])
         else:
             print(f"🚨 '{keyword}'의 순위를 찾지 못했습니다.")
             update_data.append(["검색결과없음"])
@@ -165,7 +170,8 @@ for i, keyword in enumerate(keywords, start=start_row):
         print(f"🚨 '{keyword}' 처리 중 오류: {str(e)}")
         update_data.append([f"오류: {str(e)}"])
 
-update_range = f"E{start_row}:E{end_row}"  # E열만 업데이트
+end_row = start_row + len(update_data) - 1
+update_range = f"E{start_row}:E{end_row}"
 
 try:
     sheet.update(range_name=update_range, values=update_data)
