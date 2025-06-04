@@ -115,23 +115,30 @@ def get_places_from_page():
         except Exception:
             continue
 
-def get_place_rank(keyword, target_place="무궁 송도점"):  # 🔄 타겟명 변경
+# get_place_rank 내부에서 iframe 전환 후, 항상 최신 요소를 찾도록 수정
+def get_place_rank(keyword, target_place="무궁 송도점"):
     real_places.clear()
     driver.get(f"https://map.naver.com/v5/search/{keyword}")
 
     time.sleep(5)
 
     try:
+        # iframe 다시 로딩
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.XPATH, "//*[@id='searchIframe']"))
         )
         iframe = driver.find_element(By.XPATH, "//*[@id='searchIframe']")
+        driver.switch_to.default_content()  # 항상 초기화 후 전환
         driver.switch_to.frame(iframe)
     except TimeoutException:
         print(f"🚨 '{keyword}' 검색 실패: 페이지 로딩 시간 초과")
         return "로딩실패"
 
     try:
+        # 페이지 버튼 수를 다시 가져올 때도 항상 최신 요소를 새로 조회
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.zRM9F > a"))
+        )
         page_buttons = driver.find_elements(By.CSS_SELECTOR, "div.zRM9F > a")
         total_pages = len(page_buttons) if page_buttons else 1
     except Exception:
