@@ -118,24 +118,33 @@ def get_places_from_page():
         except Exception:
             continue
 
-# get_place_rank 내부에서 iframe 전환 후, 항상 최신 요소를 찾도록 수정
+def wait_for_iframe(driver, xpath, timeout=40):
+    for _ in range(timeout):
+        try:
+            iframe = driver.find_element(By.XPATH, xpath)
+            return iframe
+        except NoSuchElementException:
+            time.sleep(1)
+    return None
+
 def get_place_rank(keyword, target_place="무궁 청라점"):
     real_places.clear()
     driver.get(f"https://map.naver.com/v5/search/{keyword}")
 
-    time.sleep(5)
+    # iframe 대기 (최대 40초)
+    iframe = wait_for_iframe(driver, "//*[@id='searchIframe']", timeout=40)
+    if not iframe:
+        print(f"🚨 '{keyword}' 검색 실패: iframe 로드 시간 초과")
+        return "로딩실패"
 
     try:
-        # iframe 다시 로딩
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//*[@id='searchIframe']"))
-        )
-        iframe = driver.find_element(By.XPATH, "//*[@id='searchIframe']")
-        driver.switch_to.default_content()  # 항상 초기화 후 전환
+        driver.switch_to.default_content()
         driver.switch_to.frame(iframe)
-    except TimeoutException:
-        print(f"🚨 '{keyword}' 검색 실패: 페이지 로딩 시간 초과")
+    except Exception as e:
+        print(f"🚨 iframe 전환 실패: {e}")
         return "로딩실패"
+    
+    # 이후 기존 로직 계속 진행
 
     try:
         # 페이지 버튼 수를 다시 가져올 때도 항상 최신 요소를 새로 조회
