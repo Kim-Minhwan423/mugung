@@ -14,7 +14,7 @@ client.login(email, password).then(async (result) => {
   console.log('✅ 로그인 성공');
 
   const channels = await client.channelList.all();
-  const targetChannel = channels[0]; // 최근 대화방
+  const targetChannel = channels[무궁]; // 채팅방 이름
 
   if (targetChannel) {
     await targetChannel.sendChat('📦 [무궁] 재고 자동 발주 메시지 테스트');
