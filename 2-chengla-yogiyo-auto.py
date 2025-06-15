@@ -258,7 +258,7 @@ def get_todays_orders(driver):
         try:
             date_elem = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
-           )
+            )
             raw_date_text = date_elem.text.strip()
             parsed_date = parse_yogiyo_order_date(raw_date_text)
             if not parsed_date:
@@ -278,6 +278,10 @@ def get_todays_orders(driver):
             if "취소" in order_status:
                 logging.info(f"{i}번째 행: 상태가 '{order_status}' → 취소 주문 → 스킵")
                 continue
+
+        except TimeoutException:
+            logging.warning(f"{i}번째 행 날짜 또는 상태 정보 찾기 실패 → 스킵")
+            continue
 
         # (2) 상세보기 팝업 열기
         row_menu_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[9]"
