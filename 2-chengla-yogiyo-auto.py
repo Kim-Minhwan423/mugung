@@ -415,7 +415,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
-    clear_ranges = ["F38:F45", "Q38:Q45", "AE38:AF45", "AQ38:AQ45", "BB38:BB45"]
+    clear_ranges = ["F38:F45", "Q38:Q45", "AF38:AF45", "AR38:AR45", "BC38:BC45"]
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
@@ -431,25 +431,25 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '불꼬리찜(2인분)': 'F43',
         '로제꼬리(2인분)': 'F44',
         '꼬리구이(2인분)': 'F45',
-        '코카콜라': 'AE42',
-        '스프라이트': 'AE43',
-        '토닉워터': 'AE44',
-        '제로콜라': 'AE41',
-        '만월 360ml': 'AQ39',
-        '문배술25 375ml': 'AQ40',
-        '로아 화이트 350ml': 'AQ43',
-        '황금보리 375ml': 'AQ38',
-        '왕율주 360ml': 'AQ41',
-        '왕주 375ml': 'AQ42',
-        '청하': 'BB38',
-        '참이슬': 'BB39',
-        '처음처럼': 'BB40',
-        '새로': 'BB42',
-        '진로이즈백': 'BB41',
-        '카스': 'BB43',
-        '테라': 'BB44',
-        '켈리': 'BB45',
-        '소성주': 'AQ45'
+        '코카콜라': 'AF42',
+        '스프라이트': 'AF43',
+        '토닉워터': 'AF44',
+        '제로콜라': 'AF41',
+        '만월 360ml': 'AR39',
+        '문배술25 375ml': 'AR40',
+        '로아 화이트 350ml': 'AR43',
+        '황금보리 375ml': 'AR38',
+        '왕율주 360ml': 'AR41',
+        '왕주 375ml': 'AR42',
+        '청하': 'BC38',
+        '참이슬': 'BC39',
+        '처음처럼': 'BC40',
+        '새로': 'BC42',
+        '진로이즈백': 'BC41',
+        '카스': 'BC43',
+        '테라': 'BC44',
+        '켈리': 'BC45',
+        '소성주': 'AR45'
     }
 
     # (디버깅) aggregated_products 내용 로그
