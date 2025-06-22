@@ -193,7 +193,7 @@ def main():
         options = webdriver.ChromeOptions()
 
         # 1) Headless (GUI 없이 동작)
-        options.add_argument("--headless=new")  # 최신 headless 모드 사용
+       # options.add_argument("--headless=new")  # 최신 headless 모드 사용
 
         # 2) 서버 환경 안정성 옵션
         options.add_argument("--no-sandbox")
