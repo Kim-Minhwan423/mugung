@@ -288,26 +288,26 @@ def main():
         print("[INFO] 매출분석 탭 클릭 완료.")
         time.sleep(1)
 
-        # 상품분석 탭 클릭
+        # 기간별매출조회 탭 클릭
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_2_cell_2_0_controltreeTextBoxElement"))
         )
         period_sales = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"
+            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_2_cell_2_0_controltreeTextBoxElement"
         )
         period_sales.click()
-        print("[INFO] 상품분석 탭 클릭 완료.")
+        print("[INFO] 기간별매출조회 탭 클릭 완료.")
         time.sleep(1)
 
-        # 상품별 일매출분석 탭 클릭
+        # 특정기간 상품별 탭 클릭
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_6_cell_6_0_controltreeTextBoxElement"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_3_cell_3_0_controltreeTextBoxElement"))
         )
         specific_period_item = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_6_cell_6_0_controltreeTextBoxElement"
+            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_3_cell_3_0_controltreeTextBoxElement"
         )
         specific_period_item.click()
-        print("[INFO] 상품별 일매출분석 탭 클릭 완료.")
+        print("[INFO] 특정기간 상품별 탭 클릭 완료.")
         time.sleep(1)
 
         # ================================================
@@ -321,16 +321,6 @@ def main():
         )
         today_btn.click()
         print("[INFO] 당일 버튼 클릭 완료.")
-        time.sleep(1)
-
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_chkItemCd_chkimg"))
-        )
-        code_search_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_chkItemCd_chkimg"
-        )
-        code_search_btn.click()
-        print("[INFO] 상품코드 표기 버튼 클릭 완료.")
         time.sleep(1)
 
         WebDriverWait(driver, 10).until(
