@@ -333,28 +333,31 @@ def main():
         print("[INFO] 상품코드 표기 버튼 클릭 완료.")
         time.sleep(1)
 
+        # ▼ 드롭다운 열기
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_dropbutton"))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_dropbutton"))
         )
-        code_btn = driver.find_element(
+        dropdown_btn = driver.find_element(
             By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_dropbutton"
         )
-        code_btn.click()
-        print("[INFO] 부가메뉴 포함 버튼 클릭 완료.")
-        time.sleep(1)
-        
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_comboeditInputElement"))
-        )
-        code_2_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_comboeditInputElement"
-        )
-        code_2_btn.click()
-        print("[INFO] 부가메뉴 포함 버튼 클릭 완료.")
+        dropdown_btn.click()
+        print("[INFO] 부가메뉴 포함 드롭다운 열기 완료.")
         time.sleep(1)
 
+        # ▼ 드롭다운에서 "부가메뉴포함" 항목 선택
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"))
+            EC.element_to_be_clickable((By.XPATH, '//div[contains(@id, "cboSrchFg_combopopup")]//div[contains(text(), "부가메뉴포함")]'))
+        )
+        menu_include_option = driver.find_element(
+            By.XPATH, '//div[contains(@id, "cboSrchFg_combopopup")]//div[contains(text(), "부가메뉴포함")]'
+        )
+        menu_include_option.click()
+        print("[INFO] '부가메뉴포함' 항목 클릭 완료.")
+        time.sleep(1)
+
+        # ▼ 조회 버튼 클릭
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"))
         )
         search_btn = driver.find_element(
             By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"
