@@ -358,7 +358,9 @@ def parse_expanded_order(driver):
             lines = raw_name.split('\n')
             item_name = lines[0]
 
-            # 옵션에 '中'이 있으면 이름을 '中'으로 변경
+            item_qty = qty_el.text.strip()
+
+            # 옵션에 '中' 포함 여부 확인
             try:
                 sub_option_el = item_el.find_element(
                     By.CSS_SELECTOR,
@@ -366,12 +368,12 @@ def parse_expanded_order(driver):
                 )
                 sub_text = sub_option_el.text.strip()
                 if '中' in sub_text:
-                    item_name = '中'
+                    results.append(('中', item_qty))
                     logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
             except NoSuchElementException:
-                pass
+                pass  # 옵션 없으면 무시
 
-            item_qty = qty_el.text.strip()
+            # 원래 이름도 매핑용으로 기록
             results.append((item_name, item_qty))
             logging.info(f"  - ({idx}) 품목명='{item_name}', 판매량='{item_qty}'")
 
@@ -379,7 +381,6 @@ def parse_expanded_order(driver):
             logging.warning(f"  - ({idx})번 아이템 파싱 실패: {e}")
 
     return results
-
 
 # ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
 def scrape_orders_in_page(driver):
