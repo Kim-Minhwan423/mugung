@@ -348,20 +348,22 @@ def parse_expanded_order(driver):
             name_el = item_el.find_element(By.CSS_SELECTOR, "div > div:nth-child(1)")
             qty_el = item_el.find_element(By.CSS_SELECTOR, "div > div.col-2.text-nowrap")
 
-            # 메뉴 이름
             raw_name = name_el.text.strip()
             lines = raw_name.split('\n')
             item_name = lines[0]
 
-            # 서브옵션 중에 '中' 포함 여부 검사
+            # 옵션에 '中'이 있으면 이름을 '中'으로 변경
             try:
-                sub_option_el = item_el.find_element(By.CSS_SELECTOR, "div > div:nth-child(1) > ul > li:nth-child(1) > span")
+                sub_option_el = item_el.find_element(
+                    By.CSS_SELECTOR,
+                    "div > div:nth-child(1) > ul > li:nth-child(1) > span"
+                )
                 sub_text = sub_option_el.text.strip()
                 if '中' in sub_text:
-                    item_name = '中'  # 매핑에서 '中': 'G45'로 처리됨
-                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑 전환")
+                    item_name = '中'
+                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
             except NoSuchElementException:
-                pass  # 옵션 없으면 무시
+                pass
 
             item_qty = qty_el.text.strip()
             results.append((item_name, item_qty))
@@ -371,6 +373,17 @@ def parse_expanded_order(driver):
             logging.warning(f"  - ({idx})번 아이템 파싱 실패: {e}")
 
     return results
+
+
+# ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
+def scrape_orders_in_page(driver):
+    all_items = []
+    for i in range(1, 11):  # 한 페이지에 최대 10개 주문
+        items = expand_and_parse_order(driver, i)
+        if items:
+            all_items.extend(items)
+    return all_items
+
 
 def scrape_all_pages_by_buttons(driver):
     all_data = []
@@ -388,8 +401,6 @@ def scrape_all_pages_by_buttons(driver):
             break
 
         current_page = next_page
-        # 이미 go_to_page_button에서 time.sleep(3)과 WebDriverWait(10)이 있음
-        # 여기서는 추가로 1초만 대기
         time.sleep(1)
 
     return all_data
