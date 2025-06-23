@@ -348,9 +348,20 @@ def parse_expanded_order(driver):
             name_el = item_el.find_element(By.CSS_SELECTOR, "div > div:nth-child(1)")
             qty_el = item_el.find_element(By.CSS_SELECTOR, "div > div.col-2.text-nowrap")
 
+            # 메뉴 이름
             raw_name = name_el.text.strip()
             lines = raw_name.split('\n')
             item_name = lines[0]
+
+            # 서브옵션 중에 '中' 포함 여부 검사
+            try:
+                sub_option_el = item_el.find_element(By.CSS_SELECTOR, "div > div:nth-child(1) > ul > li:nth-child(1) > span")
+                sub_text = sub_option_el.text.strip()
+                if '中' in sub_text:
+                    item_name = '中'  # 매핑에서 '中': 'G45'로 처리됨
+                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑 전환")
+            except NoSuchElementException:
+                pass  # 옵션 없으면 무시
 
             item_qty = qty_el.text.strip()
             results.append((item_name, item_qty))
@@ -360,43 +371,6 @@ def parse_expanded_order(driver):
             logging.warning(f"  - ({idx})번 아이템 파싱 실패: {e}")
 
     return results
-
-def scrape_orders_in_page(driver):
-    all_items = []
-    for i in range(1, 11):
-        items = expand_and_parse_order(driver, i)
-        if items:
-            all_items.extend(items)
-    return all_items
-
-def go_to_page_button(driver, page_number):
-    if page_number == 1:
-        return True
-
-    nth = page_number + 2
-    selector = (
-        "#merchant-management > div > div > div.management-scroll > "
-        "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
-        "div > div > div > div > div:nth-child(5) > div > div > div > div > ul > "
-        f"li:nth-child({nth}) > button"
-    )
-    try:
-        page_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
-        )
-        page_btn.click()
-        logging.info(f"{page_number}페이지 버튼 클릭 성공")
-        time.sleep(3)  # 페이지 전환 대기
-
-        # 여기서 추가로 'ul.order-search-result-content.row'가 뜰 때까지 대기
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "ul.order-search-result-content.row"))
-        )
-        logging.info(f"{page_number}페이지 로딩 대기 완료")
-        return True
-    except TimeoutException:
-        logging.info(f"{page_number}페이지 버튼을 찾거나 로딩이 안 됐습니다.")
-        return False
 
 def scrape_all_pages_by_buttons(driver):
     all_data = []
@@ -556,7 +530,7 @@ def main():
             '소꼬리찜': 'G42',
             '불꼬리찜': 'G43',
             '로제꼬리': 'G44',
-            '꼬리구이': 'G45',
+            '中': 'G45',
             '코카콜라 355ml': 'AH42',
             '스프라이트 355ml': 'AH43',
             '토닉워터 300ml': 'AH44',
