@@ -298,13 +298,16 @@ def expand_and_parse_order(driver, order_index):
 
     expand_btn = None
     try:
+        # 버튼 대기를 10초로
         expand_btn = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, expand_selector))
         )
 
+        # 스크롤
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", expand_btn)
         time.sleep(1)
 
+        # 클릭
         expand_btn.click()
         logging.info(f"{order_index}번째 주문 펼치기 버튼 클릭 성공")
 
@@ -329,7 +332,7 @@ def expand_and_parse_order(driver, order_index):
         logging.warning(f"{order_index}번째 주문 펼치기 클릭 오류: {e}")
         return []
 
-    time.sleep(2)
+    time.sleep(2)  # 펼치기 후 로딩
     return parse_expanded_order(driver)
 
 def parse_expanded_order(driver):
@@ -355,6 +358,19 @@ def parse_expanded_order(driver):
             lines = raw_name.split('\n')
             item_name = lines[0]
 
+            # 옵션에 '中'이 있으면 이름을 '中'으로 변경
+            try:
+                sub_option_el = item_el.find_element(
+                    By.CSS_SELECTOR,
+                    "div > div:nth-child(1) > ul > li:nth-child(1) > span"
+                )
+                sub_text = sub_option_el.text.strip()
+                if '中' in sub_text:
+                    item_name = '中'
+                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
+            except NoSuchElementException:
+                pass
+
             item_qty = qty_el.text.strip()
             results.append((item_name, item_qty))
             logging.info(f"  - ({idx}) 품목명='{item_name}', 판매량='{item_qty}'")
@@ -364,41 +380,16 @@ def parse_expanded_order(driver):
 
     return results
 
+
+# ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
 def scrape_orders_in_page(driver):
     all_items = []
-    for i in range(1, 11):
+    for i in range(1, 11):  # 한 페이지에 최대 10개 주문
         items = expand_and_parse_order(driver, i)
         if items:
             all_items.extend(items)
     return all_items
 
-def go_to_page_button(driver, page_number):
-    if page_number == 1:
-        return True
-
-    nth = page_number + 2
-    selector = (
-        "#merchant-management > div > div > div.management-scroll > "
-        "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
-        "div > div > div > div > div:nth-child(5) > div > div > div > div > ul > "
-        f"li:nth-child({nth}) > button"
-    )
-    try:
-        page_btn = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
-        )
-        page_btn.click()
-        logging.info(f"{page_number}페이지 버튼 클릭 성공")
-        time.sleep(3)
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "ul.order-search-result-content.row"))
-        )
-        logging.info(f"{page_number}페이지 로딩 대기 완료")
-        return True
-    except TimeoutException:
-        logging.info(f"{page_number}페이지 버튼을 찾거나 로딩이 안 됐습니다.")
-        return False
 
 def scrape_all_pages_by_buttons(driver):
     all_data = []
@@ -558,7 +549,8 @@ def main():
             '소꼬리찜': 'G42',
             '불꼬리찜': 'G43',
             '로제꼬리': 'G44',
-            '꼬리구이': 'G45',
+            '中': 'G45',
+            '꼬리구이': 'G46',
             '코카콜라 355ml': 'AG42',
             '스프라이트 355ml': 'AG43',
             '토닉워터 300ml': 'AG44',
