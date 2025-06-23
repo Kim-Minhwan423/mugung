@@ -325,6 +325,7 @@ def get_todays_orders(driver):
         products = {}
         j = 1
         while True:
+            # 원래 품목 텍스트 추출
             product_selector = (
                 "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
                 "div > div:nth-child(2) > div > div > "
@@ -332,25 +333,33 @@ def get_todays_orders(driver):
                 f"div:nth-child({j}) > "
                 "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > span:nth-child(1)"
             )
+            
             try:
                 product_elem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, product_selector)))
                 product_text = product_elem.text.strip()
-                
-                # '배달요금' 같은 불필요 항목은 스킵
+
+                # 중간 단계에서 '中' 포함 여부 체크
+                if product_text == "中":
+                    products["中"] = products.get("中", 0) + 1
+                    logging.info(f"{i}번째 행 팝업: j={j}, 품명='中', 수량=1 (특수항목)")
+                    j += 1
+                    continue
+
+                # 일반 품목 처리
                 if "배달요금" in product_text:
                     j += 1
                     continue
 
-                # 1) 수량 파싱 (ex: "... x 2" -> 2)
+                # 수량 파싱
                 match = re.search(r"x\s*(\d+)", product_text)
                 product_qty = int(match.group(1)) if match else 1
 
-                # 2) 상품명 정규화 (ex: "소꼬리찜(2인분) x 1" -> "소꼬리찜(2인분)")
+                # 품명 정규화
                 cleaned_name = normalize_product_name(product_text)
-
                 products[cleaned_name] = products.get(cleaned_name, 0) + product_qty
                 logging.info(f"{i}번째 행 팝업: j={j}, 품명={cleaned_name}, 수량={product_qty}")
                 j += 1
+
             except NoSuchElementException:
                 logging.info(f"{i}번째 행 팝업: 더 이상 {j}번째 품목이 없음 → 품목 추출 완료")
                 break
