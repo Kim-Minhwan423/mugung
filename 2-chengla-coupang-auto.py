@@ -352,7 +352,9 @@ def parse_expanded_order(driver):
             lines = raw_name.split('\n')
             item_name = lines[0]
 
-            # 옵션에 '中'이 있으면 이름을 '中'으로 변경
+            item_qty = qty_el.text.strip()
+
+            # 옵션에 '中' 포함 여부 확인
             try:
                 sub_option_el = item_el.find_element(
                     By.CSS_SELECTOR,
@@ -360,12 +362,12 @@ def parse_expanded_order(driver):
                 )
                 sub_text = sub_option_el.text.strip()
                 if '中' in sub_text:
-                    item_name = '中'
+                    results.append(('中', item_qty))
                     logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
             except NoSuchElementException:
-                pass
+                pass  # 옵션 없으면 무시
 
-            item_qty = qty_el.text.strip()
+            # 원래 이름도 매핑용으로 기록
             results.append((item_name, item_qty))
             logging.info(f"  - ({idx}) 품목명='{item_name}', 판매량='{item_qty}'")
 
@@ -373,6 +375,7 @@ def parse_expanded_order(driver):
             logging.warning(f"  - ({idx})번 아이템 파싱 실패: {e}")
 
     return results
+
 
 
 # ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
@@ -404,6 +407,36 @@ def scrape_all_pages_by_buttons(driver):
         time.sleep(1)
 
     return all_data
+
+def go_to_page_button(driver, page_number):
+    if page_number == 1:
+        return True
+
+    nth = page_number + 2  # 페이지 버튼의 li 인덱스 위치 계산
+    selector = (
+        "#merchant-management > div > div > div.management-scroll > "
+        "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
+        "div > div > div > div > div:nth-child(5) > div > div > div > div > ul > "
+        f"li:nth-child({nth}) > button"
+    )
+
+    try:
+        page_btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+        )
+        page_btn.click()
+        logging.info(f"{page_number}페이지 버튼 클릭 성공")
+        time.sleep(3)  # 페이지 로딩 기다림
+
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "ul.order-search-result-content.row"))
+        )
+        logging.info(f"{page_number}페이지 로딩 완료")
+        return True
+    except TimeoutException:
+        logging.info(f"{page_number}페이지 버튼 클릭 실패 또는 존재하지 않음")
+        return False
+
 
 ###############################################################################
 # 8. 구글 시트
