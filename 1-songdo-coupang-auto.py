@@ -50,15 +50,9 @@ def setup_logging(log_filename='script.log'):
     logger.addHandler(file_handler)
 
 ###############################################################################
-# 2. 환경 변수 불러오기 (SONGDO)
+# 2. 환경 변수 불러오기
 ###############################################################################
 def get_environment_variables():
-    """
-    필수 환경 변수:
-        - SONGDO_COUPANG_ID (쿠팡 아이디)
-        - SONGDO_COUPANG_PW (쿠팡 비밀번호)
-        - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
-    """
     coupang_id = os.getenv("SONGDO_COUPANG_ID")
     coupang_pw = os.getenv("SONGDO_COUPANG_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
@@ -148,7 +142,7 @@ def login_coupang_eats(driver, user_id, password):
     login_button.click()
     logging.info("로그인 버튼 클릭")
     time.sleep(3)  # 페이지 로딩 기다리기
-    
+
     # 팝업 1
     try:
         popup_close1 = WebDriverWait(driver, 10).until(
@@ -176,7 +170,7 @@ def login_coupang_eats(driver, user_id, password):
         time.sleep(2)
     except TimeoutException:
         logging.info("팝업2가 나타나지 않아 스킵")
-
+        
     # 팝업 3
     try:
         popup_close3 = WebDriverWait(driver, 10).until(
@@ -190,7 +184,7 @@ def login_coupang_eats(driver, user_id, password):
         time.sleep(2)
     except TimeoutException:
         logging.info("팝업3가 나타나지 않아 스킵")
-        
+
     # 매출관리 버튼
     try:
         order_management_button = WebDriverWait(driver, 10).until(
@@ -382,6 +376,8 @@ def parse_expanded_order(driver):
 
     return results
 
+
+
 # ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
 def scrape_orders_in_page(driver):
     all_items = []
@@ -390,6 +386,7 @@ def scrape_orders_in_page(driver):
         if items:
             all_items.extend(items)
     return all_items
+
 
 def scrape_all_pages_by_buttons(driver):
     all_data = []
@@ -440,6 +437,7 @@ def go_to_page_button(driver, page_number):
         logging.info(f"{page_number}페이지 버튼 클릭 실패 또는 존재하지 않음")
         return False
 
+
 ###############################################################################
 # 8. 구글 시트
 ###############################################################################
@@ -461,9 +459,9 @@ def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
     ranges_to_clear = [
         "G38:G45",
         "R38:R45",
-        "AG38:AG45",
-        "AR38:AR45",
-        "BC38:BC45"
+        "AH38:AH45",
+        "AS38:AS45",
+        "BD38:BD45"
     ]
     try:
         jaego_sheet.batch_clear(ranges_to_clear)
@@ -556,9 +554,7 @@ def main():
     # 5) 구글 시트
     try:
         client = get_gspread_client_from_b64(service_account_json_b64)
-        # 문서 이름: "송도 일일/월말 정산서"
         doc = client.open("송도 일일/월말 정산서")
-        # 시트 이름: "송도"
         mugeung_sheet = doc.worksheet("송도")
         jaego_sheet = doc.worksheet("재고")
 
@@ -580,25 +576,25 @@ def main():
             '로제꼬리': 'G44',
             '中': 'G45',
             '꼬리구이': 'G46',
-            '코카콜라 355ml': 'AG42',
-            '스프라이트 355ml': 'AG43',
-            '토닉워터 300ml': 'AG44',
-            '제로콜라 355ml': 'AG41',
-            '만월24 360ml': 'AR39',
-            '문배술25 375ml': 'AR40',
-            '배도가 로아 화이트 350ml': 'AR43',
-            '황금보리 375ml': 'AR38',
-            '사곡양조 왕율주 360ml': 'AR41',
-            '왕주13 375ml': 'AR42',
-            '청하 300ml': 'BC38',
-            '참이슬 후레쉬 360ml': 'BC39',
-            '처음처럼 360ml': 'BC40',
-            '새로 360ml': 'BC42',
-            '진로이즈백 360ml': 'BC41',
-            '카스 500ml': 'BC43',
-            '테라 500ml': 'BC44',
-            '켈리 500ml': 'BC45',
-            '소성주 750ml': 'AR45'
+            '코카콜라 355ml': 'AH42',
+            '스프라이트 355ml': 'AH43',
+            '토닉워터 300ml': 'AH44',
+            '제로콜라 355ml': 'AH41',
+            '만월24 360ml': 'AS39',
+            '문배술25 375ml': 'AS40',
+            '배도가 로아 화이트 350ml': 'AS43',
+            '황금보리 375ml': 'AS38',
+            '사곡양조 왕율주 360ml': 'AS41',
+            '왕주13 375ml': 'AS42',
+            '청하 300ml': 'BD38',
+            '참이슬 후레쉬 360ml': 'BD39',
+            '처음처럼 360ml': 'BD40',
+            '새로 360ml': 'BD42',
+            '진로이즈백 360ml': 'BD41',
+            '카스 500ml': 'BD43',
+            '테라 500ml': 'BD44',
+            '켈리 500ml': 'BD45',
+            '소성주 750ml': 'AS45'
         }
 
         item_quantity_map = {}
