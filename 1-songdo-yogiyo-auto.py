@@ -172,7 +172,7 @@ def go_store_selector(driver):
     time.sleep(3)
 
 def go_songdo_selector(driver):
-    songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
+    songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, songdo_xpath)))
         driver.find_element(By.XPATH, songdo_xpath).click()
@@ -258,7 +258,7 @@ def get_todays_orders(driver):
         try:
             date_elem = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
-           )
+            )
             raw_date_text = date_elem.text.strip()
             parsed_date = parse_yogiyo_order_date(raw_date_text)
             if not parsed_date:
@@ -292,7 +292,7 @@ def get_todays_orders(driver):
             logging.info(f"--- {i}번째 행 (날짜: {parsed_date}) 클릭 시도 ---")
             driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
             row_elem.click()
-            time.sleep(1)  # 팝업 열림 대기
+            time.sleep(3)  # 팝업 열림 대기
         except TimeoutException:
             logging.warning(f"{i}번째 행 클릭 불가")
             continue
@@ -320,7 +320,7 @@ def get_todays_orders(driver):
         except Exception as e:
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
-            
+
         # (4) 품목 정보 추출
         products = {}
         j = 1
@@ -424,7 +424,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
-    clear_ranges = ["F38:F45", "Q38:Q45", "AE38:AF45", "AQ38:AQ45", "BB38:BB45"]
+    clear_ranges = ["F38:F45", "Q38:Q45", "AF38:AF45", "AR38:AR45", "BC38:BC45"]
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
@@ -441,25 +441,25 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '로제꼬리': 'F44',
         '中': 'F45',
         '꼬리구이': 'F46',
-        '코카콜라': 'AE42',
-        '스프라이트': 'AE43',
-        '토닉워터': 'AE44',
-        '제로콜라': 'AE41',
-        '만월 360ml': 'AQ39',
-        '문배술25 375ml': 'AQ40',
-        '로아 화이트 350ml': 'AQ43',
-        '황금보리 375ml': 'AQ38',
-        '왕율주 360ml': 'AQ41',
-        '왕주 375ml': 'AQ42',
-        '청하': 'BB38',
-        '참이슬': 'BB39',
-        '처음처럼': 'BB40',
-        '새로': 'BB42',
-        '진로이즈백': 'BB41',
-        '카스': 'BB43',
-        '테라': 'BB44',
-        '켈리': 'BB45',
-        '소성주': 'AQ45'
+        '코카콜라': 'AF42',
+        '스프라이트': 'AF43',
+        '토닉워터': 'AF44',
+        '제로콜라': 'AF41',
+        '만월 360ml': 'AR39',
+        '문배술25 375ml': 'AR40',
+        '로아 화이트 350ml': 'AR43',
+        '황금보리 375ml': 'AR38',
+        '왕율주 360ml': 'AR41',
+        '왕주 375ml': 'AR42',
+        '청하': 'BC38',
+        '참이슬': 'BC39',
+        '처음처럼': 'BC40',
+        '새로': 'BC42',
+        '진로이즈백': 'BC41',
+        '카스': 'BC43',
+        '테라': 'BC44',
+        '켈리': 'BC45',
+        '소성주': 'AR45'
     }
 
     # (디버깅) aggregated_products 내용 로그
