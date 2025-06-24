@@ -53,7 +53,7 @@ driver = webdriver.Chrome(
 )
 driver.set_page_load_timeout(40)
 
-keywords = [kw.strip() for kw in sheet.col_values(2)[54:80] if kw.strip()]
+keywords = [kw.strip() for kw in sheet.col_values(2)[82:120] if kw.strip()]
 real_places = []
 
 def robust_scroll():
@@ -64,7 +64,7 @@ def robust_scroll():
         return []
 
     previous_count = 0
-    max_attempts = 30
+    max_attempts = 50
     attempts = 0
 
     while attempts < max_attempts:
@@ -162,7 +162,7 @@ def get_place_rank(keyword, target_place="무궁 송도점"):
     return None
 
 # --- Batch Update ---
-start_row = 55
+start_row = 83
 column_rank = 5
 update_data = []
 
