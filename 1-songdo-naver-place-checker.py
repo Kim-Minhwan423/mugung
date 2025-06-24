@@ -53,7 +53,7 @@ driver = webdriver.Chrome(
 )
 driver.set_page_load_timeout(40)
 
-keywords = [kw.strip() for kw in sheet.col_values(2)[82:120] if kw.strip()]
+keywords = [kw.strip() for kw in sheet.col_values(2)[82:200] if kw.strip()]
 real_places = []
 
 def robust_scroll():
