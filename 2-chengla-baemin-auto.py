@@ -129,7 +129,7 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # (필요 시) 헤드리스 모드
-       # if self.headless:
+        if self.headless:
             options.add_argument("--headless")
         
         # 안정성 옵션
