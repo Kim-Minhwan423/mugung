@@ -67,26 +67,30 @@ def get_environment_variables():
 ###############################################################################
 # 3. Chrome 드라이버 세팅
 ###############################################################################
-def get_chrome_driver(use_profile=False):
+def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
 
-    # User-Agent 변경
+    # ✅ headless 모드 OFF (시각적으로 확인 가능)
+    chrome_options.add_argument("--headless")  # ← 이 줄은 주석 처리
+
+    # ✅ User-Agent 설정
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/110.0.5481.77 Safari/537.36"
     )
 
+    # ✅ 사용자 프로필 재사용 (로그인 세션 유지)
     if use_profile:
         user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
         if os.path.exists(user_data_dir):
             chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
             chrome_options.add_argument("--profile-directory=Default")
-            logging.info("기존 Chrome 프로필 재사용 중...")
+            logging.info("기존 Chrome 프로필 재사용 중... (로그인 세션 유지)")
         else:
             logging.warning("지정한 프로필 경로가 존재하지 않습니다. 새 프로필이 사용됩니다.")
 
+    # ✅ 자동화 탐지 우회 옵션들
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
@@ -94,9 +98,11 @@ def get_chrome_driver(use_profile=False):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1280,960")
 
+    # ✅ ChromeDriver 실행
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
+    # ✅ WebDriver 탐지 우회 (navigator.webdriver 제거)
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {
@@ -106,7 +112,7 @@ def get_chrome_driver(use_profile=False):
         }
     )
 
-    logging.info("ChromeDriver 초기화 성공")
+    logging.info("ChromeDriver 초기화 성공 (수동 로그인 세션 재사용)")
     return driver
 
 ###############################################################################
