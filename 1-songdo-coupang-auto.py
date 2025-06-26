@@ -501,7 +501,7 @@ def main():
     setup_logging('script.log')
 
     coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
-    driver = get_chrome_driver(use_profile=True)
+    driver = get_chrome_driver(use_profile=False)
 
     all_order_items = []
     today_revenue = 0
