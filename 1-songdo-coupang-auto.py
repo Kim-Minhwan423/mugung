@@ -71,7 +71,7 @@ def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
 
     # ✅ headless 모드 OFF (시각적으로 확인 가능)
-    chrome_options.add_argument("--headless")  # ← 이 줄은 주석 처리
+    chrome_options.add_argument("--headless=new")  # ← 이 줄은 주석 처리
 
     # ✅ User-Agent 설정
     chrome_options.add_argument(
@@ -501,7 +501,7 @@ def main():
     setup_logging('script.log')
 
     coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
-    driver = get_chrome_driver(use_profile=False)
+    driver = get_chrome_driver(use_profile=True)
 
     all_order_items = []
     today_revenue = 0
