@@ -172,7 +172,7 @@ def go_store_selector(driver):
     time.sleep(3)
 
 def go_songdo_selector(driver):
-    songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
+    songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
     try:
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, songdo_xpath)))
         driver.find_element(By.XPATH, songdo_xpath).click()
