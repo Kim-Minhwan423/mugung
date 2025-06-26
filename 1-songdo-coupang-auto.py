@@ -147,7 +147,7 @@ def login_coupang_eats(driver, user_id, password):
     )
     login_button.click()
     logging.info("로그인 버튼 클릭")
-    time.sleep(100)  # 페이지 로딩 기다리기
+    time.sleep(3)  # 페이지 로딩 기다리기
 
     # 팝업
     try:
