@@ -121,7 +121,7 @@ def get_chrome_driver(use_profile=True):
 def login_coupang_eats(driver, user_id, password):
     driver.get("https://store.coupangeats.com/merchant/login")
     logging.info("쿠팡이츠 상점 로그인 페이지 접속 완료")
-    time.sleep(3)  # 넉넉히 대기
+    time.sleep(3)
 
     # 아이디 입력
     username_input = WebDriverWait(driver, 10).until(
@@ -139,30 +139,77 @@ def login_coupang_eats(driver, user_id, password):
     logging.info("비밀번호 입력")
     time.sleep(1)
 
-    # 로그인 버튼 클릭
-    login_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, "#merchant-login > div > div.center-form > div > div > div > form > button")
-        )
-    )
-    login_button.click()
-    logging.info("로그인 버튼 클릭")
-    time.sleep(3)  # 페이지 로딩 기다리기
+    # 로그인 성공할 때까지 버튼 계속 누르기
+    while True:
+        try:
+            login_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((
+                    By.CSS_SELECTOR,
+                    "#merchant-login > div > div.center-form > div > div > div > form > button"
+                ))
+            )
+            login_button.click()
+            logging.info("로그인 버튼 클릭")
 
-    # 팝업
+            # 로그인 성공 여부 판단 (매출관리 탭이 등장하면 성공)
+            WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR,
+                    "#merchant-management > div > nav > div.css-8pnkb2.esf794x2 > ul > li:nth-child(5) > a"
+                ))
+            )
+            logging.info("로그인 성공! 매출관리 버튼 감지됨")
+            break  # 루프 종료
+
+        except TimeoutException:
+            logging.warning("로그인 실패 → 다시 로그인 버튼 클릭 시도")
+            time.sleep(2)
+
+    # 로그인 후 팝업 닫기 (기존 코드 유지)
+    close_coupang_popup(driver)
+    
+def close_coupang_popup(driver):
+    # 팝업 1
     try:
-        popup_close3 = WebDriverWait(driver, 10).until(
+        popup_close1 = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((
+                By.CSS_SELECTOR,
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370"
+            ))
+        )
+        popup_close1.click()
+        logging.info("팝업1 닫기 완료")
+        time.sleep(2)
+    except TimeoutException:
+        logging.info("팝업1 없음 → 스킵")
+
+    # 팝업 2
+    try:
+        popup_close2 = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((
+                By.CSS_SELECTOR,
+                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button"
+            ))
+        )
+        popup_close2.click()
+        logging.info("팝업2 닫기 완료")
+        time.sleep(2)
+    except TimeoutException:
+        logging.info("팝업2 없음 → 스킵")
+
+    # 팝업 3
+    try:
+        popup_close3 = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((
                 By.CSS_SELECTOR,
                 "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
             ))
         )
         popup_close3.click()
-        logging.info("팝업 닫기 완료")
+        logging.info("팝업3 닫기 완료")
         time.sleep(2)
     except TimeoutException:
-        logging.info("팝업이 나타나지 않아 스킵")
-
+        logging.info("팝업3 없음 → 스킵")
+        
     # 매출관리 버튼
     try:
         order_management_button = WebDriverWait(driver, 10).until(
