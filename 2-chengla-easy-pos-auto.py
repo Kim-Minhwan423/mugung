@@ -47,7 +47,7 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-ddef process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
     update_cells_inventory = []
     processed_codes = set()
     new_data_found = True
