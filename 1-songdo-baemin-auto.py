@@ -295,7 +295,7 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
         
-    daily_filter_selector = "#\:r2b\:"
+    daily_filter_selector = r"#\:r2b\:"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, daily_filter_selector)))
     driver.find_element(By.CSS_SELECTOR, daily_filter_selector).click()
 
