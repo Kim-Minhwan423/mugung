@@ -265,8 +265,6 @@ def login_and_close_popup(driver, wait, username, password):
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
 
-    time.sleep(500)
-
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_b149_1utdzds5.OverlayFooter_b_b8ew_1slqmfa0 > div > button.TextButton_b_b8ew_1j0jumh3.c_b149_13ysz3p2.c_b149_13ysz3p0.TextButton_b_b8ew_1j0jumh6.TextButton_b_b8ew_1j0jumhb.c_b149_13c33de3")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
@@ -294,21 +292,21 @@ def navigate_to_order_history(driver, wait):
     
     time.sleep(5)
     
-    date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+    date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
 
 
 def set_daily_filter(driver, wait):
-    filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
+    filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
     
-    daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
+    daily_filter_xpath = "#\:r3b\: > div.Container_c_pg5s_1utdzds5.PageSheet_b_pnsa_1pb26is9 > div.DefaultDateFilter-module__wiPF > fieldset > div > div:nth-child(1)"
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
     
-    apply_button_xpath = "//button[contains(., '적용')]"
+    apply_button_xpath = "#\:r3b\: > div.Container_c_pg5s_1utdzds5.OverlayFooter_b_pnsa_1slqmfa0.OverlayFooter_b_pnsa_1slqmfa1 > button"
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
 
