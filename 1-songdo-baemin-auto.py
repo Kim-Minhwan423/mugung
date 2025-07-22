@@ -295,9 +295,9 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
         
-    daily_filter_xpath = '//*[@id=":r1m:"]/div[2]/div[1]/fieldset/div/div[1]'
-    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    driver.find_element(By.XPATH, daily_filter_xpath).click()
+    daily_filter_selector = "#\:r1m\: > div.Container_c_pg5s_1utdzds5.PageSheet_b_pnsa_1pb26is9 > div.DefaultDateFilter-module__wiPF > fieldset > div > div:nth-child(1)"
+    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, daily_filter_selector)))
+    driver.find_element(By.CSS_SELECTOR, daily_filter_selector).click()
 
     apply_button_xpath = '//*[@id=":r1i:"]/div[3]/button'
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
