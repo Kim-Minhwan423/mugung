@@ -294,10 +294,8 @@ def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-    
-    time.sleep(50)    
-    
-    daily_filter_xpath = '//*[@id=":r2s:"]'
+        
+    daily_filter_xpath = '//*[@id=":r1m:"]/div[2]/div[1]/fieldset/div/div[1]'
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
 
