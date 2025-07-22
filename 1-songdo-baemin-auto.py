@@ -294,7 +294,8 @@ def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-    
+
+    time.sleep(100)
     daily_filter_xpath = "#\:r3b\: > div.Container_c_pg5s_1utdzds5.PageSheet_b_pnsa_1pb26is9 > div.DefaultDateFilter-module__wiPF > fieldset > div > div:nth-child(1)"
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
