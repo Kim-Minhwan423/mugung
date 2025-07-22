@@ -289,16 +289,16 @@ def navigate_to_order_history(driver, wait):
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_pg5s_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
-    time.sleep(50)
+    
 def set_daily_filter(driver, wait):
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
 
-    daily_filter_xpath = '//*[@id=":r1i:"]/div[2]/div[1]/fieldset/div/div[1]'
+    daily_filter_xpath = '//*[@id=":r2s:"]'
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
-    
+    time.sleep(50)    
     apply_button_xpath = '//*[@id=":r1i:"]/div[3]/button'
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
