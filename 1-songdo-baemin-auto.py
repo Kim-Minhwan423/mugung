@@ -311,7 +311,7 @@ def set_daily_filter(driver, wait):
     time.sleep(0.5)
 
     # 적용 버튼 (예: "적용"이라고 되어 있는 버튼)
-    apply_button_xpath = '//button[text()="적용"]'
+    apply_button_xpath = '//button[contains(text(), "적용")]'
     apply_button = wait.until(EC.presence_of_element_located((By.XPATH, apply_button_xpath)))
     driver.execute_script("arguments[0].click();", apply_button)
     time.sleep(3)
