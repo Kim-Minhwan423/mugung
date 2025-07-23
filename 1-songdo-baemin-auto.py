@@ -291,21 +291,28 @@ def navigate_to_order_history(driver, wait):
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
     
 def set_daily_filter(driver, wait):
+    import logging
+    import time
+
+    # 필터 버튼 클릭
     filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
     driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-        
-    daily_filter_xpath = '//*[@id=":r26:"]'
+    time.sleep(1)
+
+    # "일・주" 텍스트가 포함된 버튼 클릭
+    daily_filter_xpath = '//button[.//span[text()="일・주"]]'
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
+    time.sleep(0.5)
 
-    apply_button_xpath = '//*[@id=":r1f:"]/div[3]/button'
+    # 적용 버튼 (예: "적용"이라고 되어 있는 버튼)
+    apply_button_xpath = '//button[text()="적용"]'
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
 
     time.sleep(3)
-    logging.info("날짜 필터 '일·주' 적용 완료")
-
+    logging.info("날짜 필터 '일・주' 적용 완료")
 
 def extract_order_summary(driver, wait):
     summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
