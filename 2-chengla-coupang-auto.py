@@ -168,47 +168,40 @@ def login_coupang_eats(driver, user_id, password):
     close_coupang_popup(driver)
     
 def close_coupang_popup(driver):
+    def try_click_js(selector, name):
+        try:
+            element = WebDriverWait(driver, 3).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+            )
+            driver.execute_script("arguments[0].click();", element)
+            logging.info(f"{name} JS 클릭 성공")
+            time.sleep(1)
+        except Exception:
+            logging.info(f"{name} 없음 또는 클릭 실패 → 스킵")
+
     # 팝업 1
-    try:
-        popup_close1 = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((
-                By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370"
-            ))
-        )
-        popup_close1.click()
-        logging.info("팝업1 닫기 완료")
-        time.sleep(2)
-    except TimeoutException:
-        logging.info("팝업1 없음 → 스킵")
+    try_click_js(
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370",
+        "팝업1"
+    )
 
     # 팝업 2
-    try:
-        popup_close2 = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((
-                By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button"
-            ))
-        )
-        popup_close2.click()
-        logging.info("팝업2 닫기 완료")
-        time.sleep(2)
-    except TimeoutException:
-        logging.info("팝업2 없음 → 스킵")
+    try_click_js(
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button",
+        "팝업2"
+    )
 
-    # 팝업 3
-    try:
-        popup_close3 = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((
-                By.CSS_SELECTOR,
-                "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
-            ))
-        )
-        popup_close3.click()
-        logging.info("팝업3 닫기 완료")
-        time.sleep(2)
-    except TimeoutException:
-        logging.info("팝업3 없음 → 스킵")
+    # 팝업 3 (문제 발생한 버튼)
+    try_click_js(
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
+        "팝업3"
+    )
+
+    # ✅ 최소 주문 금액 팝업 닫기 (최신 등장 요소)
+    try_click_js(
+        "button[data-testid='Dialog__CloseButton']",
+        "최소주문금액 팝업"
+    )
         
     # 매출관리 버튼
     try:
