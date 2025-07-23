@@ -293,29 +293,37 @@ def navigate_to_order_history(driver, wait):
 def set_daily_filter(driver, wait):
     import logging
     import time
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
 
-    # 필터 버튼 클릭
-    filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
-    driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-    time.sleep(1)
+    logging.info("날짜 필터 설정 시작")
 
-    # "일・주" 텍스트가 포함된 버튼 클릭
-    daily_filter_xpath = '//label[.//span[text()="일・주"]]'
-    element = wait.until(EC.presence_of_element_located((By.XPATH, daily_filter_xpath)))
-    # 혹시 보이지 않는 위치에 있을 수 있으니 스크롤
-    driver.execute_script("arguments[0].scrollIntoView(true);", element)
-    time.sleep(0.3)
-    # 가려져 있을 수 있으므로 JS로 강제 클릭
-    driver.execute_script("arguments[0].click();", element)
-    time.sleep(0.5)
+    try:
+        # 필터 버튼 클릭
+        filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
+        driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
+        time.sleep(1)
 
-    # '적용' 버튼 찾기 및 클릭
-    apply_button_xpath = '//button[.//span[text()="적용"]]'
-    apply_button = wait.until(EC.presence_of_element_located((By.XPATH, apply_button_xpath)))
-    driver.execute_script("arguments[0].scrollIntoView(true);", apply_button)
-    time.sleep(0.3)
-    driver.execute_script("arguments[0].click();", apply_button)
+        # "일・주" 라벨 클릭
+        daily_filter_xpath = '//label[.//span[text()="일・주"]]'
+        element = wait.until(EC.presence_of_element_located((By.XPATH, daily_filter_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", element)
+        time.sleep(0.5)
+
+        # '적용' 버튼 클릭
+        apply_button_xpath = '//button[.//span[text()="적용"]]'
+        apply_button = wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", apply_button)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", apply_button)
+
+        logging.info("날짜 필터 '일・주' 적용 완료")
+    except Exception as e:
+        logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
+        raise
 
 def extract_order_summary(driver, wait):
     summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
