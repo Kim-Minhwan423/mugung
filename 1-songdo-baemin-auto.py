@@ -335,17 +335,28 @@ def extract_order_summary(driver, wait):
 
 
 def extract_sales_details(driver, wait):
+    import re
+    import logging
+    import time
+    import traceback
+    from selenium.common.exceptions import NoSuchElementException, TimeoutException
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as EC
+
     sales_data = {}
     
     while True:
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
             order_button_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
-            
+
             if order_num != 1:
                 try:
-                    order_button = driver.find_element(By.XPATH, order_button_xpath)
-                    order_button.click()
+                    order_button = wait.until(EC.presence_of_element_located((By.XPATH, order_button_xpath)))
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", order_button)
+                    time.sleep(0.3)
+                    driver.execute_script("arguments[0].click();", order_button)
+
                     wait.until(
                         EC.presence_of_element_located(
                             (By.XPATH, f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]')
@@ -374,9 +385,7 @@ def extract_sales_details(driver, wait):
                     
                     if item_name in ITEM_TO_CELL:
                         cell_address = ITEM_TO_CELL[item_name]
-                        if cell_address not in sales_data:
-                            sales_data[cell_address] = 0
-                        sales_data[cell_address] += qty
+                        sales_data[cell_address] = sales_data.get(cell_address, 0) + qty
                         logging.info(f"[{item_name}] 수량 {qty} → {cell_address}에 누적")
                 except NoSuchElementException:
                     break
@@ -391,9 +400,12 @@ def extract_sales_details(driver, wait):
             if 'disabled' in next_btn.get_attribute('class'):
                 logging.info("다음 페이지 없음. 추출 종료")
                 break
-            # 대기 후 클릭
+
             wait.until(EC.element_to_be_clickable((By.XPATH, next_page_xpath)))
-            next_btn.click()
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_btn)
+            time.sleep(0.3)
+            driver.execute_script("arguments[0].click();", next_btn)
+
             time.sleep(2)
             logging.info("다음 페이지 이동")
         except NoSuchElementException:
@@ -405,6 +417,7 @@ def extract_sales_details(driver, wait):
             break
     
     return sales_data
+
 
 
 ###############################################################################
