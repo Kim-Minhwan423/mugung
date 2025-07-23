@@ -310,12 +310,12 @@ def set_daily_filter(driver, wait):
     driver.execute_script("arguments[0].click();", element)
     time.sleep(0.5)
 
-    # 적용 버튼 (예: "적용"이라고 되어 있는 버튼)
-    apply_button_xpath = '//button[contains(text(), "적용")]'
+    # '적용' 버튼 찾기 및 클릭
+    apply_button_xpath = '//button[.//span[text()="적용"]]'
     apply_button = wait.until(EC.presence_of_element_located((By.XPATH, apply_button_xpath)))
+    driver.execute_script("arguments[0].scrollIntoView(true);", apply_button)
+    time.sleep(0.3)
     driver.execute_script("arguments[0].click();", apply_button)
-    time.sleep(3)
-    logging.info("날짜 필터 '일・주' 적용 완료")
 
 def extract_order_summary(driver, wait):
     summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
