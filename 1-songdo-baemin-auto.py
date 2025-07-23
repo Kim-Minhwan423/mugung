@@ -302,8 +302,11 @@ def set_daily_filter(driver, wait):
 
     # "일・주" 텍스트가 포함된 버튼 클릭
     daily_filter_xpath = '//label[.//span[text()="일・주"]]'
-    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    element = driver.find_element(By.XPATH, '//label[.//span[text()="일・주"]]')
+    element = wait.until(EC.presence_of_element_located((By.XPATH, daily_filter_xpath)))
+    # 혹시 보이지 않는 위치에 있을 수 있으니 스크롤
+    driver.execute_script("arguments[0].scrollIntoView(true);", element)
+    time.sleep(0.3)
+    # 가려져 있을 수 있으므로 JS로 강제 클릭
     driver.execute_script("arguments[0].click();", element)
     time.sleep(0.5)
 
