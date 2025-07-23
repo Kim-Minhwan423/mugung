@@ -282,29 +282,33 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업이 없거나 이미 닫힘")
 
 def navigate_to_order_history(driver, wait):
-    menu_button_selector = "#root > div > div.Container_c_b149_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
+    # ✅ 송도 지점용 최신 메뉴 버튼 셀렉터로 교체 필요
+    menu_button_selector = "정확한 셀렉터로 교체해주세요"
 
-    # ✅ 모달이 있다면 사라질 때까지 대기
+    # ESC로 모달 닫기 시도
     try:
-        WebDriverWait(driver, 10).until_not(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.Dialog_b_pnsa_3pnjmu3"))
-        )
-        logging.info("모달 다이얼로그 사라짐 확인")
-    except TimeoutException:
-        logging.warning("모달 다이얼로그가 10초 내에 사라지지 않음 → 강행 시도")
+        modal = driver.find_element(By.CSS_SELECTOR, "div.Dialog_b_pnsa_3pnjmu3")
+        if modal.is_displayed():
+            logging.info("모달 감지됨 → ESC 입력 시도")
+            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.ESCAPE)
+            time.sleep(1)
+    except NoSuchElementException:
+        logging.info("모달 없음")
 
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
-    driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
-    logging.info("메뉴 버튼 클릭 성공")
+    # 메뉴 버튼 찾고 JS로 강제 클릭
+    try:
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, menu_button_selector)))
+        menu_button = driver.find_element(By.CSS_SELECTOR, menu_button_selector)
+        driver.execute_script("arguments[0].click();", menu_button)
+        logging.info("메뉴 버튼 JS 클릭 성공")
+    except Exception as e:
+        logging.error(f"메뉴 버튼 클릭 실패: {e}")
+        raise e
 
-    # 주문내역 페이지 이동
-    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_b149_1utdzds5 > a:nth-child(17) > button"
+    # 주문내역 메뉴 클릭
+    order_history_selector = "원래 쓰던 셀렉터 유지"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
-
-    time.sleep(3)
-    date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
 
 def set_daily_filter(driver, wait):
