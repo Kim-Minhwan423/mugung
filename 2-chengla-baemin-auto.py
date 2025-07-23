@@ -45,7 +45,8 @@ ITEM_TO_CELL = {
     '소꼬리찜': 'E42',
     '불꼬리찜': 'E43',
     '로제꼬리': 'E44',
-    '中': 'E45',
+    '꼬리구이': 'E45',
+    '中': 'E46',
     '코카콜라': 'AD42',
     '스프라이트': 'AD43',
     '토닉워터': 'AD44',
@@ -66,7 +67,6 @@ ITEM_TO_CELL = {
     '켈리': 'BB45',
     '소성주막걸리': 'AQ45'
 }
-
 
 ###############################################################################
 # 로깅 설정
@@ -264,8 +264,16 @@ def login_and_close_popup(driver, wait, username, password):
     login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
-    
+
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_b149_1utdzds5.OverlayFooter_b_b8ew_1slqmfa0 > div > button.TextButton_b_b8ew_1j0jumh3.c_b149_13ysz3p2.c_b149_13ysz3p0.TextButton_b_b8ew_1j0jumh6.TextButton_b_b8ew_1j0jumhb.c_b149_13c33de3")
+    try:
+        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
+        close_btn.click()
+        logging.info("팝업 닫기 성공")
+    except TimeoutException:
+        logging.info("팝업이 없거나 이미 닫힘")
+        
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_rfd6_1utdzds5.OverlayFooter_b_rmnf_1slqmfa0 > div > button.TextButton_b_rmnf_1j0jumh3.c_rfd6_13ysz3p2.c_rfd6_13ysz3p0.TextButton_b_rmnf_1j0jumh6.TextButton_b_rmnf_1j0jumhb.c_rfd6_13c33de3")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
@@ -274,20 +282,14 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업이 없거나 이미 닫힘")
 
 def navigate_to_order_history(driver, wait):
-    menu_button_selector = "#root > div > div.Container_c_b149_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
+    menu_button_selector = "#root > div > div.Container_c_pg5s_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
     
-    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_b149_1utdzds5 > a:nth-child(17) > button"
+    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_pg5s_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
-
-    time.sleep(3)
     
-    date_filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
-    logging.info("주문내역 페이지 진입 완료")
-
 def set_daily_filter(driver, wait):
     import logging
     import time
@@ -419,6 +421,7 @@ def extract_sales_details(driver, wait):
     return sales_data
 
 
+
 ###############################################################################
 # 메인 함수
 ###############################################################################
@@ -484,7 +487,7 @@ def main():
             logging.warning(f"시트에 오늘({day}) 날짜를 찾을 수 없음 (U3:U33 범위)")
         
         # 재고 시트 특정 범위 삭제
-        ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AQ38:AQ45', 'BB38:BB45']
+        ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
         sheets_manager.batch_clear(inventory_sheet, ranges_to_clear)
         
         # 판매 디테일 기록
