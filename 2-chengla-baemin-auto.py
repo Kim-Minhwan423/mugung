@@ -383,11 +383,17 @@ def extract_sales_details(driver, wait):
                     if not match:
                         continue
                     qty = int(match.group())
-                    
+
                     if item_name in ITEM_TO_CELL:
                         cell_address = ITEM_TO_CELL[item_name]
                         sales_data[cell_address] = sales_data.get(cell_address, 0) + qty
                         logging.info(f"[{item_name}] 수량 {qty} → {cell_address}에 누적")
+    
+                        # ⚠️ '불꼬리찜 中'인 경우 E43, E45 동시에 누적
+                        if '불꼬리찜' in item_name and '中' in item_name:
+                            sales_data['E45'] = sales_data.get('E45', 0) + qty
+                            logging.info(f"[{item_name}] → '中' 항목(E45)에도 수량 {qty} 추가 누적")
+
                 except NoSuchElementException:
                     break
                 except Exception as e:
