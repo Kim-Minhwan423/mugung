@@ -288,22 +288,41 @@ def navigate_to_order_history(driver, wait):
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, date_filter_button_selector)))
     logging.info("주문내역 페이지 진입 완료")
 
-
 def set_daily_filter(driver, wait):
-    filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button"
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
-    driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
-    
-    daily_filter_xpath = "//label[contains(., '일・주')]/preceding-sibling::input[@type='radio']"
-    wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    driver.find_element(By.XPATH, daily_filter_xpath).click()
-    
-    apply_button_xpath = "//button[contains(., '적용')]"
-    wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
-    driver.find_element(By.XPATH, apply_button_xpath).click()
+    import logging
+    import time
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
 
-    time.sleep(3)
-    logging.info("날짜 필터 '일·주' 적용 완료")
+    logging.info("날짜 필터 설정 시작")
+
+    try:
+        # 필터 버튼 클릭
+        filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM > svg"
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
+        driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
+        time.sleep(1)
+
+        # "일・주" 라벨 클릭
+        daily_filter_xpath = '//label[.//span[text()="일・주"]]'
+        element = wait.until(EC.presence_of_element_located((By.XPATH, daily_filter_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", element)
+        time.sleep(0.5)
+
+        # '적용' 버튼 클릭
+        apply_button_xpath = '//button[.//span[text()="적용"]]'
+        apply_button = wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", apply_button)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", apply_button)
+    
+        time.sleep(3)
+        logging.info("날짜 필터 '일・주' 적용 완료")
+    except Exception as e:
+        logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
+        raise
 
 
 def extract_order_summary(driver, wait):
@@ -316,21 +335,32 @@ def extract_order_summary(driver, wait):
 
 
 def extract_sales_details(driver, wait):
+    import re
+    import logging
+    import time
+    import traceback
+    from selenium.common.exceptions import NoSuchElementException, TimeoutException
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support import expected_conditions as EC
+
     sales_data = {}
     
     while True:
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
             order_button_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
-                                   
+
             if order_num != 1:
                 try:
-                    order_button = driver.find_element(By.XPATH, order_button_xpath)
-                    order_button.click()
+                    order_button = wait.until(EC.presence_of_element_located((By.XPATH, order_button_xpath)))
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", order_button)
+                    time.sleep(0.3)
+                    driver.execute_script("arguments[0].click();", order_button)
+
                     wait.until(
                         EC.presence_of_element_located(
                             (By.XPATH, f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]')
-                        )                
+                        )
                     )
                 except NoSuchElementException:
                     logging.debug(f"주문 tr[{order_num}] 버튼 없음, 스킵")
@@ -355,9 +385,7 @@ def extract_sales_details(driver, wait):
                     
                     if item_name in ITEM_TO_CELL:
                         cell_address = ITEM_TO_CELL[item_name]
-                        if cell_address not in sales_data:
-                            sales_data[cell_address] = 0
-                        sales_data[cell_address] += qty
+                        sales_data[cell_address] = sales_data.get(cell_address, 0) + qty
                         logging.info(f"[{item_name}] 수량 {qty} → {cell_address}에 누적")
                 except NoSuchElementException:
                     break
@@ -372,9 +400,12 @@ def extract_sales_details(driver, wait):
             if 'disabled' in next_btn.get_attribute('class'):
                 logging.info("다음 페이지 없음. 추출 종료")
                 break
-            # 대기 후 클릭
+
             wait.until(EC.element_to_be_clickable((By.XPATH, next_page_xpath)))
-            next_btn.click()
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_btn)
+            time.sleep(0.3)
+            driver.execute_script("arguments[0].click();", next_btn)
+
             time.sleep(2)
             logging.info("다음 페이지 이동")
         except NoSuchElementException:
