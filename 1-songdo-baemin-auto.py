@@ -299,7 +299,7 @@ def set_daily_filter(driver, wait):
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
 
-    apply_button_xpath = '//*[@id=":r1i:"]/div[3]/button'
+    apply_button_xpath = '//*[@id=":r1f:"]/div[3]/button'
     wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
     driver.find_element(By.XPATH, apply_button_xpath).click()
 
