@@ -280,6 +280,16 @@ def login_and_close_popup(driver, wait, username, password):
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
 
+def dismiss_backdrop(driver):
+    try:
+        backdrop_selector = 'div[data-testid="backdrop"][data-present="true"]'
+        backdrops = driver.find_elements(By.CSS_SELECTOR, backdrop_selector)
+        for backdrop in backdrops:
+            driver.execute_script("arguments[0].parentNode.removeChild(arguments[0]);", backdrop)
+            logging.info("남아 있는 backdrop 제거 완료")
+    except Exception as e:
+        logging.warning(f"Backdrop 제거 중 예외 발생: {e}")
+
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_pg5s_1utdzds5.MobileHeader-module__mihN > div > div > div:nth-child(1) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
@@ -445,6 +455,7 @@ def main():
             login_and_close_popup(driver, wait, baemin_id, baemin_pw)
             
             # 주문내역 & 날짜 필터
+            dismiss_backdrop(driver):
             navigate_to_order_history(driver, wait)
             set_daily_filter(driver, wait)
             
