@@ -303,7 +303,8 @@ def set_daily_filter(driver, wait):
     # "일・주" 텍스트가 포함된 버튼 클릭
     daily_filter_xpath = '//label[.//span[text()="일・주"]]'
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
-    driver.find_element(By.XPATH, daily_filter_xpath).click()
+    element = driver.find_element(By.XPATH, '//label[.//span[text()="일・주"]]')
+    driver.execute_script("arguments[0].click();", element)
     time.sleep(0.5)
 
     # 적용 버튼 (예: "적용"이라고 되어 있는 버튼)
