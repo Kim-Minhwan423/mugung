@@ -301,7 +301,7 @@ def set_daily_filter(driver, wait):
     time.sleep(1)
 
     # "일・주" 텍스트가 포함된 버튼 클릭
-    daily_filter_xpath = '//button[.//span[text()="일・주"]]'
+    daily_filter_xpath = '//label[.//span[text()="일・주"]]'
     wait.until(EC.element_to_be_clickable((By.XPATH, daily_filter_xpath)))
     driver.find_element(By.XPATH, daily_filter_xpath).click()
     time.sleep(0.5)
