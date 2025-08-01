@@ -127,7 +127,7 @@ def wait_for_iframe(driver, xpath, timeout=40):
 
 def get_place_rank(keyword, target_place="무궁 송도점"):
     real_places.clear()
-    driver.get(f"https://map.naver.com/v5/search/{keyword}")
+    driver.get(f"https://m.map.naver.com/search?query={keyword}")
 
     # iframe 대기 (최대 40초)
     iframe = wait_for_iframe(driver, "//*[@id='searchIframe']", timeout=40)
