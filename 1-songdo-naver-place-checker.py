@@ -18,7 +18,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 # =========================
 TARGET_PLACE = "무궁 송도점"  # 순위 확인 대상 가게명
 
-# 모바일 User-Agent (모바일 DOM을 강제)
+# 모바일 User-Agent (모바일 DOM 유도)
 user_agent = (
     "Mozilla/5.0 (Linux; Android 10; SM-G973N) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -62,11 +62,8 @@ driver.set_page_load_timeout(40)
 # =========================
 # 유틸/헬퍼
 # =========================
-def switch_into_search_iframe(driver, timeout=40):
-    """
-    모바일/데스크톱 혼재 환경에서 search iframe이 있으면 진입.
-    없으면 False 반환 (최상위 DOM에서 리스트가 바로 있을 수 있음).
-    """
+def switch_into_search_iframe(driver, timeout=15):
+    """search iframe이 있으면 진입. 없으면 False."""
     try:
         driver.switch_to.default_content()
     except Exception:
@@ -75,7 +72,8 @@ def switch_into_search_iframe(driver, timeout=40):
     iframe_xpaths = [
         "//*[@id='searchIframe']",
         "//*[@id='ct']//iframe[contains(@src, 'search')]",
-        "//iframe[contains(@src, '/search2/')]"
+        "//iframe[contains(@src, '/search2/')]",
+        "//iframe[contains(@name, 'search') or contains(@id, 'search')]"
     ]
     for _ in range(timeout):
         for xp in iframe_xpaths:
@@ -89,6 +87,24 @@ def switch_into_search_iframe(driver, timeout=40):
     return False
 
 
+def find_first(driver, selectors, single=False, root=None):
+    """여러 CSS 후보 중 먼저 잡히는 요소(들) 반환"""
+    ctx = root if root else driver
+    for sel in selectors:
+        try:
+            if single:
+                el = ctx.find_element(By.CSS_SELECTOR, sel)
+                if el:
+                    return el
+            else:
+                els = ctx.find_elements(By.CSS_SELECTOR, sel)
+                if els:
+                    return els
+        except Exception:
+            pass
+    return None if single else []
+
+
 def robust_scroll_mobile_first():
     """
     모바일/데스크톱 겸용 스크롤 로딩:
@@ -97,10 +113,12 @@ def robust_scroll_mobile_first():
     - 더 이상 아이템 수가 늘지 않을 때까지 맨 끝까지 스크롤
     """
     container_candidates = [
-        "#_search_list_scroll_container",  # 모바일
-        "#_pcmap_list_scroll_container",   # 데스크톱
-        "div#ct",                          # 일부 모바일 레이아웃 fallback
-        "div[data-nclick*='place']"        # 최후 fallback
+        "#_search_list_scroll_container",         # 모바일
+        "#_pcmap_list_scroll_container",          # 데스크톱
+        "div.search_list",                        # 모바일 일부
+        "div#ct div._listContainer",              # 모바일 일부
+        "div#ct div.list_container",              # 추정
+        "div#ct",                                 # 최후 fallback
     ]
     scroll_container = None
     for sel in container_candidates:
@@ -116,14 +134,18 @@ def robust_scroll_mobile_first():
         return []
 
     item_selectors = [
-        "li.UEzoS.rTjJo",   # 데스크톱 v5
-        "li._item",         # 모바일 구버전
-        "li"                # 최후 fallback
+        "li.UEzoS.rTjJo",     # 데스크톱 v5
+        "li._item",           # 모바일 구버전
+        "ul>li",              # 일반
+        "li",                 # 최후
     ]
 
     previous_count = 0
     max_attempts = 60
     attempts = 0
+
+    # 초기 약간 대기 (SPA 로딩 여유)
+    time.sleep(1.0)
 
     while attempts < max_attempts:
         places = []
@@ -139,6 +161,7 @@ def robust_scroll_mobile_first():
         if current_count == 0:
             # 첫 로딩 지연일 수 있으니 약간 대기 후 재시도
             time.sleep(1.0)
+
         if current_count == previous_count and current_count > 0:
             # 증가 없음 → 종료
             break
@@ -152,7 +175,7 @@ def robust_scroll_mobile_first():
 
         previous_count = current_count
         attempts += 1
-        time.sleep(1.0)
+        time.sleep(0.8)
 
     # 최종 아이템 다시 수집
     final_places = []
@@ -169,59 +192,77 @@ def robust_scroll_mobile_first():
 
 real_places = []  # 한 번의 검색에서 수집되는 가게명 목록
 
-def get_places_from_page():
-    """
-    스크롤 로딩을 통해 현재 페이지의 모든 결과를 수집하고 real_places에 가게명을 누적.
-    """
-    place_elements = robust_scroll_mobile_first()
-
-    # 가게명 후보 셀렉터들 (환경별 상이)
+def extract_name_from_place(place):
+    """가게명 텍스트를 다양한 셀렉터로 시도."""
     name_selectors = [
-        "span.TYaxT",      # 데스크톱 v5
-        "strong._title",   # 모바일 구버전
-        "span.OXiLu",      # 케이스 대응
-        "a span"           # fallback
+        "span.TYaxT",            # 데스크톱 v5
+        "strong._title",         # 모바일 구버전
+        "span.OXiLu",            # 케이스 대응
+        "a span",                # fallback
+        "a strong",              # fallback
+        "div a",                 # fallback
     ]
+    for ns in name_selectors:
+        try:
+            txt = place.find_element(By.CSS_SELECTOR, ns).text.strip()
+            if txt:
+                return txt
+        except Exception:
+            continue
 
+    # 요소 자체 텍스트에서 1줄 시도
+    try:
+        txt = place.text.strip().split("\n")[0]
+        if txt:
+            return txt
+    except Exception:
+        pass
+    return ""
+
+
+def get_places_from_page():
+    """스크롤 로딩을 통해 현재 페이지의 모든 결과를 수집하고 real_places에 누적."""
+    place_elements = robust_scroll_mobile_first()
     for place in place_elements:
-        name_text = ""
-        for ns in name_selectors:
-            try:
-                txt = place.find_element(By.CSS_SELECTOR, ns).text.strip()
-                if txt:
-                    name_text = txt
-                    break
-            except Exception:
-                continue
-
-        if not name_text:
-            # 요소 자체 텍스트에서 1줄 시도
-            try:
-                name_text = place.text.strip().split("\n")[0]
-            except Exception:
-                name_text = ""
-
-        # 광고 카드 등 특정 클래스를 제외하고 싶다면 여기서 필터 가능
+        name_text = extract_name_from_place(place)
         if name_text and name_text not in real_places:
             real_places.append(name_text)
 
 
-def get_place_rank(keyword, target_place=TARGET_PLACE):
+def get_place_rank(keyword, target_place=TARGET_PLACE, debug=False):
     """
     모바일 검색 페이지로 접속 → (iframe 있으면 진입) → 스크롤 수집 → 대상 가게 순위 반환
     """
     real_places.clear()
 
     # 모바일 검색 URL (v5 스타일)
-    # 쿼리는 URL 인코딩을 브라우저가 해주므로 그대로 전달해도 무방
     url = f"https://m.map.naver.com/search2/search.naver?query={keyword}&sm=hty&style=v5"
     driver.get(url)
 
-    # iframe이 있으면 진입 (없어도 동작)
-    _ = switch_into_search_iframe(driver, timeout=40)
+    # 로딩 여유
+    time.sleep(1.0)
 
-    # 모바일은 페이지 버튼이 없거나 불안정 → 스크롤로 전부 로딩
+    # iframe 있으면 진입 (없어도 동작)
+    _ = switch_into_search_iframe(driver, timeout=10)
+
+    # 결과 수집
     get_places_from_page()
+
+    if debug:
+        # 첫 키워드 디버그: 스크린샷 + 상호 로그
+        try:
+            driver.save_screenshot("page_debug.png")
+            print("🖼  페이지 스크린샷 저장: page_debug.png")
+        except Exception as e:
+            print(f"🖼  스크린샷 실패: {e}")
+        print(f"🧾 수집된 상호 {len(real_places)}개 (최대 30개 미리보기): {real_places[:30]}")
+        if not real_places:
+            try:
+                html = driver.page_source
+                print("📄 page_source(앞 1000자):")
+                print(html[:1000])
+            except Exception:
+                pass
 
     if target_place in real_places:
         return real_places.index(target_place) + 1
@@ -239,8 +280,10 @@ column_rank = 5  # E열
 update_data = []
 
 for idx, keyword in enumerate(keywords, start=start_row):
+    # 첫 키워드만 디버그 로그/스크린샷
+    debug = (idx == start_row)
     try:
-        rank = get_place_rank(keyword)
+        rank = get_place_rank(keyword, debug=debug)
         if rank:
             print(f"✅ '{keyword}'의 순위는 {rank}")
             update_data.append([rank])
@@ -266,3 +309,4 @@ except Exception:
     pass
 
 print("✅ 모든 키워드 순위 업데이트 완료")
+
