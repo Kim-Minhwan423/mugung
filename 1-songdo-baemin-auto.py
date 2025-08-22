@@ -339,6 +339,20 @@ def extract_order_summary(driver, wait):
 
 
 def extract_sales_details(driver, wait):
+    """
+    주문 상세 테이블을 순회하며 판매수량을 집계합니다.
+
+    포함 기능
+    - 콤보 트리거(식사메뉴 1개 + 육전/육회, 일품 소꼬리 + 육전/육회) 감지
+      * 다음 div(j+1)의 li[*]/div/span에서 실제 항목 문자열 추출
+      * 항목 문자열 내 줄바꿈/여분 공백 제거, "(...원)" 가격 꼬리표 제거 후 파싱
+      * "<기본메뉴> + 육전|육회" → 기본메뉴 + (육전→P44 | 육회→P42) 동시 누적
+      * li가 "꼬리 中자로 변경"이면 E45에 수량 누적
+    - 일반 매핑: ITEM_TO_CELL 기준 매핑
+    - 불꼬리찜 보정: 이름에 '불꼬리찜' 포함 시 E43 기본 누적
+    - 옵션 中/중 처리: 해당 아이템의 옵션블록(다음 형제 div) 텍스트에 中/중 있으면 E45 추가 누적
+    - 페이지네이션 및 안정화 로깅
+    """
     import re
     import logging
     import time
@@ -347,75 +361,94 @@ def extract_sales_details(driver, wait):
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as EC
 
-    sales_data = {}
-
-    # 콤보 트리거 문자열
+    # 콤보 트리거 문구
     combo_triggers = (
         "식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회",
-        "일품 소꼬리 + 육전", "일품 소꼬리 + 육회"
+        "일품 소꼬리 + 육전", "일품 소꼬리 + 육회",
     )
 
+    # 정규식: ( ...원 ) 가격 꼬리표 제거용
+    price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
+    # 공백/줄바꿈 정리
+    def normalize_text(s: str) -> str:
+        return re.sub(r"\s+", " ", s).strip()
+
+    sales_data = {}
+
     while True:
-        # 주문 목록의 홀수 tr이 타이틀(접기/펼치기), 그 다음 tr이 상세
+        # 화면상 홀수 tr이 헤더(펼치기), 그 다음 tr이 상세
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
-            order_button_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
+            order_button_xpath = (
+                f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
+            )
 
-            # 첫 번째 주문은 기본적으로 펼쳐져 있는 경우가 많아 click 생략, 이후부터 클릭
+            # 첫 주문 외에는 펼치기 클릭
             if order_num != 1:
                 try:
                     order_button = wait.until(EC.presence_of_element_located((By.XPATH, order_button_xpath)))
                     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", order_button)
-                    time.sleep(0.3)
+                    time.sleep(0.2)
                     driver.execute_script("arguments[0].click();", order_button)
 
                     wait.until(
                         EC.presence_of_element_located(
-                            (By.XPATH, f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]')
+                            (
+                                By.XPATH,
+                                f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]',
+                            )
                         )
                     )
-                except NoSuchElementException:
-                    logging.debug(f"주문 tr[{order_num}] 버튼 없음, 스킵")
-                    continue
-                except TimeoutException:
+                except (NoSuchElementException, TimeoutException):
                     logging.warning(f"주문 상세 로드 실패 (tr[{details_tr_num}])")
                     continue
 
-            # 상세 내 품목들 순회
+            # 상세 안의 품목 div들을 3칸 간격으로 순회 (이 UI 구조에 맞춤)
             for j in range(1, 100, 3):
-                base_xpath = f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]/td/div/div/section[1]/div[3]/div[{j}]'
+                base_xpath = (
+                    f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/'
+                    f'tr[{details_tr_num}]/td/div/div/section[1]/div[3]/div[{j}]'
+                )
                 item_name_xpath = base_xpath + "/span[1]/div/span[1]"
                 item_qty_xpath = base_xpath + "/span[1]/div/span[2]"
 
                 try:
-                    item_name = driver.find_element(By.XPATH, item_name_xpath).text.strip()
-                    item_qty_text = driver.find_element(By.XPATH, item_qty_xpath).text.strip()
+                    raw_item_name = driver.find_element(By.XPATH, item_name_xpath).text
+                    raw_qty = driver.find_element(By.XPATH, item_qty_xpath).text
+
+                    item_name = normalize_text(raw_item_name)
+                    item_qty_text = normalize_text(raw_qty)
 
                     # 수량 파싱
-                    match = re.search(r'\d+', item_qty_text.replace(',', ''))
-                    if not match:
+                    m = re.search(r"\d+", item_qty_text.replace(",", ""))
+                    if not m:
                         continue
-                    qty = int(match.group())
+                    qty = int(m.group())
 
-                    # ============= 콤보 처리 =============
+                    # ==================== 콤보 처리 ====================
                     if any(trigger in item_name for trigger in combo_triggers):
                         k = 1
                         while True:
+                            # 콤보 상세 li[*]
                             li_span_xpath = base_xpath + f"/following-sibling::div[1]/li[{k}]/div/span"
                             try:
-                                combo_text = driver.find_element(By.XPATH, li_span_xpath).text.strip()
+                                raw_combo_text = driver.find_element(By.XPATH, li_span_xpath).text
                             except NoSuchElementException:
-                                break  # li 끝
+                                break  # li 소진
 
-                            # 0) 콤보 옵션: "꼬리 中자로 변경" → E45 누적
+                            combo_text_norm = normalize_text(raw_combo_text)
+                            # 가격 꼬리표 제거
+                            combo_text = price_tail_re.sub("", combo_text_norm)
+
+                            # 0) 콤보 옵션: 꼬리 中자로 변경 → E45
                             if "꼬리 中자로 변경" in combo_text:
                                 sales_data["E45"] = sales_data.get("E45", 0) + qty
-                                logging.info(f"[콤보 옵션] {combo_text} → '中'(E45)에 {qty} 누적")
+                                logging.info(f"[콤보 옵션] {raw_combo_text} → '中'(E45) {qty} 누적")
                                 k += 1
                                 continue
 
                             # 1) 일반 콤보 아이템: "<기본메뉴> + 육전|육회"
-                            parts = [p.strip() for p in combo_text.split('+')]
+                            parts = [p.strip() for p in combo_text.split("+")]
                             if len(parts) == 2:
                                 base_menu, addon = parts[0], parts[1]
 
@@ -423,73 +456,93 @@ def extract_sales_details(driver, wait):
                                 if base_menu in ITEM_TO_CELL:
                                     base_cell = ITEM_TO_CELL[base_menu]
                                     sales_data[base_cell] = sales_data.get(base_cell, 0) + qty
-                                    logging.info(f"[콤보] {combo_text} → 기본({base_menu}:{base_cell}) {qty} 누적")
+                                    logging.info(
+                                        f"[콤보] {raw_combo_text} → 기본({base_menu}:{base_cell}) {qty} 누적"
+                                    )
                                 else:
-                                    logging.warning(f"[콤보] 기본메뉴 매핑 없음: '{base_menu}'")
+                                    logging.warning(
+                                        f"[콤보] 기본메뉴 매핑 없음: '{base_menu}' (원문: '{raw_combo_text}')"
+                                    )
 
-                                # 추가(육전/육회) 누적
-                                addon_cell = "P44" if addon == "육전" else ("P42" if addon == "육회" else None)
+                                # 추가 육전/육회 누적
+                                if addon == "육전":
+                                    addon_cell = "P44"
+                                elif addon == "육회":
+                                    addon_cell = "P42"
+                                else:
+                                    addon_cell = None
+
                                 if addon_cell:
                                     sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
-                                    logging.info(f"[콤보] {combo_text} → 추가({addon}:{addon_cell}) {qty} 누적")
+                                    logging.info(
+                                        f"[콤보] {raw_combo_text} → 추가({addon}:{addon_cell}) {qty} 누적"
+                                    )
                                 else:
-                                    logging.warning(f"[콤보] 추가 항목 매핑 없음: '{addon}'")
+                                    logging.warning(
+                                        f"[콤보] 추가 항목 매핑 없음: '{addon}' (정제전: '{raw_combo_text}')"
+                                    )
                             else:
-                                logging.warning(f"[콤보] 예상치 못한 형식: '{combo_text}'")
+                                logging.warning(
+                                    f"[콤보] 예상 형식 아님: '{raw_combo_text}' → 정제후: '{combo_text}'"
+                                )
                             k += 1
 
-                        # 콤보 처리 끝났으면 일반 처리로 내려가지 않도록 건너뜀 (중복 방지)
+                        # 콤보로 처리했으면 일반 처리 중복 방지
                         continue
-                    # =========== 콤보 처리 끝 ===========
+                    # ================= 콤보 처리 끝 =================
 
-                    # 옵션 블록 텍스트(중/대/소 등) 추출: j 다음 형제 div가 옵션 블록
+                    # 옵션 블록 텍스트 (다음 형제 div)
                     option_text = ""
                     option_xpath = base_xpath + "/following-sibling::div[1]"
                     try:
-                        option_text = driver.find_element(By.XPATH, option_xpath).text.strip()
+                        option_text = normalize_text(driver.find_element(By.XPATH, option_xpath).text)
                     except NoSuchElementException:
                         option_text = ""
 
-                    # 1) 정확 매핑 우선
+                    # 1) 정확 매핑
                     mapped = False
                     if item_name in ITEM_TO_CELL:
                         cell_address = ITEM_TO_CELL[item_name]
                         sales_data[cell_address] = sales_data.get(cell_address, 0) + qty
                         mapped = True
-                        logging.info(f"[일반] {item_name} → {cell_address}에 {qty} 누적")
+                        logging.info(f"[일반] {item_name} → {cell_address} {qty} 누적")
 
                     # 2) 불꼬리찜 보정(E43)
-                    if ('불꼬리찜' in item_name) and (not mapped):
-                        sales_data['E43'] = sales_data.get('E43', 0) + qty
-                        logging.info(f"[보정] {item_name} → 불꼬리찜(E43)에 {qty} 보정 누적")
+                    if ("불꼬리찜" in item_name) and (not mapped):
+                        sales_data["E43"] = sales_data.get("E43", 0) + qty
+                        logging.info(f"[보정] {item_name} → 불꼬리찜(E43) {qty} 누적")
 
-                    # 3) 불꼬리찜 + 옵션 中/중 → E45 추가 누적
-                    if ('불꼬리찜' in item_name) and (('中' in option_text) or ('중' in option_text)):
-                        sales_data['E45'] = sales_data.get('E45', 0) + qty
-                        logging.info(f"[옵션] {item_name} 옵션[{option_text}] → '中'(E45)에 {qty} 추가 누적")
+                    # 3) 불꼬리찜 옵션 中/중 → E45 추가
+                    if ("불꼬리찜" in item_name) and (("中" in option_text) or ("중" in option_text)):
+                        sales_data["E45"] = sales_data.get("E45", 0) + qty
+                        logging.info(
+                            f"[옵션] {item_name} 옵션[{option_text}] → '中'(E45) {qty} 추가 누적"
+                        )
 
                 except NoSuchElementException:
-                    # 더 이상 아이템 div가 없으면 다음 주문으로
+                    # 더 이상 아이템 div가 없으면 다음 주문으로 이동
                     break
                 except Exception as e:
                     logging.error(f"판매 상세 추출 중 오류: tr[{details_tr_num}], j={j}, {e}")
                     traceback.print_exc()
                     break
 
-        # 다음 페이지로 이동
-        next_page_xpath = '//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[5]/div/div[2]/span/button'
+        # ===== 페이지네이션 =====
+        next_page_xpath = (
+            '//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[5]/div/div[2]/span/button'
+        )
         try:
             next_btn = driver.find_element(By.XPATH, next_page_xpath)
-            if 'disabled' in next_btn.get_attribute('class'):
+            if "disabled" in next_btn.get_attribute("class"):
                 logging.info("다음 페이지 없음. 추출 종료")
                 break
 
             wait.until(EC.element_to_be_clickable((By.XPATH, next_page_xpath)))
             driver.execute_script("arguments[0].scrollIntoView(true);", next_btn)
-            time.sleep(0.3)
+            time.sleep(0.2)
             driver.execute_script("arguments[0].click();", next_btn)
 
-            time.sleep(2)
+            time.sleep(1.2)
             logging.info("다음 페이지 이동")
         except NoSuchElementException:
             logging.info("다음 페이지 버튼 없음. 추출 종료")
