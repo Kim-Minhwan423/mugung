@@ -334,7 +334,38 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
+        
+def extract_order_summary(driver, wait):
+    """
+    주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
+    UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
+    """
+    selectors = [
+        # 기존 경로
+        "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
+        "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
+        "div > div:nth-child(2) > span.TotalSummary-module__SysK > b",
 
+        # 백업 경로(클래스 일부만)
+        "div.OrderHistoryPage-module__R0bB div.TotalSummary-module__sVL1 span.TotalSummary-module__SysK > b",
+
+        # 최후 백업(더 범용)
+        "div.TotalSummary-module__sVL1 b",
+    ]
+
+    last_err = None
+    for css in selectors:
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, css)))
+            text = driver.find_element(By.CSS_SELECTOR, css).text.strip()
+            if text:
+                logging.info(f"주문 요약 데이터: {text}")
+                return text
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
 
 def extract_sales_details(driver, wait):
     """
