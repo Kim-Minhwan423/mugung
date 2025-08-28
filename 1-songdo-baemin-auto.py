@@ -267,7 +267,7 @@ def login_and_close_popup(driver, wait, username, password):
 
     time.sleep(3)
 
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_pg5s_1utdzds5.OverlayFooter_b_pnsa_1slqmfa0 > div > button.TextButton_b_pnsa_1j0jumh3.c_pg5s_13ysz3p2.c_pg5s_13ysz3p0.TextButton_b_pnsa_1j0jumh6.TextButton_b_pnsa_1j0jumhb.c_pg5s_13c33de3")
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_dogv_1utdzds5.OverlayHeader_b_dvcv_5xyph30.c_dogv_13c33de0 > div.OverlayHeader_b_dvcv_5xyph31.c_dogv_13c33de0.c_dogv_13ysz3p2.c_dogv_13ysz3p0 > div:nth-child(1) > button")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
