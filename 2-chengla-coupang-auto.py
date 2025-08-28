@@ -203,7 +203,7 @@ def close_coupang_popup(driver):
     try:
         order_management_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "#merchant-management > div > nav > div.css-8pnkb2.esf794x2 > ul > li:nth-child(5) > a")
+                (By.CSS_SELECTOR, "#merchant-management > div > nav > div.css-hd12du.esf794x2 > ul > li:nth-child(5) > a")
             )
         )
         order_management_button.click()
