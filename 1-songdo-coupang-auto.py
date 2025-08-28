@@ -143,25 +143,21 @@ def login_coupang_eats(driver, user_id, password):
     while True:
         try:
             login_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((
-                    By.CSS_SELECTOR,
-                    "#merchant-login > div > div.center-form > div > div > div > form > button"
-                ))
+                EC.element_to_be_clickable((By.CSS_SELECTOR,
+                    "#merchant-login > div > div.center-form > div > div > div > form > button"))
             )
             login_button.click()
             logging.info("로그인 버튼 클릭")
 
-            # 로그인 성공 여부 판단 (매출관리 탭이 등장하면 성공)
+            # ✅ URL이 변경될 때까지 대기
             WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR,
-                    "#merchant-management > div > nav > div.css-8pnkb2.esf794x2 > ul > li:nth-child(5) > a"
-                ))
+                lambda d: "management" in d.current_url
             )
-            logging.info("로그인 성공! 매출관리 버튼 감지됨")
-            break  # 루프 종료
+            logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
+            break
 
         except TimeoutException:
-            logging.warning("로그인 실패 → 다시 로그인 버튼 클릭 시도")
+            logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
             time.sleep(2)
 
     # 로그인 후 팝업 닫기 (기존 코드 유지)
