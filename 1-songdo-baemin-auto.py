@@ -287,6 +287,8 @@ def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_dogv_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button > span > span > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
+
+    time.sleep(3)
     
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_dogv_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
@@ -299,10 +301,10 @@ def set_daily_filter(driver, wait):
     from selenium.webdriver.common.by import By
 
     logging.info("날짜 필터 설정 시작")
-
+    
     try:
         # 필터 버튼 클릭
-        filter_button_selector = "#root > div > div.Container_c_dogv_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button"
+        filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
         driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
         time.sleep(1)
