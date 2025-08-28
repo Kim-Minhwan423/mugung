@@ -595,7 +595,6 @@ def main():
             login_and_close_popup(driver, wait, baemin_id, baemin_pw)
             
             # 주문내역 & 날짜 필터
-            dismiss_backdrop(driver)
             navigate_to_order_history(driver, wait)
             set_daily_filter(driver, wait)
             
