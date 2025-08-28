@@ -288,7 +288,7 @@ def navigate_to_order_history(driver, wait):
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
     
-    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_pg5s_1utdzds5 > a:nth-child(18) > button"
+    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_dogv_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
     
