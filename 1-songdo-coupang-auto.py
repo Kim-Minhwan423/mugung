@@ -71,7 +71,7 @@ def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
 
     # ✅ headless 모드 OFF (시각적으로 확인 가능)
-    #chrome_options.add_argument("--headless=new")  # ← 이 줄은 주석 처리
+    chrome_options.add_argument("--headless=new")  # ← 이 줄은 주석 처리
 
     # ✅ User-Agent 설정
     chrome_options.add_argument(
@@ -150,7 +150,7 @@ def login_coupang_eats(driver, user_id, password):
             logging.info("로그인 버튼 클릭")
 
             # ✅ URL이 변경될 때까지 대기
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 2).until(
                 lambda d: "management" in d.current_url
             )
             logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
@@ -158,7 +158,7 @@ def login_coupang_eats(driver, user_id, password):
 
         except TimeoutException:
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
-            time.sleep(2)
+            time.sleep(1)
 
     # 로그인 후 팝업 닫기 (기존 코드 유지)
     close_coupang_popup(driver)
