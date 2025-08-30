@@ -364,6 +364,7 @@ def extract_sales_details(driver, wait):
     from selenium.webdriver.support import expected_conditions as EC
 
     # 콤보 트리거 문구
+    time.sleep(500)
     combo_triggers = (
         "식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회",
         "일품 소꼬리 + 육전", "일품 소꼬리 + 육회",
@@ -382,9 +383,9 @@ def extract_sales_details(driver, wait):
         for order_num in range(1, 20, 2):
             details_tr_num = order_num + 1
             order_button_xpath = (
-                f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{order_num}]/td/div/div'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/tr[{order_num}]/td[1]/div/div'
             )
-
+            
             # 첫 주문 외에는 펼치기 클릭
             if order_num != 1:
                 try:
@@ -397,7 +398,7 @@ def extract_sales_details(driver, wait):
                         EC.presence_of_element_located(
                             (
                                 By.XPATH,
-                                f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/tr[{details_tr_num}]',
+                                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/tr[{details_tr_num}]/td[1]/div',
                             )
                         )
                     )
@@ -408,7 +409,7 @@ def extract_sales_details(driver, wait):
             # 상세 안의 품목 div들을 3칸 간격으로 순회 (이 UI 구조에 맞춤)
             for j in range(1, 100, 3):
                 base_xpath = (
-                    f'//*[@id="root"]/div/div[3]/div[2]/div[1]/div[3]/div[4]/div/table/tbody/'
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/'
                     f'tr[{details_tr_num}]/td/div/div/section[1]/div[3]/div[{j}]'
                 )
                 item_name_xpath = base_xpath + "/span[1]/div/span[1]"
