@@ -389,7 +389,7 @@ def extract_sales_details(driver, wait):
                     driver.execute_script("arguments[0].click();", order_button)
                     wait.until(EC.presence_of_element_located((
                         By.XPATH,
-                        f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/tr[{details_tr_num}]/td[1]/div',
+                        f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/tr[{details_tr_num}]/td[1]/div/svg',
                     )))
                 except (NoSuchElementException, TimeoutException):
                     logging.warning(f"주문 상세 로드 실패 (tr[{details_tr_num}])")
