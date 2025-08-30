@@ -351,7 +351,7 @@ def extract_sales_details(driver, wait):
     - 콤보/옵션/불꼬리찜/中 처리 포함
     """
 
-    import re, time, logging, traceback
+    import re, time, logging
     from selenium.common.exceptions import NoSuchElementException
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as EC
@@ -368,10 +368,13 @@ def extract_sales_details(driver, wait):
     sales_data = {}
 
     while True:
-        for order_index in range(2, 12):  # tr[2] ~ tr[11] (1페이지 최대 10개 주문)
-            # tr[2]는 기본 열림 → skip
+        for order_index in range(2, 12):  # tr[2] ~ tr[11]
+            # 첫 주문은 기본 열림
             if order_index > 2:
-                toggle_xpath = f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/tr[{order_index}]/td[1]/div'
+                toggle_xpath = (
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/'
+                    f'table/tbody/tr[{order_index}]/td[1]/div'
+                )
                 try:
                     btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
                     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
@@ -385,8 +388,8 @@ def extract_sales_details(driver, wait):
             # 메뉴 순회
             for j in range(1, 100, 3):
                 base_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/table/tbody/'
-                    f'tr[{order_index}]/td/div/div/section[1]/div[3]/div[{j}]'
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/'
+                    f'table/tbody/tr[{order_index}]/td/div/div/section[1]/div[3]/div[{j}]'
                 )
                 item_name_xpath = base_xpath + "/span[1]/div/span[1]"
                 item_qty_xpath = base_xpath + "/span[1]/div/span[2]"
@@ -403,7 +406,7 @@ def extract_sales_details(driver, wait):
                     continue
                 qty = int(qty_match.group())
 
-                # ================= 콤보 =================
+                # ========== 콤보 처리 ==========
                 if any(trigger in item_name for trigger in combo_triggers):
                     k = 1
                     while True:
@@ -433,7 +436,7 @@ def extract_sales_details(driver, wait):
                                 logging.info(f"[콤보] {addon} {qty}")
                         k += 1
                     continue
-                # =======================================
+                # ===============================
 
                 # 일반 매핑
                 if item_name in ITEM_TO_CELL:
@@ -441,7 +444,7 @@ def extract_sales_details(driver, wait):
                     sales_data[cell] = sales_data.get(cell, 0) + qty
                     logging.info(f"[일반] {item_name} → {cell} {qty}")
 
-                # 불꼬리찜 보정
+                # 불꼬리찜 처리
                 if "불꼬리찜" in item_name:
                     sales_data["E43"] = sales_data.get("E43", 0) + qty
                     logging.info(f"[불꼬리찜] {item_name} {qty}")
@@ -454,9 +457,21 @@ def extract_sales_details(driver, wait):
                     except NoSuchElementException:
                         pass
 
-        # 페이지네이션 (tr[11]이 존재하면 다음 페이지)
+                # 모든 메뉴 공통 中 옵션
+                option_xpath = base_xpath + "/following-sibling::div[1]"
+                try:
+                    option_text = driver.find_element(By.XPATH, option_xpath).text
+                    if "中" in option_text or "중" in option_text:
+                        sales_data["E46"] = sales_data.get("E46", 0) + qty
+                        logging.info(f"[공통 옵션] {item_name} 中 → E46 {qty}")
+                except NoSuchElementException:
+                    pass
+
+        # ===== 페이지네이션 =====
         try:
-            next_btn_xpath = '//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[5]/div/div[2]/span/button'
+            next_btn_xpath = (
+                '//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[5]/div/div[2]/span/button'
+            )
             next_btn = driver.find_element(By.XPATH, next_btn_xpath)
             if "disabled" in next_btn.get_attribute("class"):
                 logging.info("다음 페이지 없음 → 종료")
