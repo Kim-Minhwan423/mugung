@@ -438,8 +438,8 @@ def extract_sales_details(driver, wait):
                         combo_text = normalize_text(price_tail_re.sub("", raw_combo))
 
                         if "꼬리 中자로 변경" in combo_text:
-                            sales_data["E46"] = sales_data.get("E46", 0) + qty
-                            logging.info(f"[콤보옵션] {combo_text} → E46 {qty}")
+                            sales_data["E45"] = sales_data.get("E45", 0) + qty
+                            logging.info(f"[콤보옵션] {combo_text} → E45 {qty}")
                             k += 1
                             continue
 
@@ -471,8 +471,8 @@ def extract_sales_details(driver, wait):
                     try:
                         option_text = driver.find_element(By.XPATH, option_xpath).text
                         if "中" in option_text or "중" in option_text:
-                            sales_data["E46"] = sales_data.get("E46", 0) + qty
-                            logging.info(f"[불꼬리찜 옵션] 中 → E46 {qty}")
+                            sales_data["E45"] = sales_data.get("E45", 0) + qty
+                            logging.info(f"[불꼬리찜 옵션] 中 → E45 {qty}")
                     except NoSuchElementException:
                         pass
 
@@ -481,8 +481,8 @@ def extract_sales_details(driver, wait):
                 try:
                     option_text = driver.find_element(By.XPATH, option_xpath).text
                     if "中" in option_text or "중" in option_text:
-                        sales_data["E46"] = sales_data.get("E46", 0) + qty
-                        logging.info(f"[공통 옵션] {item_name} 中 → E46 {qty}")
+                        sales_data["E45"] = sales_data.get("E45", 0) + qty
+                        logging.info(f"[공통 옵션] {item_name} 中 → E45 {qty}")
                 except NoSuchElementException:
                     pass
 
