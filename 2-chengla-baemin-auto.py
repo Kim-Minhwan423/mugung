@@ -316,7 +316,7 @@ def navigate_to_order_history(driver, wait):
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_c1xs_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
-    time.sleep(100)
+    
 def set_daily_filter(driver, wait):
     import logging
     import time
@@ -352,7 +352,7 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
-        
+        time.sleep(100)
 def extract_order_summary(driver, wait):
     """
     주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
