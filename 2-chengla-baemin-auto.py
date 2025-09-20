@@ -88,6 +88,32 @@ def setup_logging(log_filename='script.log'):
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
+def wait_and_click(driver, by, value, timeout=10):
+    """
+    element click intercepted 문제 해결용
+    """
+    try:
+        # element가 클릭 가능할 때까지 기다림
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((by, value))
+        )
+        # 혹시 backdrop이 덮여 있으면 사라질 때까지 대기
+        WebDriverWait(driver, timeout).until_not(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-testid='backdrop']"))
+        )
+        element.click()
+        return True
+    except Exception as e:
+        logging.warning(f"[wait_and_click] 일반 클릭 실패, 자바스크립트 클릭 시도: {e}")
+        try:
+            element = driver.find_element(by, value)
+            driver.execute_script("arguments[0].click();", element)
+            return True
+        except Exception as e2:
+            logging.error(f"[wait_and_click] 자바스크립트 클릭도 실패: {e2}")
+            return False
+
+
 
 ###############################################################################
 # 환경 변수 & 설정값 불러오기
