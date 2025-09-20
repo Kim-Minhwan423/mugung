@@ -128,8 +128,8 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # (필요 시) 헤드리스 모드
-        if self.headless:
-            options.add_argument("--headless")
+        #if self.headless:
+         #   options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
