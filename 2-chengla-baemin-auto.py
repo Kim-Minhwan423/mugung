@@ -399,71 +399,36 @@ def extract_order_summary(driver, wait):
 
     raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
 
-def extract_sales_details(driver, wait, max_orders=10):
-    """
-    주문 상세 테이블을 순회하며 메뉴별 판매수량을 집계합니다.
-    - 첫 번째 주문은 기본 펼침 상태
-    - 2번째 ~ 10번째 주문은 CSS Selector로 버튼 클릭해서 펼침
-    """
+def extract_sales_details(driver, wait):
+    sales_data = []
 
-    sales_data = {}
+    # 주문 row 전체 찾기
+    order_rows = driver.find_elements(By.CSS_SELECTOR,
+        "#root div.frame-body div.OrderHistoryPage-module__R0bB "
+        "div.ShadowContentBox-module__i2yS table tbody tr"
+    )
 
-    # ===============================
-    # 각 주문별 순회
-    # ===============================
-    for order_idx in range(1, max_orders+1):
-        if order_idx == 1:
-            print("✅ 1번째 주문은 이미 펼쳐져 있음 → 바로 수집")
-        else:
-            # CSS Selector 계산
-            tr_index = order_idx + 1  # 2번째 주문 = tr:nth-child(3)
-            css_selector = (
-                f"#root > div > div.frame-container > div.frame-wrap > div.frame-body "
-                f"> div.OrderHistoryPage-module__R0bB > div.ShadowContentBox-module__i2yS "
-                f"> div > div > table > tbody > tr:nth-child({tr_index}) "
-                f"> td.Table_b_c9kn_1dwbr4op.Table_b_c9kn_1dwbr4os.Table_b_c9kn_1dwbr4o1c > div"
-            )
-            try:
-                btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector)))
-                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-                time.sleep(0.2)
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.5)
-                print(f"✅ {order_idx}번째 주문 펼치기 성공")
-            except Exception as e:
-                print(f"❌ {order_idx}번째 주문 펼치기 실패: {e}")
-                continue
+    print(f"👉 발견된 주문 개수: {len(order_rows)}")
 
-        # ===============================
-        # 주문 내 메뉴 아이템 추출
-        # ===============================
-        for j in range(1, 50, 3):  # 1,4,7,... 최대 50개
-            try:
-                name_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/'
-                    f'tbody/tr[{order_idx+1}]/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[1]'
-                )
-                qty_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/'
-                    f'tbody/tr[{order_idx+1}]/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[2]'
-                )
+    for i, row in enumerate(order_rows, start=1):
+        try:
+            toggle = row.find_element(By.CSS_SELECTOR, "td div")
 
-                item_name = driver.find_element(By.XPATH, name_xpath).text.strip()
-                item_qty = driver.find_element(By.XPATH, qty_xpath).text.strip()
+            # 스크롤 후 클릭
+            driver.execute_script("arguments[0].scrollIntoView(true);", toggle)
+            time.sleep(0.5)
+            driver.execute_script("arguments[0].click();", toggle)
+            print(f"✅ {i}번째 주문 펼치기 성공")
 
-                if not item_name:
-                    break
+            # 펼친 뒤 상세 데이터 추출 (예시)
+            # 필요시 row.find_elements(...) 해서 데이터 수집
+            details = row.text
+            sales_data.append(details)
 
-                qty = int(re.sub(r"[^0-9]", "", item_qty)) if item_qty else 0
-                sales_data[item_name] = sales_data.get(item_name, 0) + qty
-
-                print(f"   → {item_name}: {qty}개")
-            except Exception:
-                break
+        except Exception as e:
+            print(f"❌ {i}번째 주문 펼치기 실패: {e}")
 
     return sales_data
-
-
 
 ###############################################################################
 # 메인 함수
