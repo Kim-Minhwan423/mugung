@@ -356,15 +356,38 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
-
-
+        
 def extract_order_summary(driver, wait):
-    summary_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, summary_selector)))
-    
-    summary_text = driver.find_element(By.CSS_SELECTOR, summary_selector).text.strip()
-    logging.info(f"주문 요약 데이터: {summary_text}")
-    return summary_text
+    """
+    주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
+    UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
+    """
+    selectors = [
+        # 기존 경로
+        "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
+        "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
+        "div > div:nth-child(2) > span.TotalSummary-module__SysK > b",
+
+        # 백업 경로(클래스 일부만)
+        "div.OrderHistoryPage-module__R0bB div.TotalSummary-module__sVL1 span.TotalSummary-module__SysK > b",
+
+        # 최후 백업(더 범용)
+        "div.TotalSummary-module__sVL1 b",
+    ]
+
+    last_err = None
+    for css in selectors:
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, css)))
+            text = driver.find_element(By.CSS_SELECTOR, css).text.strip()
+            if text:
+                logging.info(f"주문 요약 데이터: {text}")
+                return text
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
 
 
 def extract_sales_details(driver, wait):
@@ -373,7 +396,7 @@ def extract_sales_details(driver, wait):
 
     포함 기능
     - 첫 주문(tr[2])은 기본 펼쳐짐 (펼치기 안함)
-    - 2~10번째(tr[3]~tr[11])는 클릭해서 펼침
+    - 2~10번째(tr[3]~tr[11])는 클릭해서 펼침 (CSS nth-child(order_index+1))
     - tr[11]이 존재하면 다음 페이지 이동
     - 콤보/옵션/불꼬리찜/中 처리 포함
     """
@@ -398,18 +421,19 @@ def extract_sales_details(driver, wait):
         for order_index in range(2, 12):  # tr[2] ~ tr[11]
             # 첫 주문은 기본 열림
             if order_index > 2:
-                toggle_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/'
-                    f'table/tbody/tr[{order_index}]/td[1]/div'
+                css = (
+                    f"#root div.frame-container div.frame-wrap div.frame-body "
+                    f"div.OrderHistoryPage-module__R0bB div.ShadowContentBox-module__i2yS "
+                    f"table tbody tr:nth-child({order_index+1}) td div"
                 )
                 try:
-                    btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
+                    btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css)))
                     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
                     time.sleep(0.2)
-                    driver.execute_script("arguments[0].click();", btn)
+                    btn.click()
                     time.sleep(0.5)
-                except Exception:
-                    logging.info(f"펼치기 실패 또는 tr[{order_index}] 없음 → break")
+                except Exception as e:
+                    logging.info(f"{order_index}번째 주문 펼치기 실패: {e}")
                     break
 
             # 메뉴 순회
@@ -439,81 +463,43 @@ def extract_sales_details(driver, wait):
                     while True:
                         li_xpath = base_xpath + f"/following-sibling::div[1]/li[{k}]/div/span"
                         try:
-                            raw_combo = driver.find_element(By.XPATH, li_xpath).text
+                            sub_text = driver.find_element(By.XPATH, li_xpath).text
                         except NoSuchElementException:
                             break
-
-                        combo_text = normalize_text(price_tail_re.sub("", raw_combo))
-
-                        if "꼬리 中자로 변경" in combo_text:
-                            sales_data["E46"] = sales_data.get("E46", 0) + qty
-                            logging.info(f"[콤보옵션] {combo_text} → E46 {qty}")
-                            k += 1
-                            continue
-
-                        parts = [p.strip() for p in combo_text.split("+")]
-                        if len(parts) == 2:
-                            base_menu, addon = parts
-                            if base_menu in ITEM_TO_CELL:
-                                sales_data[ITEM_TO_CELL[base_menu]] = sales_data.get(ITEM_TO_CELL[base_menu], 0) + qty
-                                logging.info(f"[콤보] {base_menu} {qty}")
-                            addon_cell = "P44" if addon == "육전" else "P42" if addon == "육회" else None
-                            if addon_cell:
-                                sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
-                                logging.info(f"[콤보] {addon} {qty}")
+                        sub_item = normalize_text(price_tail_re.sub("", sub_text))
+                        sales_data[sub_item] = sales_data.get(sub_item, 0) + qty
                         k += 1
                     continue
-                # ===============================
 
-                # 일반 매핑
-                if item_name in ITEM_TO_CELL:
-                    cell = ITEM_TO_CELL[item_name]
-                    sales_data[cell] = sales_data.get(cell, 0) + qty
-                    logging.info(f"[일반] {item_name} → {cell} {qty}")
-
-                # 불꼬리찜 처리
+                # ========== 옵션/중자 처리 ==========
                 if "불꼬리찜" in item_name:
-                    sales_data["E43"] = sales_data.get("E43", 0) + qty
-                    logging.info(f"[불꼬리찜] {item_name} {qty}")
-                    option_xpath = base_xpath + "/following-sibling::div[1]"
                     try:
-                        option_text = driver.find_element(By.XPATH, option_xpath).text
-                        if "中" in option_text or "중" in option_text:
-                            sales_data["E46"] = sales_data.get("E46", 0) + qty
-                            logging.info(f"[불꼬리찜 옵션] 中 → E46 {qty}")
+                        opt_xpath = base_xpath + "/following-sibling::div[1]/li[1]/div/span"
+                        opt_text = driver.find_element(By.XPATH, opt_xpath).text
+                        if "중" in opt_text or "中" in opt_text:
+                            item_name = "불꼬리찜 중"
                     except NoSuchElementException:
                         pass
 
-                # 모든 메뉴 공통 中 옵션
-                option_xpath = base_xpath + "/following-sibling::div[1]"
-                try:
-                    option_text = driver.find_element(By.XPATH, option_xpath).text
-                    if "中" in option_text or "중" in option_text:
-                        sales_data["E46"] = sales_data.get("E46", 0) + qty
-                        logging.info(f"[공통 옵션] {item_name} 中 → E46 {qty}")
-                except NoSuchElementException:
-                    pass
+                # 금액 꼬리 제거
+                item_name = price_tail_re.sub("", item_name)
 
-        # ===== 페이지네이션 =====
+                # 집계
+                sales_data[item_name] = sales_data.get(item_name, 0) + qty
+
+        # 다음 페이지 버튼 확인
         try:
-            next_btn_xpath = (
-                '//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[5]/div/div[2]/span/button'
-            )
-            next_btn = driver.find_element(By.XPATH, next_btn_xpath)
+            next_btn = driver.find_element(By.CSS_SELECTOR, "button.Pagination_next__pZuC3")
             if "disabled" in next_btn.get_attribute("class"):
-                logging.info("다음 페이지 없음 → 종료")
                 break
-            driver.execute_script("arguments[0].click();", next_btn)
-            time.sleep(1.5)
-            logging.info("다음 페이지 이동")
+            else:
+                driver.execute_script("arguments[0].click();", next_btn)
+                time.sleep(1)
         except NoSuchElementException:
-            logging.info("다음 페이지 버튼 없음 → 종료")
             break
 
+    logging.info(f"최종 판매 데이터: {sales_data}")
     return sales_data
-
-
-
 
 
 ###############################################################################
