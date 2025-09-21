@@ -453,7 +453,7 @@ def main():
             
             # 요약 & 판매량
             order_summary = extract_order_summary(driver, wait)
-            sales_details = extract_sales_details(driver, wait, max_orders=10)
+            sales_details = extract_sales_details(driver, wait)
         except Exception as e:
             logging.error(f"에러 발생: {e}")
             traceback.print_exc()
