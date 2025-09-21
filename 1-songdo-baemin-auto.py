@@ -88,6 +88,26 @@ def setup_logging(log_filename='script.log'):
     file_formatter = logging.Formatter('%(message)s')
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
+
+# ======================================
+# 안전 클릭 함수
+# ======================================
+def safe_click(driver, element):
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", element)
+    time.sleep(0.2)
+    driver.execute_script("arguments[0].click();", element)
+
+# ======================================
+# 팝업 자동 닫기
+# ======================================
+def close_popup_if_exists(driver):
+    try:
+        backdrop = driver.find_element(By.CSS_SELECTOR, 'div.Dialog_b_c9kn_3pnjmu3')
+        safe_click(driver, backdrop)
+        time.sleep(0.5)
+        logging.info("팝업 닫기 성공")
+    except NoSuchElementException:
+        logging.info("팝업 없음")
     
 def wait_and_click(driver, by, value, timeout=10):
     """
