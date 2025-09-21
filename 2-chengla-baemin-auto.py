@@ -404,7 +404,9 @@ def extract_order_summary(driver, wait):
 # ==============================
 def extract_sales_details(driver, wait):
     """
-    주문 상세 메뉴/수량 추출 (페이지 전체)
+    주문 상세 테이블을 순회하며 판매수량을 집계.
+    - 콤보/옵션/불꼬리찜/중 옵션 처리 포함
+    - 모든 주문 페이지 탐색
     """
     sales_data = {}
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
@@ -413,26 +415,32 @@ def extract_sales_details(driver, wait):
     def normalize_text(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
-    while True:  # 페이지 반복
+    page = 1
+    while True:
+        logging.info(f"페이지 {page} 주문 수집 시작")
         orders = driver.find_elements(By.XPATH, '//table/tbody/tr[contains(@id,"order")]')
+        if not orders:
+            logging.info("주문 데이터 없음 → 종료")
+            break
+
         for order_index, order in enumerate(orders, start=1):
             # 주문 펼치기
-            if order_index != 1:
-                try:
-                    toggle_btn = order.find_element(By.XPATH, './/div[contains(@class,"toggle")]')
-                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", toggle_btn)
-                    toggle_btn.click()
-                    time.sleep(0.5)
-                except Exception:
-                    logging.info(f"{order_index}번째 주문 펼치기 실패, 넘어감")
-            
-            # 메뉴 아이템 수집
+            try:
+                toggle = order.find_element(By.XPATH, './/td/div/div/div[contains(@class,"toggle")]')
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", toggle)
+                time.sleep(0.2)
+                driver.execute_script("arguments[0].click();", toggle)
+                time.sleep(0.5)
+            except:
+                pass  # 이미 펼쳐져 있거나 실패해도 넘어감
+
+            # 메뉴 항목 반복
             items = order.find_elements(By.XPATH, './/section[1]/div[3]/div')
             for item in items:
                 try:
-                    raw_name = item.find_element(By.XPATH, './span[1]/div/span[1]').text
-                    raw_qty = item.find_element(By.XPATH, './span[1]/div/span[2]').text
-                except NoSuchElementException:
+                    raw_name = item.find_element(By.XPATH, './/span[1]/div/span[1]').text
+                    raw_qty = item.find_element(By.XPATH, './/span[1]/div/span[2]').text
+                except:
                     continue
 
                 item_name = normalize_text(price_tail_re.sub("", raw_name))
@@ -441,11 +449,15 @@ def extract_sales_details(driver, wait):
                     continue
                 qty = int(qty_match.group())
 
-                # 콤보 처리
+                # ================= 콤보 처리 =================
                 if any(trigger in item_name for trigger in combo_triggers):
-                    combo_items = item.find_elements(By.XPATH, './following-sibling::div[1]/li/div/span')
-                    for combo in combo_items:
-                        combo_text = normalize_text(price_tail_re.sub("", combo.text))
+                    k = 1
+                    while True:
+                        try:
+                            raw_combo = item.find_element(By.XPATH, f'./following-sibling::div[1]/li[{k}]/div/span').text
+                        except:
+                            break
+                        combo_text = normalize_text(price_tail_re.sub("", raw_combo))
                         parts = [p.strip() for p in combo_text.split("+")]
                         if len(parts) == 2:
                             base_menu, addon = parts
@@ -454,35 +466,43 @@ def extract_sales_details(driver, wait):
                             addon_cell = "P44" if addon == "육전" else "P42" if addon == "육회" else None
                             if addon_cell:
                                 sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
+                        k += 1
                     continue
+                # ==========================================
 
-                # 일반 메뉴 매핑
+                # 일반 매핑
                 if item_name in ITEM_TO_CELL:
-                    sales_data[ITEM_TO_CELL[item_name]] = sales_data.get(ITEM_TO_CELL[item_name], 0) + qty
+                    cell = ITEM_TO_CELL[item_name]
+                    sales_data[cell] = sales_data.get(cell, 0) + qty
+                    logging.info(f"[일반] {item_name} → {cell} {qty}")
 
                 # 불꼬리찜 처리
                 if "불꼬리찜" in item_name:
                     sales_data["E43"] = sales_data.get("E43", 0) + qty
 
-                # 중 옵션 처리
+                # 모든 메뉴 공통 중 옵션 처리
                 try:
                     option_text = item.find_element(By.XPATH, './following-sibling::div[1]').text
                     if "中" in option_text or "중" in option_text:
                         sales_data["E46"] = sales_data.get("E46", 0) + qty
-                except NoSuchElementException:
+                except:
                     pass
 
-        # 페이지네이션: 다음 페이지가 없으면 종료
+        # 페이지네이션
         try:
             next_btn = driver.find_element(By.XPATH, '//span/button[contains(@class,"next")]')
             if "disabled" in next_btn.get_attribute("class"):
+                logging.info("다음 페이지 없음 → 종료")
                 break
             driver.execute_script("arguments[0].click();", next_btn)
             time.sleep(1.5)
-        except NoSuchElementException:
+            page += 1
+        except:
+            logging.info("페이지네이션 처리 실패 → 종료")
             break
 
     return sales_data
+
 
 ###############################################################################
 # 메인 함수
