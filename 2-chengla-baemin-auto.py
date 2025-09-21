@@ -309,7 +309,9 @@ def login_and_close_popup(driver, wait, username, password):
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
 
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_dogv_1utdzds5.OverlayHeader_b_dvcv_5xyph30.c_dogv_13c33de0 > div.OverlayHeader_b_dvcv_5xyph31.c_dogv_13c33de0.c_dogv_13ysz3p2.c_dogv_13ysz3p0 > div:nth-child(1) > button")
+    time.sleep(100)
+
+    popup_close_selector = ("div[id^='\\:r'] ")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
@@ -324,7 +326,7 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
-time.sleep(100)
+
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_c1xs_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button > span > span > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
