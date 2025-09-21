@@ -404,13 +404,18 @@ def extract_order_summary(driver, wait):
 # ==============================
 def extract_sales_details(driver, wait):
     """
-    주문 상세 테이블을 순회하며 판매수량을 집계.
-    - 콤보/옵션/불꼬리찜/중 옵션 처리 포함
-    - 모든 주문 페이지 탐색
+    청라 배민 주문 상세 테이블에서 판매수량을 수집합니다.
+    - 동적 로딩 대기
+    - 콤보/옵션/불꼬리찜/中 옵션 처리
+    - 페이지네이션 처리
     """
+    import re
     sales_data = {}
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
-    combo_triggers = ("식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회", "일품 소꼬리 + 육전", "일품 소꼬리 + 육회")
+    combo_triggers = (
+        "식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회",
+        "일품 소꼬리 + 육전", "일품 소꼬리 + 육회"
+    )
 
     def normalize_text(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
@@ -418,28 +423,38 @@ def extract_sales_details(driver, wait):
     page = 1
     while True:
         logging.info(f"페이지 {page} 주문 수집 시작")
-        orders = driver.find_elements(By.XPATH, '//table/tbody/tr[contains(@id,"order")]')
-        if not orders:
-            logging.info("주문 데이터 없음 → 종료")
+        # 테이블 로딩 대기
+        try:
+            wait.until(EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "table tbody tr")
+            ))
+        except:
+            logging.info("주문 테이블 없음 → 종료")
             break
 
-        for order_index, order in enumerate(orders, start=1):
-            # 주문 펼치기
-            try:
-                toggle = order.find_element(By.XPATH, './/td/div/div/div[contains(@class,"toggle")]')
-                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", toggle)
-                time.sleep(0.2)
-                driver.execute_script("arguments[0].click();", toggle)
-                time.sleep(0.5)
-            except:
-                pass  # 이미 펼쳐져 있거나 실패해도 넘어감
+        rows = driver.find_elements(By.CSS_SELECTOR, "table tbody tr")
+        if not rows:
+            logging.info("페이지에 주문 데이터 없음 → 종료")
+            break
 
-            # 메뉴 항목 반복
-            items = order.find_elements(By.XPATH, './/section[1]/div[3]/div')
+        for order_index, tr in enumerate(rows, start=1):
+            # 주문 상세 펼치기
+            try:
+                toggle_btn = tr.find_element(By.CSS_SELECTOR, "td > div > div > section > div.toggle-button")
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", toggle_btn)
+                driver.execute_script("arguments[0].click();", toggle_btn)
+                time.sleep(0.3)
+            except:
+                pass  # 첫 주문은 이미 열려있음
+
+            # 메뉴 아이템 수집
+            items = tr.find_elements(By.CSS_SELECTOR, "div.item-row")
             for item in items:
                 try:
-                    raw_name = item.find_element(By.XPATH, './/span[1]/div/span[1]').text
-                    raw_qty = item.find_element(By.XPATH, './/span[1]/div/span[2]').text
+                    name_elem = item.find_element(By.CSS_SELECTOR, "span.item-name")
+                    qty_elem = item.find_element(By.CSS_SELECTOR, "span.item-quantity")
+                    raw_name = name_elem.text
+                    raw_qty = qty_elem.text
                 except:
                     continue
 
@@ -451,13 +466,9 @@ def extract_sales_details(driver, wait):
 
                 # ================= 콤보 처리 =================
                 if any(trigger in item_name for trigger in combo_triggers):
-                    k = 1
-                    while True:
-                        try:
-                            raw_combo = item.find_element(By.XPATH, f'./following-sibling::div[1]/li[{k}]/div/span').text
-                        except:
-                            break
-                        combo_text = normalize_text(price_tail_re.sub("", raw_combo))
+                    combo_list = item.find_elements(By.CSS_SELECTOR, "ul.combo-list li")
+                    for li in combo_list:
+                        combo_text = normalize_text(price_tail_re.sub("", li.text))
                         parts = [p.strip() for p in combo_text.split("+")]
                         if len(parts) == 2:
                             base_menu, addon = parts
@@ -466,9 +477,7 @@ def extract_sales_details(driver, wait):
                             addon_cell = "P44" if addon == "육전" else "P42" if addon == "육회" else None
                             if addon_cell:
                                 sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
-                        k += 1
                     continue
-                # ==========================================
 
                 # 일반 매핑
                 if item_name in ITEM_TO_CELL:
@@ -480,29 +489,29 @@ def extract_sales_details(driver, wait):
                 if "불꼬리찜" in item_name:
                     sales_data["E43"] = sales_data.get("E43", 0) + qty
 
-                # 모든 메뉴 공통 중 옵션 처리
+                # 중 옵션 처리
                 try:
-                    option_text = item.find_element(By.XPATH, './following-sibling::div[1]').text
+                    option_text = item.find_element(By.CSS_SELECTOR, "div.item-option").text
                     if "中" in option_text or "중" in option_text:
                         sales_data["E46"] = sales_data.get("E46", 0) + qty
                 except:
                     pass
 
-        # 페이지네이션
+        # ===== 페이지네이션 처리 =====
         try:
-            next_btn = driver.find_element(By.XPATH, '//span/button[contains(@class,"next")]')
+            next_btn = driver.find_element(By.CSS_SELECTOR, "div.pagination button.next")
             if "disabled" in next_btn.get_attribute("class"):
                 logging.info("다음 페이지 없음 → 종료")
                 break
-            driver.execute_script("arguments[0].click();", next_btn)
-            time.sleep(1.5)
-            page += 1
+            else:
+                driver.execute_script("arguments[0].click();", next_btn)
+                time.sleep(1.5)
+                page += 1
         except:
-            logging.info("페이지네이션 처리 실패 → 종료")
+            logging.info("페이지네이션 요소 없음 → 종료")
             break
 
     return sales_data
-
 
 ###############################################################################
 # 메인 함수
