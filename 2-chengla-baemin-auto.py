@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import re
 import time
@@ -29,10 +32,22 @@ import gspread
 from gspread_formatting import CellFormat, NumberFormat, format_cell_range
 from oauth2client.service_account import ServiceAccountCredentials
 
+###############################################################################
+# 설정 (필요시 수정)
+###############################################################################
+SPREADSHEET_NAME = "청라 일일/월말 정산서"
+MU_GUNG_SHEET_NAME = "청라"
+INVENTORY_SHEET_NAME = "재고"
 
-###############################################################################
-# 환경설정 및 상수
-###############################################################################
+# 청라 시트의 요약 컬럼 (기본: V=금액, W=주문수, X=판매합계(개수) )
+SUMMARY_AMOUNT_COL = "V"
+SUMMARY_ORDER_COUNT_COL = "W"
+SUMMARY_ITEM_COUNT_COL = "X"
+
+# 재고 시트에서 초기 클리어할 범위 (기본값: 기존 스크립트와 동일)
+RANGES_TO_CLEAR = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
+
+# 메뉴명 -> 셀 매핑 (기존)
 ITEM_TO_CELL = {
     '육회비빔밥': 'P43',
     '꼬리곰탕': 'E38',
@@ -73,51 +88,36 @@ ITEM_TO_CELL = {
 def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    
-    # Stream Handler (콘솔)
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.INFO)
-    stream_formatter = logging.Formatter('%(message)s')
-    stream_handler.setFormatter(stream_formatter)
-    logger.addHandler(stream_handler)
-    
-    # File Handler (파일)
+    # 콘솔
+    if not logger.handlers:
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setLevel(logging.INFO)
+        stream_formatter = logging.Formatter('%(message)s')
+        stream_handler.setFormatter(stream_formatter)
+        logger.addHandler(stream_handler)
+    # 파일
     file_handler = logging.FileHandler(log_filename, encoding='utf-8')
     file_handler.setLevel(logging.INFO)
-    file_formatter = logging.Formatter('%(message)s')
+    file_formatter = logging.Formatter('%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
+    # 중복 추가 방지
+    has_file = any(isinstance(h, logging.FileHandler) for h in logger.handlers)
+    if not has_file:
+        logger.addHandler(file_handler)
 
-# ======================================
+###############################################################################
 # 안전 클릭 함수
-# ======================================
+###############################################################################
 def safe_click(driver, element):
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", element)
     time.sleep(0.2)
     driver.execute_script("arguments[0].click();", element)
 
-# ======================================
-# 팝업 자동 닫기
-# ======================================
-def close_popup_if_exists(driver):
-    try:
-        backdrop = driver.find_element(By.CSS_SELECTOR, 'div.Dialog_b_c9kn_3pnjmu3')
-        safe_click(driver, backdrop)
-        time.sleep(0.5)
-        logging.info("팝업 닫기 성공")
-    except NoSuchElementException:
-        logging.info("팝업 없음")
-    
 def wait_and_click(driver, by, value, timeout=10):
-    """
-    element click intercepted 문제 해결용
-    """
     try:
-        # element가 클릭 가능할 때까지 기다림
         element = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((by, value))
         )
-        # 혹시 backdrop이 덮여 있으면 사라질 때까지 대기
         WebDriverWait(driver, timeout).until_not(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-testid='backdrop']"))
         )
@@ -133,19 +133,19 @@ def wait_and_click(driver, by, value, timeout=10):
             logging.error(f"[wait_and_click] 자바스크립트 클릭도 실패: {e2}")
             return False
 
-
-
+def close_popup_if_exists(driver):
+    try:
+        backdrop = driver.find_element(By.CSS_SELECTOR, 'div.Dialog_b_c9kn_3pnjmu3')
+        safe_click(driver, backdrop)
+        time.sleep(0.5)
+        logging.info("팝업 닫기 성공")
+    except NoSuchElementException:
+        logging.info("팝업 없음")
 
 ###############################################################################
-# 환경 변수 & 설정값 불러오기
+# 환경 변수 불러오기
 ###############################################################################
 def get_environment_variables():
-    """
-    필수 환경 변수:
-        - CHENGLA_BAEMIN_ID (배민 아이디)
-        - CHENGLA_BAEMIN_PW (배민 비밀번호)
-        - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
-    """
     baemin_id = os.getenv("CHENGLA_BAEMIN_ID")
     baemin_pw = os.getenv("CHENGLA_BAEMIN_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
@@ -157,9 +157,8 @@ def get_environment_variables():
 
     return baemin_id, baemin_pw, service_account_json_b64
 
-
 ###############################################################################
-# Selenium WebDriver 관리 클래스
+# Selenium WebDriver Manager
 ###############################################################################
 class SeleniumDriverManager:
     def __init__(self, headless=True, user_agent=None):
@@ -173,12 +172,8 @@ class SeleniumDriverManager:
     
     def __enter__(self):
         options = webdriver.ChromeOptions()
-        
-        # (필요 시) 헤드리스 모드
         #if self.headless:
-         #   options.add_argument("--headless")
-        
-        # 안정성 옵션
+        #    options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
@@ -187,11 +182,6 @@ class SeleniumDriverManager:
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
         options.add_argument("--remote-debugging-port=9222")
-        
-        # 예시: user-data-dir (원한다면 사용)
-        # unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
-        # options.add_argument(f"--user-data-dir={unique_dir}")
-
         try:
             self.driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
@@ -201,7 +191,6 @@ class SeleniumDriverManager:
         except WebDriverException as e:
             logging.error("WebDriver 초기화 실패")
             raise e
-        
         return self.driver
     
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -209,15 +198,11 @@ class SeleniumDriverManager:
             self.driver.quit()
             logging.info("WebDriver 종료")
 
-
 ###############################################################################
-# Google Sheets 관리 클래스
+# Google Sheets Manager
 ###############################################################################
 class GoogleSheetsManager:
     def __init__(self, service_account_json_b64):
-        """
-        :param service_account_json_b64: Base64로 인코딩된 Google Service Account JSON
-        """
         self.service_account_json_b64 = service_account_json_b64
         self.client = None
         self.spreadsheet = None
@@ -229,10 +214,8 @@ class GoogleSheetsManager:
             "https://www.googleapis.com/auth/drive"
         ]
         try:
-            # base64 디코딩
             raw_json = base64.b64decode(self.service_account_json_b64).decode('utf-8')
             creds_dict = json.loads(raw_json)
-
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scopes)
             self.client = gspread.authorize(creds)
             logging.info("Google Sheets API 인증 성공")
@@ -272,6 +255,9 @@ class GoogleSheetsManager:
             raise e
     
     def batch_update(self, worksheet, data_list):
+        """
+        data_list: [{'range': 'E38', 'values': [[qty]]}, ...]
+        """
         try:
             worksheet.batch_update(data_list)
             logging.info("배치 업데이트 완료")
@@ -290,14 +276,13 @@ class GoogleSheetsManager:
             logging.error(f"셀 형식 지정 실패: {e}")
             raise e
 
-
 ###############################################################################
-# 기능별 함수 (배민 사이트 크롤링)
+# 배민 크롤링 관련 함수
 ###############################################################################
 def login_and_close_popup(driver, wait, username, password):
     driver.get("https://self.baemin.com/")
     logging.info("배민 페이지 접속 시도")
-    
+    # 기존 셀렉터 기반 로그인 (기존 스크립트 참조)
     login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, login_page_selector)))
     
@@ -310,9 +295,9 @@ def login_and_close_popup(driver, wait, username, password):
     login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
-
     time.sleep(3)
 
+    # 팝업 닫기 시도 (여러 케이스)
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_c1xs_1utdzds5.OverlayFooter_b_c9kn_1slqmfa0 > div > button.TextButton_b_c9kn_1j0jumh3.c_c1xs_13ysz3p2.c_c1xs_13ysz3p0.TextButton_b_c9kn_1j0jumh6.TextButton_b_c9kn_1j0jumhb.c_c1xs_13c33de3")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
@@ -320,26 +305,24 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업 닫기 성공")
     except TimeoutException:
         logging.info("팝업이 없거나 이미 닫힘")
-        
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_rfd6_1utdzds5.OverlayFooter_b_rmnf_1slqmfa0 > div > button.TextButton_b_rmnf_1j0jumh3.c_rfd6_13ysz3p2.c_rfd6_13ysz3p0.TextButton_b_rmnf_1j0jumh6.TextButton_b_rmnf_1j0jumhb.c_rfd6_13c33de3")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
-        logging.info("팝업 닫기 성공")
+        logging.info("팝업 닫기 성공 (케이스2)")
     except TimeoutException:
-        logging.info("팝업이 없거나 이미 닫힘")
+        logging.info("팝업이 없거나 이미 닫힘 (케이스2)")
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div > div.Container_c_c1xs_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button > span > span > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
-
     time.sleep(3)
-    
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_c1xs_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
-    
+    logging.info("주문내역 메뉴로 이동")
+
 def set_daily_filter(driver, wait):
     import logging
     import time
@@ -375,12 +358,8 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
-        
+
 def extract_order_summary(driver, wait):
-    """
-    주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
-    UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
-    """
     selectors = [
         "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
         "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
@@ -403,16 +382,13 @@ def extract_order_summary(driver, wait):
 
     raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
 
-# ==============================
-# 주문 상세 메뉴/수량 추출
-# ==============================
 def extract_sales_details(driver, wait):
     """
     주문 상세 테이블을 순회하며 판매수량을 집계합니다.
-
-    - 첫 주문(tr[2])부터 안전하게 수집
-    - 2~10번째 주문은 클릭하여 펼치기
-    - 콤보/옵션/불꼬리찜/中 처리 포함
+    반환: (sales_data_dict, order_count, total_item_qty)
+      - sales_data_dict: {셀주소: qty, ...}
+      - order_count: 읽은 주문(행) 수
+      - total_item_qty: 모든 아이템의 수량 합계
     """
     combo_triggers = (
         "식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회",
@@ -424,6 +400,8 @@ def extract_sales_details(driver, wait):
         return re.sub(r"\s+", " ", s).strip()
 
     sales_data = {}
+    order_count = 0
+    total_item_qty = 0
 
     # 주문 tr[2]부터 tr[12]까지 (최대 6번째 주문)
     for order_index in range(2, 12, 2):
@@ -441,6 +419,9 @@ def extract_sales_details(driver, wait):
             except Exception:
                 logging.info(f"{order_index//2}번째 주문 펼치기 실패 → break")
                 break
+
+        # 주문 하나 읽음
+        order_count += 1
 
         # 주문 내 메뉴 아이템 수집
         for j in range(1, 101, 3):  # j=1,4,7,10,...100
@@ -464,8 +445,9 @@ def extract_sales_details(driver, wait):
             if not qty_match:
                 continue
             qty = int(qty_match.group())
+            total_item_qty += qty
 
-            # ================= 콤보 처리 =================
+            # 콤보 처리
             if any(trigger in item_name for trigger in combo_triggers):
                 k = 1
                 while True:
@@ -489,7 +471,6 @@ def extract_sales_details(driver, wait):
                             sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
                     k += 1
                 continue
-            # ==========================================
 
             # 일반 매핑
             if item_name in ITEM_TO_CELL:
@@ -497,7 +478,7 @@ def extract_sales_details(driver, wait):
                 sales_data[cell] = sales_data.get(cell, 0) + qty
                 logging.info(f"[일반] {item_name} → {cell} {qty}")
 
-            # 불꼬리찜 처리
+            # 불꼬리찜 특수 처리
             if "불꼬리찜" in item_name:
                 sales_data["E43"] = sales_data.get("E43", 0) + qty
                 option_xpath = (
@@ -511,7 +492,7 @@ def extract_sales_details(driver, wait):
                 except NoSuchElementException:
                     pass
 
-            # 모든 메뉴 공통 중 옵션 처리
+            # 모든 메뉴 공통 '중' 옵션 처리
             option_xpath = (
                 f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
                 f'/td/div/div/section[1]/div[3]/div[{j}]/following-sibling::div[1]'
@@ -523,101 +504,128 @@ def extract_sales_details(driver, wait):
             except NoSuchElementException:
                 pass
 
-    # ===== 페이지네이션 처리 =====
+    # 페이지네이션(다음 버튼 클릭하여 추가 페이지 읽는 로직 필요시 확장)
     try:
         next_btn_xpath = '//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[5]/div/div[2]/span/button'
         next_btn = driver.find_element(By.XPATH, next_btn_xpath)
         if "disabled" not in next_btn.get_attribute("class"):
             driver.execute_script("arguments[0].click();", next_btn)
             time.sleep(1.5)
-            logging.info("다음 페이지 이동")
+            logging.info("다음 페이지 이동 (주의: 현재는 한 페이지당 최대 6주문만 처리하도록 설계됨)")
     except NoSuchElementException:
         logging.info("다음 페이지 버튼 없음 → 종료")
 
-    return sales_data
+    return sales_data, order_count, total_item_qty
+
 ###############################################################################
-# 메인 함수
+# 메인
 ###############################################################################
 def main():
     setup_logging()
     logging.info("=== 스크립트 시작 ===")
-    
+
     # 1) 환경 변수
-    baemin_id, baemin_pw, service_account_json_b64 = get_environment_variables()
-    
-    # 2) Selenium
-    with SeleniumDriverManager(headless=True) as driver:
-        wait = WebDriverWait(driver, 30)
-        try:
-            # 로그인 & 팝업
-            login_and_close_popup(driver, wait, baemin_id, baemin_pw)
-            
-            # 주문내역 & 날짜 필터
-            navigate_to_order_history(driver, wait)
-            set_daily_filter(driver, wait)
-            
-            # 요약 & 판매량
-            order_summary = extract_order_summary(driver, wait)
-            sales_details = extract_sales_details(driver, wait)
-        except Exception as e:
-            logging.error(f"에러 발생: {e}")
-            traceback.print_exc()
-            return
-    
-    # 3) Google Sheets 인증 & 열기
-    sheets_manager = GoogleSheetsManager(service_account_json_b64)
-    sheets_manager.authenticate()
-    
-    SPREADSHEET_NAME = "청라 일일/월말 정산서"
-    MU_GUNG_SHEET_NAME = "청라"
-    INVENTORY_SHEET_NAME = "재고"
-    
-    sheets_manager.open_spreadsheet(SPREADSHEET_NAME)
-    mu_gung_sheet = sheets_manager.get_worksheet(MU_GUNG_SHEET_NAME)
-    inventory_sheet = sheets_manager.get_worksheet(INVENTORY_SHEET_NAME)
-    
     try:
-        # 날짜 행에 요약 데이터 기록
+        baemin_id, baemin_pw, service_account_json_b64 = get_environment_variables()
+    except Exception as e:
+        logging.error(f"환경변수 로드 실패: {e}")
+        return
+
+    # 2) Selenium으로 배민 접속/데이터 수집
+    sales_details = {}
+    order_summary_text = "0"
+    order_count = 0
+    total_item_qty = 0
+
+    try:
+        with SeleniumDriverManager(headless=True) as driver:
+            wait = WebDriverWait(driver, 30)
+            try:
+                login_and_close_popup(driver, wait, baemin_id, baemin_pw)
+                navigate_to_order_history(driver, wait)
+                set_daily_filter(driver, wait)
+                order_summary_text = extract_order_summary(driver, wait)
+                sales_details, order_count, total_item_qty = extract_sales_details(driver, wait)
+            except Exception as e:
+                logging.error(f"크롤링 중 에러 발생: {e}")
+                traceback.print_exc()
+                return
+    except Exception as e:
+        logging.error(f"WebDriver 오류: {e}")
+        traceback.print_exc()
+        return
+
+    # 3) Google Sheets 인증 & 업데이트
+    try:
+        sheets_manager = GoogleSheetsManager(service_account_json_b64)
+        sheets_manager.authenticate()
+        sheets_manager.open_spreadsheet(SPREADSHEET_NAME)
+        mu_gung_sheet = sheets_manager.get_worksheet(MU_GUNG_SHEET_NAME)
+        inventory_sheet = sheets_manager.get_worksheet(INVENTORY_SHEET_NAME)
+    except Exception as e:
+        logging.error(f"구글 시트 인증/열기 실패: {e}")
+        traceback.print_exc()
+        return
+
+    try:
+        # --- 3-1) 청라 시트: 날짜 위치 찾고 요약(금액/주문수/판매합계) 기록 ---
         today = datetime.datetime.now()
         day = str(today.day)
-        
         date_cells = mu_gung_sheet.range('U3:U33')
         day_values = [cell.value for cell in date_cells]
-        
+
         if day in day_values:
             row_index = day_values.index(day) + 3
-            target_cell = f"V{row_index}"
-            
-            # 빈 문자열 방지
-            digits_only = re.sub(r'[^\d]', '', order_summary)
+            amount_cell = f"{SUMMARY_AMOUNT_COL}{row_index}"
+            order_count_cell = f"{SUMMARY_ORDER_COUNT_COL}{row_index}"
+            item_count_cell = f"{SUMMARY_ITEM_COUNT_COL}{row_index}"
+
+            # 금액 숫자만 추출 (문자열 예: '126,000원' 혹은 '126,000')
+            digits_only = re.sub(r'[^\d]', '', order_summary_text)
             if not digits_only:
                 digits_only = "0"
-            
-            extracted_num = int(digits_only)
-            sheets_manager.update_cell_value(mu_gung_sheet, target_cell, extracted_num)
-            sheets_manager.format_cells_number(mu_gung_sheet, 'V3:V33')
+            extracted_amount = int(digits_only)
+
+            # 업데이트 (덮어쓰기)
+            sheets_manager.update_cell_value(mu_gung_sheet, amount_cell, extracted_amount)
+            sheets_manager.update_cell_value(mu_gung_sheet, order_count_cell, order_count)
+            sheets_manager.update_cell_value(mu_gung_sheet, item_count_cell, total_item_qty)
+
+            # 포맷 적용 (금액/숫자)
+            sheets_manager.format_cells_number(mu_gung_sheet, f"{SUMMARY_AMOUNT_COL}3:{SUMMARY_AMOUNT_COL}33")
+            sheets_manager.format_cells_number(mu_gung_sheet, f"{SUMMARY_ORDER_COUNT_COL}3:{SUMMARY_ORDER_COUNT_COL}33")
+            sheets_manager.format_cells_number(mu_gung_sheet, f"{SUMMARY_ITEM_COUNT_COL}3:{SUMMARY_ITEM_COUNT_COL}33")
+
+            logging.info(f"청라 시트 요약 업데이트: 금액 {amount_cell}={extracted_amount}, 주문수 {order_count_cell}={order_count}, 판매개수 {item_count_cell}={total_item_qty}")
         else:
             logging.warning(f"시트에 오늘({day}) 날짜를 찾을 수 없음 (U3:U33 범위)")
-        
-        # 재고 시트 특정 범위 삭제
-        ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
-        sheets_manager.batch_clear(inventory_sheet, ranges_to_clear)
-        
-        # 판매 디테일 기록
+
+        # --- 3-2) 재고 시트: 특정 범위 클리어 후 매핑된 셀에 판매 수량 기록 ---
+        sheets_manager.batch_clear(inventory_sheet, RANGES_TO_CLEAR)
+
         if sales_details:
             batch_data = []
+            # sales_details은 {셀주소: qty}
             for cell_addr, qty in sales_details.items():
                 batch_data.append({'range': cell_addr, 'values': [[qty]]})
-            sheets_manager.batch_update(inventory_sheet, batch_data)
+            if batch_data:
+                sheets_manager.batch_update(inventory_sheet, batch_data)
+                # 포맷 적용: 예시는 전체 범위에 대해 숫자 포맷 적용
+                # 필요하면 범위를 세분화 가능
+                sheets_manager.format_cells_number(inventory_sheet, 'E38:E45')
+                sheets_manager.format_cells_number(inventory_sheet, 'P38:P45')
+                sheets_manager.format_cells_number(inventory_sheet, 'AD38:AD45')
+                sheets_manager.format_cells_number(inventory_sheet, 'AP38:AP45')
+                sheets_manager.format_cells_number(inventory_sheet, 'BA38:BA45')
+                logging.info("재고 시트에 판매 수량 기록 완료")
         else:
-            logging.info("판매 수량 데이터가 없습니다.")
-    
+            logging.info("판매 수량 데이터가 없습니다. 재고 시트 기록 생략.")
+
     except Exception as e:
         logging.error(f"구글 시트 처리 중 에러: {e}")
         traceback.print_exc()
-    
-    logging.info("=== 스크립트 종료 ===")
 
+    logging.info("=== 스크립트 종료 ===")
 
 if __name__ == "__main__":
     main()
