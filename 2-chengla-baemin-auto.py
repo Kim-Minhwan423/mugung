@@ -396,6 +396,82 @@ def extract_sales_details(driver, wait):
     )
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
 
+    def scrape_order_detail(driver, order_index):
+    """
+    특정 주문(order_index번째)을 펼치고 메뉴 dict 반환
+    """
+    results = {}
+    try:
+        # 주문 펼치기
+        order_row = driver.find_element(
+            By.XPATH,
+            f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]/td[1]/div'
+        )
+        driver.execute_script("arguments[0].click();", order_row)
+        time.sleep(1)
+
+        # 메뉴 반복 (N=2,5,8,...)
+        for N in range(2, 30, 3):  # 최대 10개 메뉴까지
+            try:
+                name_xpath = f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index+1}]/td/div/div/section[1]/div[3]/div[{N}]/li[1]/div/span'
+                qty_xpath  = f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index+1}]/td/div/div/section[1]/div[3]/div[{N}]/li[2]/div/span'
+
+                item_name = driver.find_element(By.XPATH, name_xpath).text.strip()
+                qty_text  = driver.find_element(By.XPATH, qty_xpath).text.strip()
+                qty = int(re.sub(r'[^0-9]', '', qty_text) or "0")
+
+                if item_name:
+                    # "中" 옵션은 따로 분류
+                    if "中" in item_name:
+                        results["__중옵션__"] = results.get("__중옵션__", 0) + qty
+                    else:
+                        results[item_name] = results.get(item_name, 0) + qty
+            except:
+                break  # 더 이상 메뉴 없으면 종료
+
+    except Exception as e:
+        logging.warning(f"{order_index}번째 주문 크롤링 실패: {e}")
+
+    return results
+
+
+def scrape_all_orders(driver, max_pages=5):
+    """
+    여러 페이지 돌면서 주문 크롤링
+    """
+    all_results = {}
+    order_count = 0
+    total_item_qty = 0
+
+    for page in range(max_pages):
+        for idx in range(2, 12):  # tr[2]~tr[11] = 최대 5 주문
+            data = scrape_order_detail(driver, idx)
+            if not data:
+                continue
+            order_count += 1
+            for k, v in data.items():
+                if k == "__중옵션__":
+                    all_results["E46"] = all_results.get("E46", 0) + v
+                elif k in ITEM_TO_CELL:
+                    all_results[ITEM_TO_CELL[k]] = all_results.get(ITEM_TO_CELL[k], 0) + v
+                total_item_qty += v
+
+        # TODO: 페이지네이션 처리 필요 시 여기에 클릭 로직 추가
+        try:
+            next_btn_xpath = '//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[5]/div/div[2]/span/button'
+            next_btn = driver.find_element(By.XPATH, next_btn_xpath)
+            if "disabled" not in next_btn.get_attribute("class"):
+                driver.execute_script("arguments[0].click();", next_btn)
+                time.sleep(1.5)
+                logging.info("다음 페이지 이동")
+            else:
+                break
+        except NoSuchElementException:
+            break
+
+    return all_results, order_count, total_item_qty
+
+
     def normalize_text(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
@@ -545,7 +621,7 @@ def main():
                 navigate_to_order_history(driver, wait)
                 set_daily_filter(driver, wait)
                 order_summary_text = extract_order_summary(driver, wait)
-                sales_details, order_count, total_item_qty = extract_sales_details(driver, wait)
+                sales_details, order_count, total_item_qty = scrape_all_orders(driver, max_pages=5)
             except Exception as e:
                 logging.error(f"크롤링 중 에러 발생: {e}")
                 traceback.print_exc()
@@ -610,20 +686,18 @@ def main():
                 batch_data.append({'range': cell_addr, 'values': [[qty]]})
             if batch_data:
                 sheets_manager.batch_update(inventory_sheet, batch_data)
-                # 포맷 적용: 예시는 전체 범위에 대해 숫자 포맷 적용
-                # 필요하면 범위를 세분화 가능
-                sheets_manager.format_cells_number(inventory_sheet, 'E38:E45')
-                sheets_manager.format_cells_number(inventory_sheet, 'P38:P45')
-                sheets_manager.format_cells_number(inventory_sheet, 'AD38:AD45')
-                sheets_manager.format_cells_number(inventory_sheet, 'AP38:AP45')
-                sheets_manager.format_cells_number(inventory_sheet, 'BA38:BA45')
-                logging.info("재고 시트에 판매 수량 기록 완료")
+                # 숫자 형식 적용
+                cell_ranges = [cell_addr for cell_addr in sales_details.keys()]
+                for cell_addr in cell_ranges:
+                    sheets_manager.format_cells_number(inventory_sheet, cell_addr)
+                logging.info("재고 시트 판매 수량 업데이트 완료")
         else:
-            logging.info("판매 수량 데이터가 없습니다. 재고 시트 기록 생략.")
+            logging.info("판매 데이터가 없어 재고 시트 업데이트 없음")
 
     except Exception as e:
-        logging.error(f"구글 시트 처리 중 에러: {e}")
+        logging.error(f"구글 시트 업데이트 중 에러: {e}")
         traceback.print_exc()
+        return
 
     logging.info("=== 스크립트 종료 ===")
 
