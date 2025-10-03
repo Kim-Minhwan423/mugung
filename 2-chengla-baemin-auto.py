@@ -687,15 +687,14 @@ def main():
             if batch_data:
                 sheets_manager.batch_update(inventory_sheet, batch_data)
                 # 숫자 형식 적용
-                cell_ranges = [cell_addr for cell_addr in sales_details.keys()]
-                for cell_addr in cell_ranges:
-                    sheets_manager.format_cells_number(inventory_sheet, cell_addr)
+                all_cells = ','.join(sales_details.keys())
+                sheets_manager.format_cells_number(inventory_sheet, all_cells)
                 logging.info("재고 시트 판매 수량 업데이트 완료")
         else:
-            logging.info("판매 데이터가 없어 재고 시트 업데이트 없음")
+            logging.info("판매 내역이 없어 재고 시트 업데이트 없음")
 
     except Exception as e:
-        logging.error(f"구글 시트 업데이트 중 에러: {e}")
+        logging.error(f"구글 시트 업데이트 중 오류 발생: {e}")
         traceback.print_exc()
         return
 
