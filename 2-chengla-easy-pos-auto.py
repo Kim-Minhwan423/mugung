@@ -51,7 +51,6 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
     update_cells_inventory = []
     processed_codes = set()
     new_data_found = True
-    combined_58_59_qty = 0  # 000058 + 000059 수량 합산 변수
 
     while new_data_found:
         new_data_found = False
@@ -72,14 +71,6 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                 total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
                 total_text = total_elem.text.strip().replace(",", "").replace("원", "")
                 total_val = int(total_text) if total_text.isdigit() else 0
-
-                if code_text in ["000058", "000059"]:
-                    qty_val = int(qty_text) if qty_text.isdigit() else 0
-                    combined_58_59_qty += qty_val
-                    print(f"[INFO] {code_text} - 합산 대상 수량 {qty_val} 누적 중...")
-                    processed_codes.add(code_text)
-                    new_data_found = True
-                    continue
 
                 if code_text in special_prices:
                     unit_price = special_prices[code_text]
@@ -120,14 +111,6 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             except Exception as e:
                 print(f"[INFO] 스크롤 불가 또는 완료: {e}")
                 break
-
-    # 🔽 000058 + 000059 → C45 기록
-    if combined_58_59_qty > 0:
-        update_cells_inventory.append({
-            'range': code_to_cell_inventory["COMBINED_58_59"],
-            'values': [[combined_58_59_qty]]
-        })
-        print(f"[INFO] 000058 + 000059 합산 수량 {combined_58_59_qty} → C45 기록 완료.")
 
     return update_cells_inventory
 
@@ -363,7 +346,7 @@ def main():
         }
 
         special_prices = {
-            "000018": 2000,  "000019": 2000,  "000020": 2000,  "000055": 2000,
+            "000018": 2000,  "000019": 2000,  "000020": 3000,  "000055": 2000,
             "000021": 28000, "000022": 22000, "000023": 18000, "000024": 18000,
             "000039": 28000
             # 필요하면 추가
