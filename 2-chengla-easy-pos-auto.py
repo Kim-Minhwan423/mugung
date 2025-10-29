@@ -1,4 +1,4 @@
-ㅇimport os
+import os
 import time
 import gspread
 import traceback
