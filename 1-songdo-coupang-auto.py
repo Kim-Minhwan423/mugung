@@ -31,6 +31,20 @@ from oauth2client.service_account import ServiceAccountCredentials
 ###############################################################################
 # 1. 로깅 설정
 ###############################################################################
+import time
+import gspread
+from google.auth.exceptions import TransportError
+
+def open_google_sheet_with_retry(client, sheet_name, retries=5):
+    for attempt in range(1, retries + 1):
+        try:
+            doc = client.open(sheet_name)
+            return doc
+        except Exception as e:
+            print(f"[경고] 구글 시트 연결 실패 (시도 {attempt}/{retries}) → {e}")
+            time.sleep(3)
+    raise RuntimeError(f"구글 시트 연결 실패: {sheet_name}")
+
 def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -568,7 +582,7 @@ def main():
     # 5) 구글 시트
     try:
         client = get_gspread_client_from_b64(service_account_json_b64)
-        doc = client.open("송도 일일/월말 정산서")
+        doc = open_google_sheet_with_retry(client, "송도 일일/월말 정산서")
         mugeung_sheet = doc.worksheet("송도")
         jaego_sheet = doc.worksheet("재고")
 
