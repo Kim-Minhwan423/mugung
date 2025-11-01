@@ -428,11 +428,13 @@ def update_google_sheets(total_order_amount, aggregated_products):
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
-        '낙지비빔밥': 'F44',
-        '낙지볶음': 'F45',
+        '낙지비빔밥': 'Q39',
+        '낙지볶음': 'Q40',
+        '낙지부추전': 'Q38',
         '육회비빔밥': 'Q43',
+        '소고기김치전': 'F44',
         '숙주갈비탕': 'F38',
-        '소불고기': 'Q38',
+        '소불고기': 'F43',
         '갈비찜덮밥': 'F39',
         '육전': 'Q44',
         '육회': 'Q42',
