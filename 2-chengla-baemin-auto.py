@@ -34,6 +34,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 # 환경설정 및 상수
 ###############################################################################
 ITEM_TO_CELL = {
+    '백골뱅이숙회': 'E44',
+    '백골뱅이무침': 'E45',
     '얼큰소국밥': 'P38',
     '낙지비빔밥': 'AD38',
     '낙지볶음': 'AD40',
