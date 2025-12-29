@@ -410,18 +410,43 @@ def extract_order_summary(driver, wait):
 # ==============================
 # 주문 상세 메뉴/수량 추출
 # ==============================
+def extract_order_summary(driver, wait):
+    """
+    주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
+    UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
+    """
+    selectors = [
+        "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
+        "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
+        "div > div:nth-child(2) > span.TotalSummary-module__SysK > b",
+        "div.OrderHistoryPage-module__R0bB div.TotalSummary-module__sVL1 span.TotalSummary-module__SysK > b",
+        "div.TotalSummary-module__sVL1 b",
+    ]
+
+    last_err = None
+    for css in selectors:
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, css)))
+            text = driver.find_element(By.CSS_SELECTOR, css).text.strip()
+            if text:
+                logging.info(f"주문 요약 데이터: {text}")
+                return text
+        except Exception as e:
+            last_err = e
+            continue
+
+    raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
+
+# ==============================
+# 주문 상세 메뉴/수량 추출
+# ==============================
 def extract_sales_details(driver, wait):
     """
     주문 상세 테이블을 순회하며 판매수량을 집계합니다.
 
     - 첫 주문(tr[2])부터 안전하게 수집
     - 2~10번째 주문은 클릭하여 펼치기
-    - 콤보/옵션/불꼬리찜/中 처리 포함
     """
-    combo_triggers = (
-        "식사메뉴 1개 + 육전", "식사메뉴 1개 + 육회",
-        "일품 소꼬리 + 육전", "일품 소꼬리 + 육회"
-    )
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
 
     def normalize_text(s: str) -> str:
@@ -434,7 +459,7 @@ def extract_sales_details(driver, wait):
         # 첫 주문은 기본 열림, 이후 주문은 펼치기 클릭
         if order_index > 2:
             toggle_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]/td/div'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]/td/div'
             )
             try:
                 btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
@@ -449,11 +474,11 @@ def extract_sales_details(driver, wait):
         # 주문 내 메뉴 아이템 수집
         for j in range(1, 101, 3):  # j=1,4,7,10,...100
             item_name_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
                 f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[1]'
             )
             item_qty_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
                 f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[2]'
             )
 
@@ -469,63 +494,11 @@ def extract_sales_details(driver, wait):
                 continue
             qty = int(qty_match.group())
 
-            # ================= 콤보 처리 =================
-            if any(trigger in item_name for trigger in combo_triggers):
-                k = 1
-                while True:
-                    li_xpath = (
-                        f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
-                        f'/td/div/div/section[1]/div[3]/div[{j}]/following-sibling::div[1]/li[{k}]/div/span'
-                    )
-                    try:
-                        raw_combo = driver.find_element(By.XPATH, li_xpath).text
-                    except NoSuchElementException:
-                        break
-
-                    combo_text = normalize_text(price_tail_re.sub("", raw_combo))
-                    parts = [p.strip() for p in combo_text.split("+")]
-                    if len(parts) == 2:
-                        base_menu, addon = parts
-                        if base_menu in ITEM_TO_CELL:
-                            sales_data[ITEM_TO_CELL[base_menu]] = sales_data.get(ITEM_TO_CELL[base_menu], 0) + qty
-                        addon_cell = "P44" if addon == "육전" else "P42" if addon == "육회" else None
-                        if addon_cell:
-                            sales_data[addon_cell] = sales_data.get(addon_cell, 0) + qty
-                    k += 1
-                continue
-            # ==========================================
-
             # 일반 매핑
             if item_name in ITEM_TO_CELL:
                 cell = ITEM_TO_CELL[item_name]
                 sales_data[cell] = sales_data.get(cell, 0) + qty
                 logging.info(f"[일반] {item_name} → {cell} {qty}")
-
-            # 불꼬리찜 처리
-            if "불꼬리찜" in item_name:
-                sales_data["E43"] = sales_data.get("E43", 0) + qty
-                option_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
-                    f'/td/div/div/section[1]/div[3]/div[{j}]/following-sibling::div[1]'
-                )
-                try:
-                    option_text = driver.find_element(By.XPATH, option_xpath).text
-                    if "中" in option_text or "중" in option_text:
-                        sales_data["E46"] = sales_data.get("E46", 0) + qty
-                except NoSuchElementException:
-                    pass
-
-            # 모든 메뉴 공통 중 옵션 처리
-            option_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
-                f'/td/div/div/section[1]/div[3]/div[{j}]/following-sibling::div[1]'
-            )
-            try:
-                option_text = driver.find_element(By.XPATH, option_xpath).text
-                if "中" in option_text or "중" in option_text:
-                    sales_data["E46"] = sales_data.get("E46", 0) + qty
-            except NoSuchElementException:
-                pass
 
     # ===== 페이지네이션 처리 =====
     try:
