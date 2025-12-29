@@ -445,11 +445,11 @@ def extract_sales_details(driver, wait):
         # 주문 내 메뉴 아이템 수집
         for j in range(1, 101, 3):  # j=1,4,7,10,...100
             item_name_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
                 f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[1]'
             )
             item_qty_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
                 f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[2]'
             )
 
