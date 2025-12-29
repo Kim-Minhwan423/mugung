@@ -167,7 +167,7 @@ def get_environment_variables():
 # Selenium WebDriver 관리 클래스
 ###############################################################################
 class SeleniumDriverManager:
-    def __init__(self, headless=True, user_agent=None):
+    #def __init__(self, headless=True, user_agent=None):
         #self.headless = headless
         self.user_agent = user_agent or (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
@@ -551,7 +551,7 @@ def main():
     baemin_id, baemin_pw, service_account_json_b64 = get_environment_variables()
     
     # 2) Selenium
-    with SeleniumDriverManager(headless=True) as driver:
+    #with SeleniumDriverManager(headless=True) as driver:
         wait = WebDriverWait(driver, 30)
         try:
             # 로그인 & 팝업
