@@ -342,11 +342,11 @@ def get_todays_orders(driver):
                 if "배달요금" in product_text:
                     continue
 
-                # 수량 파싱
+                # 수량 파싱 (x 2 형태)
                 match = re.search(r"x\s*(\d+)", product_text)
                 product_qty = int(match.group(1)) if match else 1
 
-                # 상품명 정규화
+                # 상품명 정규화 (옵션, x 제거)
                 cleaned_name = normalize_product_name(product_text)
 
                 products[cleaned_name] = products.get(cleaned_name, 0) + product_qty
@@ -355,15 +355,24 @@ def get_todays_orders(driver):
             except Exception as e:
                 logging.warning(f"품목 추출 중 예외 발생: {e}")
 
-        # (5) 팝업 닫기
-        close_popup_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
+        # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
+        close_popup_selector = "#portal-root svg"
+
         try:
             close_btn = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
             )
             close_btn.click()
+
+            # 🔥 팝업 언더레이가 사라질 때까지 대기
+            WebDriverWait(driver, 5).until(
+                EC.invisibility_of_element_located(
+                    (By.CSS_SELECTOR, "div.FullScreenModal__Underlay-sc-7lyzl-0")
+                )
+            )
+
             logging.info(f"{i}번째 행 팝업 닫기 완료")
-            time.sleep(1)
+
         except Exception as e:
             logging.error(f"{i}번째 행 팝업 닫기 오류: {e}")
 
@@ -416,20 +425,19 @@ def update_google_sheets(total_order_amount, aggregated_products):
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
-        '백골뱅이숙회': 'F44',
-        '백골뱅이무침': 'F45',
+        '백골뱅이숙회': 'F45',
         '얼큰소국밥': 'Q38',
         '낙지비빔밥': 'AF38',
         '낙지볶음': 'AF40',
         '낙지파전': 'AF39',
         '소고기김치전': 'Q39',
         '두부제육김치': 'Q40',
-        '육회비빔밥': 'Q43',
+        '육회비빔밥': 'F42',
         '숙주갈비탕': 'F38',
         '갈비찜덮밥': 'F39',
-        '육전': 'F42',
-        '육회': 'Q44',
-        '육사시미': 'Q45',
+        '육전': 'Q44',
+        '육회': 'F43',
+        '육사시미': 'F44',
         '갈비수육': 'F40',
         '소갈비찜': 'F41',
         '소불고기': 'Q42',
