@@ -335,13 +335,13 @@ def login_and_close_popup(driver, wait, username, password):
         logging.info("팝업이 없거나 이미 닫힘")
 
 def navigate_to_order_history(driver, wait):
-    menu_button_selector = "#root > div > div.Container_c_c1xs_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button > span > span > svg"
+    menu_button_selector = "#root > div > div.Container_c_qx9u_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button > span > span > svg"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
 
     time.sleep(3)
     
-    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_c1xs_1utdzds5 > a:nth-child(18) > button"
+    order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > div > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_qx9u_1utdzds5 > a:nth-child(18) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
     
