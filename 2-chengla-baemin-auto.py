@@ -71,6 +71,7 @@ ITEM_TO_CELL = {
     '소성주막걸리': 'AQ45'
 }
 
+
 ###############################################################################
 # 로깅 설정
 ###############################################################################
@@ -179,8 +180,8 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # (필요 시) 헤드리스 모드
-       # if self.headless:
-        #    options.add_argument("--headless")
+        #if self.headless:
+            #options.add_argument("--headless")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -317,7 +318,7 @@ def login_and_close_popup(driver, wait, username, password):
 
     time.sleep(3)
 
-    popup_close_selector = ("#\:r2e\: > div.Container_c_qx9u_1utdzds5.OverlayFooter_b_r4ax_1slqmfa0 > div > button.TextButton_b_r4ax_1j0jumh3.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0.TextButton_b_r4ax_1j0jumh6.TextButton_b_r4ax_1j0jumhb.c_qx9u_13c33de3")
+    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button > span > svg")
     try:
         close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
         close_btn.click()
@@ -379,37 +380,7 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
-        
-def extract_order_summary(driver, wait):
-    """
-    주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
-    UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
-    """
-    selectors = [
-        "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
-        "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
-        "div > div:nth-child(2) > span.TotalSummary-module__SysK > b",
-        "div.OrderHistoryPage-module__R0bB div.TotalSummary-module__sVL1 span.TotalSummary-module__SysK > b",
-        "div.TotalSummary-module__sVL1 b",
-    ]
-
-    last_err = None
-    for css in selectors:
-        try:
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, css)))
-            text = driver.find_element(By.CSS_SELECTOR, css).text.strip()
-            if text:
-                logging.info(f"주문 요약 데이터: {text}")
-                return text
-        except Exception as e:
-            last_err = e
-            continue
-
-    raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
-
-# ==============================
-# 주문 상세 메뉴/수량 추출
-# ==============================
+                
 def extract_order_summary(driver, wait):
     """
     주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
@@ -442,76 +413,79 @@ def extract_order_summary(driver, wait):
 # ==============================
 def extract_sales_details(driver, wait):
     """
-    주문 상세 테이블을 순회하며 판매수량을 집계합니다.
-
-    - 첫 주문(tr[2])부터 안전하게 수집
-    - 2~10번째 주문은 클릭하여 펼치기
+    배민 주문내역에서
+    - 최대 10개 주문 처리
+    - 주문 펼치기 → 메뉴명/수량 추출
     """
+
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
 
     def normalize_text(s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
+    def extract_qty(text: str) -> int:
+        m = re.search(r"\d+", text.replace(",", ""))
+        return int(m.group()) if m else 0
+
     sales_data = {}
 
-    # 주문 tr[2]부터 tr[12]까지 (최대 6번째 주문)
-    for order_index in range(2, 12, 2):
-        # 첫 주문은 기본 열림, 이후 주문은 펼치기 클릭
-        if order_index > 2:
+    # 주문 상세 tr 시작값 (첫 주문은 tr[2])
+    detail_tr = 2
+
+    # 최대 10개 주문
+    for order_no in range(1, 11):
+
+        # 첫 주문 제외, 이후 주문은 펼치기 클릭
+        if order_no > 1:
+            toggle_tr = detail_tr - 1
             toggle_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]/td/div'
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                f'table/tbody/tr[{toggle_tr}]/td[1]/div'
             )
             try:
                 btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
                 driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
                 time.sleep(0.2)
                 driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.5)
+                time.sleep(0.4)
             except Exception:
-                logging.info(f"{order_index//2}번째 주문 펼치기 실패 → break")
+                logging.info(f"{order_no}번째 주문 펼치기 실패 → 종료")
                 break
 
-        # 주문 내 메뉴 아이템 수집
-        for j in range(1, 101, 3):  # j=1,4,7,10,...100
-            item_name_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
-                f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[1]'
+        # ===== 메뉴 루프 =====
+        for i in range(1, 26, 3):  # 1,4,7,10,13,16,19,22,25
+            name_xpath = (
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
+                f'/span[1]/div/span[1]'
             )
-            item_qty_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/table/tbody/tr[{order_index}]'
-                f'/td/div/div/section[1]/div[3]/div[{j}]/span[1]/div/span[2]'
+            qty_xpath = (
+                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
+                f'/span[1]/div/span[2]'
             )
 
             try:
-                raw_name = driver.find_element(By.XPATH, item_name_xpath).text
-                raw_qty = driver.find_element(By.XPATH, item_qty_xpath).text
+                raw_name = driver.find_element(By.XPATH, name_xpath).text
+                raw_qty = driver.find_element(By.XPATH, qty_xpath).text
             except NoSuchElementException:
                 break
 
             item_name = normalize_text(price_tail_re.sub("", raw_name))
-            qty_match = re.search(r"\d+", raw_qty.replace(",", ""))
-            if not qty_match:
+            qty = extract_qty(raw_qty)
+            if qty == 0:
                 continue
-            qty = int(qty_match.group())
 
-            # 일반 매핑
             if item_name in ITEM_TO_CELL:
                 cell = ITEM_TO_CELL[item_name]
                 sales_data[cell] = sales_data.get(cell, 0) + qty
-                logging.info(f"[일반] {item_name} → {cell} {qty}")
+                logging.info(f"[집계] {item_name} → {cell} +{qty}")
 
-    # ===== 페이지네이션 처리 =====
-    try:
-        next_btn_xpath = '//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[5]/div/div[2]/span/button'
-        next_btn = driver.find_element(By.XPATH, next_btn_xpath)
-        if "disabled" not in next_btn.get_attribute("class"):
-            driver.execute_script("arguments[0].click();", next_btn)
-            time.sleep(1.5)
-            logging.info("다음 페이지 이동")
-    except NoSuchElementException:
-        logging.info("다음 페이지 버튼 없음 → 종료")
+        # 다음 주문 상세 tr은 +2
+        detail_tr += 2
 
     return sales_data
+
 ###############################################################################
 # 메인 함수
 ###############################################################################
