@@ -433,12 +433,12 @@ def extract_sales_details(driver, wait):
 
     while True:  # ===== 페이지네이션 루프 =====
         # 주문은 tr[2]부터 시작, 한 주문당 2줄 사용
-        for order_base in range(2, 22, 2):  # 최대 10개 주문
+        for order_base in range(3, 19, 2):  # 최대 10개 주문
             # 1번째 주문은 이미 열려있음, 이후는 펼치기
             if order_base > 2:
                 toggle_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/'
-                    f'table/tbody/tr[{order_base-1}]/td[1]/div'
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                    f'table/tbody/tr[{order_base}]/td[1]/div'
                 )
                 try:
                     btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
@@ -455,7 +455,7 @@ def extract_sales_details(driver, wait):
             # ===== 메뉴 루프 =====
             for j in range(1, 30, 3):  # 메뉴 블럭 단위
                 name_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[3]/div[1]/div[4]/div[4]/div/div/'
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{j}]'
                     f'/span[1]/div/span[1]'
                 )
