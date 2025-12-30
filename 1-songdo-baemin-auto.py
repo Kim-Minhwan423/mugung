@@ -316,7 +316,7 @@ def login_and_close_popup(driver, wait, username, password):
     driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
     logging.info("로그인 버튼 클릭")
 
-    time.sleep(3)
+    time.sleep(3000)
 
     popup_close_selector = ("div[id^='\\:r'] div.Container_c_c1xs_1utdzds5.OverlayFooter_b_c9kn_1slqmfa0 > div > button.TextButton_b_c9kn_1j0jumh3.c_c1xs_13ysz3p2.c_c1xs_13ysz3p0.TextButton_b_c9kn_1j0jumh6.TextButton_b_c9kn_1j0jumhb.c_c1xs_13c33de3")
     try:
