@@ -407,7 +407,7 @@ def extract_order_summary(driver, wait):
             continue
 
     raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
-
+TIME.SLLEP(3000)
 # ==============================
 # 주문 상세 메뉴/수량 추출
 # ==============================
