@@ -416,6 +416,7 @@ def extract_sales_details(driver, wait):
     배민 주문내역에서
     - 최대 10개 주문 처리
     - 주문 펼치기 → 메뉴명/수량 추출
+    - 페이지네이션 반복
     """
 
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
@@ -429,62 +430,93 @@ def extract_sales_details(driver, wait):
 
     sales_data = {}
 
-    # 주문 상세 tr 시작값 (첫 주문은 tr[2])
-    detail_tr = 2
+    while True:  # ===== 페이지네이션 루프 =====
 
-    # 최대 10개 주문
-    for order_no in range(1, 11):
+        # 주문 상세 tr 시작값 (첫 주문은 tr[2])
+        detail_tr = 2
 
-        # 첫 주문 제외, 이후 주문은 펼치기 클릭
-        if order_no > 1:
-            toggle_tr = detail_tr - 1
-            toggle_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
-                f'table/tbody/tr[{toggle_tr}]/td[1]/div'
+        # 최대 10개 주문
+        for order_no in range(1, 11):
+
+            # 첫 주문 제외, 이후 주문은 펼치기 클릭
+            if order_no > 1:
+                toggle_tr = detail_tr - 1
+                toggle_xpath = (
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                    f'table/tbody/tr[{toggle_tr}]/td[1]/div'
+                )
+                try:
+                    btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
+                    driver.execute_script(
+                        "arguments[0].scrollIntoView({block:'center'});", btn
+                    )
+                    time.sleep(0.2)
+                    driver.execute_script("arguments[0].click();", btn)
+                    time.sleep(0.4)
+                except Exception:
+                    logging.info(f"{order_no}번째 주문 펼치기 실패 → 다음 페이지로")
+                    break
+
+            # ===== 메뉴 루프 =====
+            for i in range(1, 26, 3):  # 1,4,7,10,13,16,19,22,25
+                name_xpath = (
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
+                    f'/span[1]/div/span[1]'
+                )
+                qty_xpath = (
+                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
+                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
+                    f'/span[1]/div/span[2]'
+                )
+
+                try:
+                    raw_name = driver.find_element(By.XPATH, name_xpath).text
+                    raw_qty = driver.find_element(By.XPATH, qty_xpath).text
+                except NoSuchElementException:
+                    break
+
+                item_name = normalize_text(price_tail_re.sub("", raw_name))
+                qty = extract_qty(raw_qty)
+                if qty == 0:
+                    continue
+
+                if item_name in ITEM_TO_CELL:
+                    cell = ITEM_TO_CELL[item_name]
+                    sales_data[cell] = sales_data.get(cell, 0) + qty
+                    logging.info(f"[집계] {item_name} → {cell} +{qty}")
+
+            # 다음 주문 상세 tr
+            detail_tr += 2
+
+        # ===== 다음 페이지 버튼 =====
+        try:
+            next_btn_xpath = (
+                '//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[5]'
+                '/div/div[2]/span/button'
             )
-            try:
-                btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
-                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-                time.sleep(0.2)
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.4)
-            except Exception:
-                logging.info(f"{order_no}번째 주문 펼치기 실패 → 종료")
+            next_btn = driver.find_element(By.XPATH, next_btn_xpath)
+
+            # 비활성화면 종료
+            if "disabled" in next_btn.get_attribute("class"):
+                logging.info("마지막 페이지 도달 → 종료")
                 break
 
-        # ===== 메뉴 루프 =====
-        for i in range(1, 26, 3):  # 1,4,7,10,13,16,19,22,25
-            name_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
-                f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
-                f'/span[1]/div/span[1]'
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block:'center'});", next_btn
             )
-            qty_xpath = (
-                f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[4]/div[4]/div/div/'
-                f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
-                f'/span[1]/div/span[2]'
-            )
+            time.sleep(0.3)
+            driver.execute_script("arguments[0].click();", next_btn)
+            time.sleep(1.5)
 
-            try:
-                raw_name = driver.find_element(By.XPATH, name_xpath).text
-                raw_qty = driver.find_element(By.XPATH, qty_xpath).text
-            except NoSuchElementException:
-                break
+            logging.info("다음 페이지 이동")
 
-            item_name = normalize_text(price_tail_re.sub("", raw_name))
-            qty = extract_qty(raw_qty)
-            if qty == 0:
-                continue
-
-            if item_name in ITEM_TO_CELL:
-                cell = ITEM_TO_CELL[item_name]
-                sales_data[cell] = sales_data.get(cell, 0) + qty
-                logging.info(f"[집계] {item_name} → {cell} +{qty}")
-
-        # 다음 주문 상세 tr은 +2
-        detail_tr += 2
+        except NoSuchElementException:
+            logging.info("다음 페이지 버튼 없음 → 종료")
+            break
 
     return sales_data
+
 
 ###############################################################################
 # 메인 함수
