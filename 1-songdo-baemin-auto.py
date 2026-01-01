@@ -375,7 +375,7 @@ def set_daily_filter(driver, wait):
         time.sleep(0.3)
         driver.execute_script("arguments[0].click();", apply_button)
     
-        time.sleep(3000)
+        time.sleep(3)
         logging.info("날짜 필터 '일・주' 적용 완료")
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
