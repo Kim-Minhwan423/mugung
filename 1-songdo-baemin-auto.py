@@ -375,7 +375,7 @@ def set_daily_filter(driver, wait):
         time.sleep(0.3)
         driver.execute_script("arguments[0].click();", apply_button)
     
-        time.sleep(3)
+        time.sleep(3000)
         logging.info("날짜 필터 '일・주' 적용 완료")
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
@@ -408,7 +408,6 @@ def extract_order_summary(driver, wait):
 
     raise RuntimeError(f"주문 요약 영역 탐색 실패. 마지막 오류: {last_err}")
 
-    time.sleep(3000)
 # ==============================
 # 주문 상세 메뉴/수량 추출
 # ==============================
