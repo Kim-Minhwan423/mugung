@@ -189,18 +189,6 @@ def close_coupang_popup(driver):
         except Exception:
             logging.info(f"{name} 없음 또는 클릭 실패 → 스킵")
 
-    # 팝업 1
-    try_click_js(
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370",
-        "팝업1"
-    )
-
-    # 팝업 2
-    try_click_js(
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button",
-        "팝업2"
-    )
-
     # 팝업 3 (문제 발생한 버튼)
     try_click_js(
         "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
@@ -235,7 +223,7 @@ def close_coupang_popup(driver):
         )
         float_dropdown_button.click()
         logging.info("펼쳐보기 버튼 클릭")
-        time.sleep(2)
+        time.sleep(2000)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
         
