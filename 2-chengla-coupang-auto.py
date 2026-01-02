@@ -31,6 +31,20 @@ from oauth2client.service_account import ServiceAccountCredentials
 ###############################################################################
 # 1. 로깅 설정
 ###############################################################################
+import time
+import gspread
+from google.auth.exceptions import TransportError
+
+def open_google_sheet_with_retry(client, sheet_name, retries=5):
+    for attempt in range(1, retries + 1):
+        try:
+            doc = client.open(sheet_name)
+            return doc
+        except Exception as e:
+            print(f"[경고] 구글 시트 연결 실패 (시도 {attempt}/{retries}) → {e}")
+            time.sleep(3)
+    raise RuntimeError(f"구글 시트 연결 실패: {sheet_name}")
+
 def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -71,7 +85,7 @@ def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
 
     # ✅ headless 모드 OFF (시각적으로 확인 가능)
-    chrome_options.add_argument("--headless")  # ← 이 줄은 주석 처리
+    chrome_options.add_argument("--headless=new")  # ← 이 줄은 주석 처리
 
     # ✅ User-Agent 설정
     chrome_options.add_argument(
@@ -175,18 +189,6 @@ def close_coupang_popup(driver):
         except Exception:
             logging.info(f"{name} 없음 또는 클릭 실패 → 스킵")
 
-    # 팝업 1
-    try_click_js(
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.jss10.css-1pi72m7.e1gf2dph0 > div > div > div > div.css-1vx8fbv.e151q4372 > button.css-5zma23.e151q4370",
-        "팝업1"
-    )
-
-    # 팝업 2
-    try_click_js(
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-1pi72m7.e1gf2dph0 > div > div > div > button",
-        "팝업2"
-    )
-
     # 팝업 3 (문제 발생한 버튼)
     try_click_js(
         "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
@@ -216,7 +218,7 @@ def close_coupang_popup(driver):
     try:
         float_dropdown_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "#merchant-management > div > div > div.management-scroll > div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters > div > div.dropdown-btn.highlight > i")
+                (By.CSS_SELECTOR, "#merchant-management > div > div > div.management-scroll > div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > div > div > svg")
             )
         )
         float_dropdown_button.click()
@@ -224,7 +226,7 @@ def close_coupang_popup(driver):
         time.sleep(2)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
-
+        
 ###############################################################################
 # 5. '오늘' 버튼 + '조회' 버튼
 ###############################################################################
@@ -236,8 +238,8 @@ def click_today_and_search(driver):
                 By.CSS_SELECTOR,
                 "#merchant-management > div > div > div.management-scroll > "
                 "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
-                "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters > "
-                "div > div.dropdown-date-select > div.dropdown-range-shortcut > div > div:nth-child(1) > div > label > i"
+                "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > "
+                "div > div.css-mc9tgf.e4pgcj05 > div.css-h5a8xm.e4pgcj04 > span:nth-child(1) > label > svg"
             ))
         )
         today_button.click()
@@ -253,7 +255,7 @@ def click_today_and_search(driver):
                 By.CSS_SELECTOR,
                 "#merchant-management > div > div > div.management-scroll > "
                 "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > "
-                "div.mt-4.sales-search-row > div.sales-search-filters > button"
+                "div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > button"
             ))
         )
         search_button.click()
@@ -367,19 +369,6 @@ def parse_expanded_order(driver):
             item_name = lines[0]
 
             item_qty = qty_el.text.strip()
-
-            # 옵션에 '中' 포함 여부 확인
-            try:
-                sub_option_el = item_el.find_element(
-                    By.CSS_SELECTOR,
-                    "div > div:nth-child(1) > ul > li:nth-child(1) > span"
-                )
-                sub_text = sub_option_el.text.strip()
-                if '中' in sub_text:
-                    results.append(('中', item_qty))
-                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
-            except NoSuchElementException:
-                pass  # 옵션 없으면 무시
 
             # 원래 이름도 매핑용으로 기록
             results.append((item_name, item_qty))
@@ -568,7 +557,7 @@ def main():
     # 5) 구글 시트
     try:
         client = get_gspread_client_from_b64(service_account_json_b64)
-        doc = client.open("청라 일일/월말 정산서")
+        doc = open_google_sheet_with_retry(client, "청라 일일/월말 정산서")
         mugeung_sheet = doc.worksheet("청라")
         jaego_sheet = doc.worksheet("재고")
 
@@ -577,23 +566,21 @@ def main():
 
         # 재고
         item_cell_map = {
-            '백골뱅이숙회': 'G44',
-            '백골뱅이무침': 'G45',
+            '백골뱅이숙회': 'G45',
             '얼큰소국밥': 'R38',
             '낙지비빔밥': 'AH38',
             '낙지볶음': 'AH40',
             '낙지파전': 'AH39',
             '소고기김치전': 'R39',
             '두부제육김치': 'R40',
-            '육회비빔밥': 'R43',
+            '육회비빔밥': 'G42',
             '숙주갈비탕': 'G38',
             '갈비찜덮밥': 'G39',
-            '육전': 'G42',
-            '육회': 'R44',
-            '육사시미': 'R45',
+            '육전': 'R44',
+            '육회': 'G43',
+            '육사시미': 'G44',
             '갈비수육': 'G40',
             '소갈비찜': 'G41',
-            '소불고기': 'R42',
             '코카콜라': 'AH42',
             '스프라이트': 'AH43',
             '토닉워터': 'AH44',
