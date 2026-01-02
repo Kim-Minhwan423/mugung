@@ -321,48 +321,44 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
 
-        # (4) 품목 정보 추출 (옵션 완전 무시 / 여러 품목 대응)
+        # (4) 품목 정보 추출 (nth-child 순회 방식)
         products = {}
 
         try:
-            # 1️⃣ 메뉴 전체를 감싸는 컨테이너 (1개)
-            menu_container = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "#portal-root div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11")
-                )
+            base_selector = (
+                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
+                "div > div:nth-child(2) > div > div > "
+                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
             )
 
-            # 2️⃣ 그 안의 모든 메뉴 row (nth-child 전부 자동)
-            menu_rows = menu_container.find_elements(By.CSS_SELECTOR, "> div")
-
-            logging.info(f"메뉴 행 개수: {len(menu_rows)}")
-
-            for row in menu_rows:
+            for n in range(1, 11):  # 최대 10개까지 시도
                 try:
-                    text = row.find_element(
-                        By.CSS_SELECTOR,
-                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15 span:nth-child(1)"
-                    ).text.strip()
+                    item_selector = (
+                        f"{base_selector} > div:nth-child({n}) > "
+                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                        "span:nth-child(1)"
+                    )
 
-                    # 배달요금 등 제외
+                    elem = driver.find_element(By.CSS_SELECTOR, item_selector)
+                    text = elem.text.strip()
+
                     if "배달요금" in text:
                         continue
 
-                    # 수량 파싱 (x 2)
                     match = re.search(r"x\s*(\d+)", text)
                     qty = int(match.group(1)) if match else 1
 
-                    # 상품명 정규화 (옵션, x 제거)
                     name = normalize_product_name(text)
-
                     products[name] = products.get(name, 0) + qty
+
                     logging.info(f"상품 추출: {name} x {qty}")
 
-                except Exception as e:
-                    logging.warning(f"개별 메뉴 파싱 실패: {e}")
+                except NoSuchElementException:
+                    logging.info(f"{n}번째 품목 없음 → 종료")
+                    break
 
-        except TimeoutException:
-            logging.warning("메뉴 컨테이너를 찾지 못함")
+        except Exception as e:
+            logging.warning(f"품목 추출 전체 실패: {e}")
 
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
