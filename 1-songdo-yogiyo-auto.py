@@ -179,7 +179,7 @@ def go_songdo_selector(driver):
         logging.info("송도점 선택 완료")
     except TimeoutException:
         logging.warning("송도점 버튼을 찾지 못함")
-    time.sleep(30000)
+    time.sleep(3)
 
 def go_order_history(driver):
     order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
@@ -321,39 +321,48 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
 
-        # (4) 품목 정보 추출 (옵션 완전 무시 버전)
+        # (4) 품목 정보 추출 (옵션 완전 무시 / 여러 품목 대응)
         products = {}
 
-        order_items_selector = (
-            "#portal-root div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11"
-        )
-
-        order_items = driver.find_elements(By.CSS_SELECTOR, order_items_selector)
-
-        for item in order_items:
-            try:
-                name_elem = item.find_element(
-                    By.CSS_SELECTOR,
-                    "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15 span:nth-child(1)"
+        try:
+            # 1️⃣ 메뉴 전체를 감싸는 컨테이너 (1개)
+            menu_container = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "#portal-root div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11")
                 )
-                product_text = name_elem.text.strip()
+            )
 
-                # 배달요금 등 제외
-                if "배달요금" in product_text:
-                    continue
+            # 2️⃣ 그 안의 모든 메뉴 row (nth-child 전부 자동)
+            menu_rows = menu_container.find_elements(By.CSS_SELECTOR, "> div")
 
-                # 수량 파싱 (x 2 형태)
-                match = re.search(r"x\s*(\d+)", product_text)
-                product_qty = int(match.group(1)) if match else 1
+            logging.info(f"메뉴 행 개수: {len(menu_rows)}")
 
-                # 상품명 정규화 (옵션, x 제거)
-                cleaned_name = normalize_product_name(product_text)
+            for row in menu_rows:
+                try:
+                    text = row.find_element(
+                        By.CSS_SELECTOR,
+                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15 span:nth-child(1)"
+                    ).text.strip()
 
-                products[cleaned_name] = products.get(cleaned_name, 0) + product_qty
-                logging.info(f"상품 추출: {cleaned_name} x {product_qty}")
+                    # 배달요금 등 제외
+                    if "배달요금" in text:
+                        continue
 
-            except Exception as e:
-                logging.warning(f"품목 추출 중 예외 발생: {e}")
+                    # 수량 파싱 (x 2)
+                    match = re.search(r"x\s*(\d+)", text)
+                    qty = int(match.group(1)) if match else 1
+
+                    # 상품명 정규화 (옵션, x 제거)
+                    name = normalize_product_name(text)
+
+                    products[name] = products.get(name, 0) + qty
+                    logging.info(f"상품 추출: {name} x {qty}")
+
+                except Exception as e:
+                    logging.warning(f"개별 메뉴 파싱 실패: {e}")
+
+        except TimeoutException:
+            logging.warning("메뉴 컨테이너를 찾지 못함")
 
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
