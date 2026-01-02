@@ -179,7 +179,7 @@ def go_songdo_selector(driver):
         logging.info("송도점 선택 완료")
     except TimeoutException:
         logging.warning("송도점 버튼을 찾지 못함")
-    time.sleep(3)
+    time.sleep(30000)
 
 def go_order_history(driver):
     order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
