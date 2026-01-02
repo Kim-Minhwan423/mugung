@@ -143,10 +143,10 @@ def main():
         client = gspread.authorize(creds)
 
         # 스프레드시트 열기 (예시)
-        spreadsheet = client.open("청라 일일/월말 정산서")  # 스프레드시트 이름
+        spreadsheet = client.open("송도 일일/월말 정산서")  # 스프레드시트 이름
 
         sheet_inventory = spreadsheet.worksheet("재고")    # '재고' 시트 선택
-        sheet_report = spreadsheet.worksheet("청라")  # '청라' 시트 선택
+        sheet_report = spreadsheet.worksheet("송도")  # '송도' 시트 선택
 
         # ================================
         # 2. Chrome WebDriver 실행
@@ -198,7 +198,7 @@ def main():
         id_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtId_input")
         id_input.click()
         id_input.clear()
-        id_input.send_keys(os.getenv("CHENGLA_EASY_POS_ID"))
+        id_input.send_keys(os.getenv("SONGDO_OK_POS_ID"))
         print("[INFO] ID 입력 완료.")
 
         # PW 입력
@@ -208,7 +208,7 @@ def main():
         pw_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtPw_input")
         pw_input.click()
         pw_input.clear()
-        pw_input.send_keys(os.getenv("CHENGLA_EASY_POS_PW"))
+        pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
         # 로그인 버튼 클릭
@@ -444,9 +444,9 @@ def main():
         time.sleep(2)
 
         # ================================================
-        # 10. 데이터 추출 및 스프레드시트 업데이트 ("청라" 시트)
+        # 10. 데이터 추출 및 스프레드시트 업데이트 ("송도" 시트)
         # ================================================
-        # '청라' 시트 업데이트를 위한 요청 리스트
+        # '송도' 시트 업데이트를 위한 요청 리스트
         requests = []
 
         # 카드 매출
@@ -600,13 +600,13 @@ def main():
             print(f"[ERROR] 전체 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # "청라" 시트의 특정 범위를 먼저 비웁니다.
+        # "송도" 시트의 특정 범위를 먼저 비웁니다.
         ranges_report_clear = ["E3", "E5", "E6", "D30", "E30"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
-            print("[INFO] '청라' 시트 초기화 완료.")
+            print("[INFO] '송도' 시트 초기화 완료.")
         except Exception as e:
-            print(f"[ERROR] '청라' 시트 초기화 실패: {e}")
+            print(f"[ERROR] '송도' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
         # 숫자 형식 설정을 위한 요청 추가
@@ -643,16 +643,16 @@ def main():
         # 모든 요청을 하나의 리스트로 합칩니다.
         all_requests = requests + number_format_requests
 
-        # "청라" 시트 배치 업데이트 수행
+        # "송도" 시트 배치 업데이트 수행
         if all_requests:
             try:
                 body = {
                     "requests": all_requests
                 }
                 sheet_report.spreadsheet.batch_update(body)
-                print("[INFO] '청라' 시트 배치 업데이트 및 형식 적용 완료.")
+                print("[INFO] '송도' 시트 배치 업데이트 및 형식 적용 완료.")
             except Exception as e:
-                print(f"[ERROR] '청라' 시트 배치 업데이트 실패: {e}")
+                print(f"[ERROR] '송도' 시트 배치 업데이트 실패: {e}")
                 traceback.print_exc()
 
     except Exception as e:
