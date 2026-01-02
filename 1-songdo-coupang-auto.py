@@ -218,12 +218,12 @@ def close_coupang_popup(driver):
     try:
         float_dropdown_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "#merchant-management > div > div > div.management-scroll > div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters > div > div.dropdown-btn.highlight > i")
+                (By.CSS_SELECTOR, "#merchant-management > div > div > div.management-scroll > div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > div > div > svg")
             )
         )
         float_dropdown_button.click()
         logging.info("펼쳐보기 버튼 클릭")
-        time.sleep(2000)
+        time.sleep(2)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
         
