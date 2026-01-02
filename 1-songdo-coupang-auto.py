@@ -238,8 +238,8 @@ def click_today_and_search(driver):
                 By.CSS_SELECTOR,
                 "#merchant-management > div > div > div.management-scroll > "
                 "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
-                "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters > "
-                "div > div.dropdown-date-select > div.dropdown-range-shortcut > div > div:nth-child(1) > div > label > i"
+                "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > "
+                "div > div.css-mc9tgf.e4pgcj05 > div.css-h5a8xm.e4pgcj04 > span:nth-child(1) > label > svg > rect"    
             ))
         )
         today_button.click()
