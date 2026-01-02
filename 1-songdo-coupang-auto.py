@@ -223,7 +223,7 @@ def close_coupang_popup(driver):
         )
         float_dropdown_button.click()
         logging.info("펼쳐보기 버튼 클릭")
-        time.sleep(2)
+        time.sleep(2000)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
         
