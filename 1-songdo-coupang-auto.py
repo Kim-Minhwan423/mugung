@@ -370,19 +370,6 @@ def parse_expanded_order(driver):
 
             item_qty = qty_el.text.strip()
 
-            # 옵션에 '中' 포함 여부 확인
-            try:
-                sub_option_el = item_el.find_element(
-                    By.CSS_SELECTOR,
-                    "div > div:nth-child(1) > ul > li:nth-child(1) > span"
-                )
-                sub_text = sub_option_el.text.strip()
-                if '中' in sub_text:
-                    results.append(('中', item_qty))
-                    logging.info(f"  - ({idx}) 서브옵션에 '中' 포함 → G45로 매핑")
-            except NoSuchElementException:
-                pass  # 옵션 없으면 무시
-
             # 원래 이름도 매핑용으로 기록
             results.append((item_name, item_qty))
             logging.info(f"  - ({idx}) 품목명='{item_name}', 판매량='{item_qty}'")
@@ -579,23 +566,21 @@ def main():
 
         # 재고
         item_cell_map = {
-            '백골뱅이숙회': 'G44',
-            '백골뱅이무침': 'G45',
+            '백골뱅이숙회': 'G45',
             '얼큰소국밥': 'R38',
             '낙지비빔밥': 'AH38',
             '낙지볶음': 'AH40',
             '낙지파전': 'AH39',
             '소고기김치전': 'R39',
             '두부제육김치': 'R40',
-            '육회비빔밥': 'R43',
+            '육회비빔밥': 'G42',
             '숙주갈비탕': 'G38',
             '갈비찜덮밥': 'G39',
-            '육전': 'G42',
-            '육회': 'R44',
-            '육사시미': 'R45',
+            '육전': 'R44',
+            '육회': 'G43',
+            '육사시미': 'G44',
             '갈비수육': 'G40',
             '소갈비찜': 'G41',
-            '소불고기': 'R42',
             '코카콜라': 'AH42',
             '스프라이트': 'AH43',
             '토닉워터': 'AH44',
