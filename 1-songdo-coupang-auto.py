@@ -223,7 +223,7 @@ def close_coupang_popup(driver):
         )
         float_dropdown_button.click()
         logging.info("펼쳐보기 버튼 클릭")
-        time.sleep(2000)
+        time.sleep(2)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
         
@@ -239,7 +239,7 @@ def click_today_and_search(driver):
                 "#merchant-management > div > div > div.management-scroll > "
                 "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > "
                 "div > div > div > div > div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > "
-                "div > div.css-mc9tgf.e4pgcj05 > div.css-h5a8xm.e4pgcj04 > span:nth-child(1) > label > svg > rect"    
+                "div > div.css-mc9tgf.e4pgcj05 > div.css-h5a8xm.e4pgcj04 > span:nth-child(1) > label > svg"
             ))
         )
         today_button.click()
@@ -255,7 +255,7 @@ def click_today_and_search(driver):
                 By.CSS_SELECTOR,
                 "#merchant-management > div > div > div.management-scroll > "
                 "div.management-page.p-2.p-md-4.p-lg-5.d-flex.flex-column > div > div > div > div > "
-                "div.mt-4.sales-search-row > div.sales-search-filters > button"
+                "div.mt-4.sales-search-row > div.sales-search-filters-date-picker.css-18vw3vd.e4pgcj010 > button"
             ))
         )
         search_button.click()
