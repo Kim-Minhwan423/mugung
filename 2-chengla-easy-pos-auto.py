@@ -559,7 +559,7 @@ def main():
                     'range': {
                         'sheetId': sheet_report.id,
                         'startRowIndex': 30,  # D31: 0-based
-                        'endRowIndex': 30,
+                        'endRowIndex': 31,
                         'startColumnIndex': 3,  # D열: 0-based (D=3)
                         'endColumnIndex': 4
                     }
@@ -589,7 +589,7 @@ def main():
                     'range': {
                         'sheetId': sheet_report.id,
                         'startRowIndex': 30,  # E31: 0-based
-                        'endRowIndex': 30,
+                        'endRowIndex': 31,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
                     }
