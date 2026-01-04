@@ -7,21 +7,25 @@ on:
 
 jobs:
   run-script:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-        shell: cmd
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run Point Auto Script
         run: python 1-songdo-point-auto.py
-        shell: cmd
         env:
           SONGDO_POINT_ID: ${{ secrets.SONGDO_POINT_ID }}
           SONGDO_POINT_PW: ${{ secrets.SONGDO_POINT_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
-          PYTHONIOENCODING: utf-8
