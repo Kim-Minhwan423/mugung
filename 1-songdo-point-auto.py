@@ -159,13 +159,16 @@ def get_average_visit_gap(driver):
             lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
         )
         text = driver.find_element(By.XPATH, xpath).text.strip()
-        value = int(re.sub(r'[^\d]', '', text))
+
+        # 숫자 + 소수점 추출
+        match = re.search(r'\d+(\.\d+)?', text)
+        value = float(match.group()) if match else -1
+
         logging.info(f"평균 방문간격: {value}")
         return value
     except Exception as e:
         logging.error(f"평균 방문간격 파싱 오류: {e}")
         return -1
-
 
 def get_recent_visit(driver):
     xpath = '//*[@id="recentVisits"]'
