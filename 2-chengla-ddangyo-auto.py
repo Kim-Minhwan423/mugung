@@ -131,11 +131,11 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
     driver.get("https://boss.ddangyo.com/")
     logging.info("땡겨요 사장님 사이트 로그인 페이지 접속 완료")
 
-    time.sleep(1000)
+    time.sleep(1)
 
-    id_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(1) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
-    pw_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(2) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
-    login_btn_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > button"
+    id_selector = "#mf_ibx_mbrId"
+    pw_selector = "#mf_sct_pwd"
+    login_btn_selector = "#mf_btn_webLogin"
 
     try:
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, id_selector)))
@@ -147,7 +147,7 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
         logging.info("로그인 버튼 클릭")
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
-    time.sleep(5)
+    time.sleep(5000)
 
 def close_popup_if_exist(driver):
     popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
