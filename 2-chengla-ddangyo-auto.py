@@ -286,7 +286,7 @@ def get_todays_orders(driver):
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products, service_account_json_b64):
     """
-    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 AA3:AA33(주문 총액)을 업데이트
+    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 Z3:Z33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
     service_account_json = base64.b64decode(service_account_json_b64).decode("utf-8")
@@ -307,7 +307,7 @@ def update_google_sheets(total_order_amount, aggregated_products, service_accoun
             break
 
     if row_index:
-        cell = f"AA{row_index}"
+        cell = f"Z{row_index}"
         sheet_daily.update_acell(cell, total_order_amount)
         logging.info(f"청라 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
     else:
