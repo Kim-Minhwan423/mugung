@@ -131,7 +131,7 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
     driver.get("https://boss.ddangyo.com/")
     logging.info("땡겨요 사장님 사이트 로그인 페이지 접속 완료")
 
-    time.sleep(100000)
+    time.sleep(1000)
 
     id_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(1) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
     pw_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(2) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
