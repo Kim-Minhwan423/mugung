@@ -118,7 +118,7 @@ def login_point(driver, point_id, point_pw):
         logging.info("로그인 버튼 클릭")
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
-    time.sleep(5)
+    time.sleep(50000)
 
 ###############################################################################
 # 5. 포인트 적립&사용 조회
