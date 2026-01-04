@@ -74,16 +74,16 @@ def setup_logging(log_filename='script.log'):
 def get_environment_variables():
     """
     필수 환경 변수:
-      - DDANGYO_ID (땡겨요 아이디)
-      - DDANGYO_PW (땡겨요 비밀번호)
+      - CHENGLA_DDANGYO_ID (땡겨요 아이디)
+      - CHENGLA_DDANGYO_PW (땡겨요 비밀번호)
       - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
     """
-    ddangyo_id = os.getenv("DDANGYO_ID")
-    ddangyo_pw = os.getenv("DDANGYO_PW")
+    ddangyo_id = os.getenv("CHENGLA_DDANGYO_ID")
+    ddangyo_pw = os.getenv("CHENGLA_DDANGYO_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
 
     if not ddangyo_id or not ddangyo_pw:
-        raise ValueError("DDANGYO_ID 혹은 DDANGYO_PW 환경변수가 설정되지 않았습니다.")
+        raise ValueError("CHENGLA_DDANGYO_ID 혹은 CHENGLA_DDANGYO_PW 환경변수가 설정되지 않았습니다.")
     if not service_account_json_b64:
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경변수가 설정되지 않았습니다.")
 
