@@ -17,102 +17,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.1):
-    """
-    증가 버튼을 클릭하여 스크롤을 시도합니다.
-    한 번의 호출당 num_clicks만큼 버튼을 클릭합니다.
-
-    :param driver: Selenium WebDriver 인스턴스
-    :param inc_button_selector: 증가 버튼의 CSS 선택자
-    :param num_clicks: 버튼 클릭 횟수
-    :param pause_time: 클릭 후 대기 시간 (초)
-    :return: 성공적으로 스크롤했는지 여부
-    """
-    try:
-        for click_num in range(1, num_clicks + 1):
-            inc_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, inc_button_selector))
-            )
-            inc_button.click()
-            print(f"[INFO] 증가 버튼 클릭하여 스크롤 시도 {click_num}/{num_clicks}.")
-            time.sleep(pause_time)
-        return True
-    except TimeoutException:
-        print("[ERROR] 증가 버튼 요소를 찾을 수 없습니다.")
-        return False
-    except WebDriverException as e:
-        print(f"[ERROR] 증가 버튼 클릭 중 WebDriver 예외 발생: {e}")
-        return False
-    except Exception as e:
-        print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
-        return False
-
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
-    update_cells_inventory = []
-    processed_codes = set()
-    new_data_found = True
-
-    while new_data_found:
-        new_data_found = False
-
-        for i in range(0, max_i + 1):
-            code_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_3"
-            qty_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_6"
-            total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
-
-            try:
-                code_elem = driver.find_element(By.CSS_SELECTOR, code_selector)
-                code_text = code_elem.text.strip()
-                if not code_text or code_text in processed_codes:
-                    continue
-
-                qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
-                qty_text = qty_elem.text.strip().replace(",", "")
-                total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
-                total_text = total_elem.text.strip().replace(",", "").replace("원", "")
-                total_val = int(total_text) if total_text.isdigit() else 0
-
-                if code_text in special_prices:
-                    unit_price = special_prices[code_text]
-                    qty_to_set = total_val // unit_price if unit_price else 0
-                    print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {qty_to_set}")
-                else:
-                    qty_to_set = int(qty_text) if qty_text.isdigit() else 0
-                    print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
-
-                if code_text in code_to_cell_inventory:
-                    update_cells_inventory.append({
-                        'range': code_to_cell_inventory[code_text],
-                        'values': [[qty_to_set]]
-                    })
-                    print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
-                    processed_codes.add(code_text)
-                    new_data_found = True
-                else:
-                    print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
-
-            except NoSuchElementException:
-                continue
-            except Exception as e:
-                print(f"[ERROR] 행 {i} 처리 중 예외 발생: {e}")
-                traceback.print_exc()
-                continue
-
-        if new_data_found:
-            try:
-                for _ in range(15):
-                    inc_button = WebDriverWait(driver, 5).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton"))
-                    )
-                    inc_button.click()
-                    time.sleep(0.1)
-                print("[INFO] 스크롤 시도 완료.")
-                time.sleep(1)
-            except Exception as e:
-                print(f"[INFO] 스크롤 불가 또는 완료: {e}")
-                break
-
-    return update_cells_inventory
 
 def main():
     try:
@@ -180,9 +84,9 @@ def main():
         print("[INFO] Chrome WebDriver 초기화 완료.")
 
         # ================================================
-        # 3. EasyPOS 로그인 페이지 접속 및 로그인 진행
+        # 3. OKPOS 로그인 페이지 접속 및 로그인 진행
         # ================================================
-        url = "https://smart.easypos.net/index.jsp"
+        url = "https://okasp.okpos.co.kr/login/login_form.jsp"
         driver.get(url)
         print("[INFO] EasyPOS 로그인 페이지에 접속했습니다.")
 
