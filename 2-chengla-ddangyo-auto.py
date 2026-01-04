@@ -31,23 +31,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 ###############################################################################
-# 0. 공백 제거를 위한 함수
-###############################################################################
-def strip_whitespace(data):
-    """
-    입력 데이터가 문자열, 딕셔너리, 리스트인 경우
-    재귀적으로 앞뒤 공백을 제거합니다.
-    """
-    if isinstance(data, str):
-        return data.strip()
-    elif isinstance(data, dict):
-        return {k.strip(): strip_whitespace(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [strip_whitespace(element) for element in data]
-    else:
-        return data
-
-###############################################################################
 # 1. 로깅 설정
 ###############################################################################
 def setup_logging(log_filename='script.log'):
@@ -147,10 +130,10 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
         logging.info("로그인 버튼 클릭")
     except TimeoutException:
         logging.warning("로그인 페이지 로딩 Timeout")
-    time.sleep(5000)
+    time.sleep(5)
 
 def close_popup_if_exist(driver):
-    popup_close_selector = "#portal-root > div > div > div.FullScreenModal__Header-sc-7lyzl-1.eQqjUi > svg"
+    popup_close_selector = "#mf_wfm_side_SMWCO050000P02SHOPP0000074_wframe_wq_uuid_447"
     try:
         close_btn = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
@@ -163,50 +146,19 @@ def close_popup_if_exist(driver):
         logging.warning(f"팝업 닫기 중 예외 발생: {e}")
     time.sleep(2)
 
-def go_store_selector(driver):
-    store_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, store_xpath)))
-        driver.find_element(By.XPATH, store_xpath).click()
-        logging.info("스토어 셀렉터 버튼 클릭")
-    except TimeoutException:
-        logging.warning("스토어 셀렉터 버튼을 찾지 못함")
-    time.sleep(3)
-
-def go_chengla_selector(driver):
-    chengla_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[2]/ul/li"
-    try:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, chengla_xpath)))
-        driver.find_element(By.XPATH, chengla_xpath).click()
-        logging.info("청라점 선택 완료")
-    except TimeoutException:
-        logging.warning("청라점 버튼을 찾지 못함")
-    time.sleep(3)
-
 def go_order_history(driver):
-    order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
-    
-    # 최대 3번까지 재시도 (페이지 로딩 문제 해결)
-    for attempt in range(3):
-        try:
-            logging.info(f"주문내역 버튼 클릭 시도 ({attempt+1}/3)")
-            
-            # 주문내역 버튼이 나타날 때까지 최대 15초 대기
-            WebDriverWait(driver, 15).until(EC.element_to_be_clickable((By.XPATH, order_btn_xpath)))
-            driver.find_element(By.XPATH, order_btn_xpath).click()
-            logging.info("주문내역 버튼 클릭 완료")
-            time.sleep(3)  # 페이지 전환 대기
-            return  # 성공하면 함수 종료
-
-        except TimeoutException:
-            logging.warning(f"주문내역 버튼을 찾지 못함 (시도 {attempt+1}/3)")
-
-            if attempt < 2:
-                logging.info("페이지를 새로고침 후 다시 시도합니다...")
-                driver.refresh()  # 페이지 새로고침
-                time.sleep(5)  # 새로고침 후 대기
-
-    logging.error("3회 시도 후에도 주문내역 버튼을 찾지 못함 → 스크립트 종료")
+    order_btn_selector = "#mf_wfm_side_gen_menuParent_3_gen_menuSub_1_btn_child"
+    try:
+        close_btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, order_btn_selector))
+        )
+        close_btn.click()
+        logging.info("주문내역 클릭 완료")
+    except TimeoutException:
+        logging.info("주문내역이 나타나지 않음(혹은 이미 닫힘)")
+    except Exception as e:
+        logging.warning(f"주문내역 클릭 중 예외 발생: {e}")
+    time.sleep(2)
 
 ###############################################################################
 # 5. 상품명 정규화 함수 (앞뒤 공백 제거 포함)
@@ -225,188 +177,123 @@ def normalize_product_name(product_text):
 ###############################################################################
 # 6. 주문 날짜 파싱 헬퍼 함수
 ###############################################################################
-def parse_ddangyo_order_date(date_text):
+def extract_number(text):
+    return int(re.sub(r"[^\d]", "", text)) if text else 0
+
+def parse_yyyymmdd(text):
     """
-    예) "02.06(목) 오후 04:31:59" -> '02.06' 부분만 파싱.
-         (year는 현재 연도)
+    예: 2025-02-06 14:31
     """
-    current_year = datetime.date.today().year
-    match = re.search(r'(\d{2})\.(\d{2})', date_text)
+    match = re.search(r'(\d{4})[-.](\d{2})[-.](\d{2})', text)
     if not match:
         return None
-    month = int(match.group(1))
-    day   = int(match.group(2))
-    try:
-        return datetime.date(current_year, month, day)
-    except ValueError:
-        return None
+    return datetime.date(
+        int(match.group(1)),
+        int(match.group(2)),
+        int(match.group(3))
+    )
 
 ###############################################################################
 # 7. 주문 상세 정보 추출 (오늘 날짜 기준)
 ###############################################################################
 def get_todays_orders(driver):
-    """
-    오늘 날짜의 주문만 가져와서,
-    - 총 주문금액 (fee)
-    - 판매 품목(제품명, 수량)
-    을 리스트로 반환.
-    """
-    result_data = []
-    today_date = datetime.date.today()
+    results = []
+    today = datetime.date.today()
 
-    for i in range(1, 11):  # 최대 10개의 주문 확인
-        # (1) 주문 날짜 확인
-        row_date_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div"
+    for n in range(0, 101):
+        link_id = f"mf_wfm_contents_gen_benefitsList_{n}_table_link_anchor"
+
+        try:
+            link = driver.find_element(By.ID, link_id)
+        except NoSuchElementException:
+            logging.info(f"N={n} 링크 없음 → 주문 리스트 종료")
+            break
+
+        logging.info(f"N={n} 주문 클릭")
+        driver.execute_script("arguments[0].scrollIntoView(true);", link)
+        link.click()
+        time.sleep(2)
+
+        # 날짜 확인
         try:
             date_elem = WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.XPATH, row_date_xpath))
-            )
-            raw_date_text = date_elem.text.strip()
-            parsed_date = parse_ddangyo_order_date(raw_date_text)
-            if not parsed_date:
-                logging.info(f"{i}번째 행: '{raw_date_text}' → 날짜 파싱 실패 → 스킵")
-                continue
-
-            if parsed_date != today_date:
-                logging.info(f"{i}번째 행: {raw_date_text} (파싱결과: {parsed_date}) 오늘 주문 아님 → 스킵")
-                continue
-
-            # (1-추가) 상태 확인: 취소 여부 체크
-            status_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[2]/div/div"
-            status_elem = WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.XPATH, status_xpath))
-            )
-            order_status = status_elem.text.strip()
-            if "취소" in order_status:
-                logging.info(f"{i}번째 행: 상태가 '{order_status}' → 취소 주문 → 스킵")
-                continue
-
-        except TimeoutException:
-            logging.warning(f"{i}번째 행 날짜 또는 상태 정보 찾기 실패 → 스킵")
-            continue
-
-        # (2) 상세보기 팝업 열기
-        row_menu_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[9]"
-        try:
-            row_elem = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, row_menu_xpath))
-            )
-            logging.info(f"--- {i}번째 행 (날짜: {parsed_date}) 클릭 시도 ---")
-            driver.execute_script("arguments[0].scrollIntoView(true);", row_elem)
-            row_elem.click()
-            time.sleep(3)  # 팝업 열림 대기
-        except TimeoutException:
-            logging.warning(f"{i}번째 행 클릭 불가")
-            continue
-        except Exception as e:
-            logging.error(f"{i}번째 행 클릭 중 오류: {e}")
-            continue
-
-        # (3) 총 주문금액
-        fee_selector = (
-            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-            "div > div:nth-child(1) > div > li > "
-            "div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
-        )
-        try:
-            fee_elem = WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, fee_selector))
-            )
-            fee_text = fee_elem.text.strip()
-            fee_clean = re.sub(r"[^\d]", "", fee_text)  # 숫자만 추출
-            fee_value = int(fee_clean) if fee_clean else 0
-            logging.info(f"{i}번째 행 팝업: 추출된 총 주문금액 {fee_value}")
-        except TimeoutException:
-            logging.warning(f"{i}번째 행 팝업: 총 주문금액 요소를 찾지 못함")
-            fee_value = 0
-        except Exception as e:
-            logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
-            fee_value = 0
-
-        # (4) 품목 정보 추출 (nth-child 순회 방식)
-        products = {}
-
-        try:
-            base_selector = (
-                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-                "div > div:nth-child(2) > div > div > "
-                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
-            )
-
-            for n in range(1, 11):  # 최대 10개까지 시도
-                try:
-                    item_selector = (
-                        f"{base_selector} > div:nth-child({n}) > "
-                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                        "span:nth-child(1)"
-                    )
-
-                    elem = driver.find_element(By.CSS_SELECTOR, item_selector)
-                    text = elem.text.strip()
-
-                    if "배달요금" in text:
-                        continue
-
-                    match = re.search(r"x\s*(\d+)", text)
-                    qty = int(match.group(1)) if match else 1
-
-                    name = normalize_product_name(text)
-                    products[name] = products.get(name, 0) + qty
-
-                    logging.info(f"상품 추출: {name} x {qty}")
-
-                except NoSuchElementException:
-                    logging.info(f"{n}번째 품목 없음 → 종료")
-                    break
-
-        except Exception as e:
-            logging.warning(f"품목 추출 전체 실패: {e}")
-
-        # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
-        close_popup_selector = "#portal-root svg"
-
-        try:
-            close_btn = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, close_popup_selector))
-            )
-            close_btn.click()
-
-            # 🔥 팝업 언더레이가 사라질 때까지 대기
-            WebDriverWait(driver, 5).until(
-                EC.invisibility_of_element_located(
-                    (By.CSS_SELECTOR, "div.FullScreenModal__Underlay-sc-7lyzl-0")
+                EC.visibility_of_element_located(
+                    (By.ID, "mf_wfm_contents_SMWPU010000P02_wframe_grp_cmpt_dttm")
                 )
             )
+            order_date = parse_yyyymmdd(date_elem.text.strip())
 
-            logging.info(f"{i}번째 행 팝업 닫기 완료")
+            if order_date != today:
+                logging.info(f"N={n} 주문 날짜 {order_date} → 오늘 아님")
+                driver.back()
+                time.sleep(1)
+                continue
 
         except Exception as e:
-            logging.error(f"{i}번째 행 팝업 닫기 오류: {e}")
+            logging.warning(f"N={n} 날짜 확인 실패: {e}")
+            driver.back()
+            time.sleep(1)
+            continue
 
-        # result_data 저장
-        result_data.append({
-            "row_index": i,
-            "fee": fee_value,
+        # 총 주문 금액
+        try:
+            amt_elem = driver.find_element(
+                By.ID,
+                "mf_wfm_contents_SMWPU010000P02_wframe_grp_tot_ord_amt"
+            )
+            total_amount = extract_number(amt_elem.text)
+            logging.info(f"N={n} 총 주문금액: {total_amount}")
+        except Exception:
+            total_amount = 0
+
+        # 메뉴 추출
+        products = {}
+
+        for i in range(0, 101):
+            try:
+                name_elem = driver.find_element(
+                    By.ID,
+                    f"mf_wfm_contents_SMWPU010000P02_wframe_gen_QryOrderDetailList_{i}_grp1_menu_nm"
+                )
+                qty_elem = driver.find_element(
+                    By.ID,
+                    f"mf_wfm_contents_SMWPU010000P02_wframe_gen_QryOrderDetailList_{i}_grp1_ord_qty"
+                )
+
+                name = normalize_product_name(name_elem.text.strip())
+                qty = extract_number(qty_elem.text)
+
+                products[name] = products.get(name, 0) + qty
+                logging.info(f"메뉴: {name} x {qty}")
+
+            except NoSuchElementException:
+                logging.info(f"I={i} 메뉴 없음 → 메뉴 종료")
+                break
+
+        results.append({
+            "order_index": n,
+            "fee": total_amount,
             "products": products
         })
 
-    return result_data
+        driver.back()
+        time.sleep(1)
+
+    return results
 
 ###############################################################################
 # 8. Google Sheets 업데이트 함수
 ###############################################################################
-def update_google_sheets(total_order_amount, aggregated_products):
+def update_google_sheets(total_order_amount, aggregated_products, service_account_json_b64):
     """
-    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
+    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 AA3:AA33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
-    ddangyo_id, ddangyo_pw, service_account_json_b64 = get_environment_variables()
-    service_account_json = base64.b64decode(service_account_json_b64)
+    service_account_json = base64.b64decode(service_account_json_b64).decode("utf-8")
     service_account_info = json.loads(service_account_json)
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(service_account_info, scopes)
     gc = gspread.authorize(creds)
-
     sh = gc.open("청라 일일/월말 정산서")
 
     # 1) "청라" 시트: 총 주문금액 업데이트
@@ -420,7 +307,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
             break
 
     if row_index:
-        cell = f"W{row_index}"
+        cell = f"AA{row_index}"
         sheet_daily.update_acell(cell, total_order_amount)
         logging.info(f"청라 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
     else:
@@ -428,7 +315,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
-    clear_ranges = ["F38:F45", "Q38:Q45", "AF38:AF45", "AR38:AR45", "BC38:BC45"]
+    clear_ranges = ["I38:I45", "T38:T45", "AJ38:AJ45", "AU38:AU45", "BF38:BF45"]
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
@@ -485,50 +372,57 @@ def update_google_sheets(total_order_amount, aggregated_products):
         sheet_inventory.batch_update(batch_updates)
         logging.info("재고 시트 업데이트 완료")
 
-        # 업데이트 후 셀 값 확인 (예: F42)
-        debug_val = sheet_inventory.acell("F42").value
-        logging.info(f"[DEBUG] F42 셀 값: {debug_val}")
+        # 업데이트 후 셀 값 확인 (예: I42)
+        debug_val = sheet_inventory.acell("I42").value
+        logging.info(f"[DEBUG] I42 셀 값: {debug_val}")
 
 ###############################################################################
 # 메인 실행
 ###############################################################################
 def main():
     setup_logging("script.log")
-    ddangyo_id, ddangyo_pw, _ = get_environment_variables()
+
+    # 🔴 에러 대비 기본값
+    total_order_amount = -1
+    aggregated_products = {}
+
+    ddangyo_id, ddangyo_pw, service_account_json_b64 = get_environment_variables()
     driver = get_chrome_driver(use_profile=False)
 
     try:
-        # 1. 로그인 및 초기 팝업 처리
         login_ddangyo(driver, ddangyo_id, ddangyo_pw)
-        close_popup_if_exist(driver)
-
-        # 2. 매장(청라점) 선택 → 주문내역 페이지 진입
-        go_store_selector(driver)
-        go_chengla_selector(driver)
         close_popup_if_exist(driver)
         go_order_history(driver)
 
-        # 3. 오늘의 주문내역 수집
         orders_data = get_todays_orders(driver)
+
+        # 정상 수집 시에만 덮어쓰기
         total_order_amount = sum(order["fee"] for order in orders_data)
 
-        # 3-1. 전체 상품 집계
-        aggregated_products = {}
         for order in orders_data:
             for product, qty in order["products"].items():
                 aggregated_products[product] = aggregated_products.get(product, 0) + qty
 
-        # (디버깅) 어떤 상품들이 몇 개 들어왔는지
         logging.info(f"[DEBUG] orders_data: {orders_data}")
-
-        # 4. Google Sheets 업데이트
-        update_google_sheets(total_order_amount, aggregated_products)
+        logging.info(f"[DEBUG] total_order_amount: {total_order_amount}")
 
     except Exception as e:
-        logging.error(f"에러 발생: {e}")
+        logging.error(f"❌ 에러 발생 → 매출 -1 기록: {e}")
         traceback.print_exc()
+
     finally:
-        driver.quit()
+        # ✅ 성공/실패 무조건 기록
+        update_google_sheets(
+            total_order_amount,
+            aggregated_products,
+            service_account_json_b64
+        )
+
+        try:
+            driver.quit()
+        except Exception:
+            pass
+
         logging.info("WebDriver 종료")
 
 if __name__ == "__main__":
