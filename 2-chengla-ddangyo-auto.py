@@ -286,7 +286,7 @@ def get_todays_orders(driver):
 ###############################################################################
 def update_google_sheets(total_order_amount, aggregated_products, service_account_json_b64):
     """
-    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 Z3:Z33(주문 총액)을 업데이트
+    - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 Y3:Y33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
     service_account_json = base64.b64decode(service_account_json_b64).decode("utf-8")
@@ -307,7 +307,7 @@ def update_google_sheets(total_order_amount, aggregated_products, service_accoun
             break
 
     if row_index:
-        cell = f"Z{row_index}"
+        cell = f"Y{row_index}"
         sheet_daily.update_acell(cell, total_order_amount)
         logging.info(f"청라 시트 {cell}에 오늘 주문 총액 {total_order_amount} 업데이트")
     else:
@@ -315,47 +315,47 @@ def update_google_sheets(total_order_amount, aggregated_products, service_accoun
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
-    clear_ranges = ["I38:I45", "T38:T45", "AJ38:AJ45", "AU38:AU45", "BF38:BF45"]
+    clear_ranges = ["H38:H45", "S38:S45", "AI38:AI45", "AT38:AT45", "BE38:BE45"]
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
-        '백골뱅이숙회': 'I45',
-        '얼큰소국밥': 'T38',
-        '낙지비빔밥': 'AJ38',
-        '낙지볶음': 'AJ40',
-        '낙지파전': 'AJ39',
-        '우삼겹김치전': 'T39',
-        '두부제육김치': 'T40',
-        '육회비빔밥': 'I42',
-        '숙주갈비탕': 'I38',
-        '갈비찜덮밥': 'I39',
-        '육전': 'T44',
-        '육회': 'I43',
-        '육사시미': 'I44',
-        '갈비수육': 'I40',
-        '소갈비찜': 'I41',
-        '소불고기': 'T42',
-        '코카콜라': 'AJ42',
-        '스프라이트': 'AJ43',
-        '토닉워터': 'AJ44',
-        '제로콜라': 'AJ41',
-        '만월': 'AU39',
-        '문배술25': 'AU40',
-        '로아 화이트': 'AU43',
-        '황금보리': 'AU38',
-        '왕율주': 'AU41',
-        '왕주': 'AU42',
-        '청하': 'BF38',
-        '참이슬 후레쉬': 'BF39',
-        '처음처럼': 'BF40',
-        '새로': 'BF42',
-        '진로이즈백': 'BF41',
-        '카스': 'BF43',
-        '테라': 'BF44',
-        '켈리': 'BF45',
-        '소성주막걸리': 'AU45'
+        '백골뱅이숙회': 'H45',
+        '얼큰소국밥': 'S38',
+        '낙지비빔밥': 'AI38',
+        '낙지볶음': 'AI40',
+        '낙지파전': 'AI39',
+        '우삼겹김치전': 'S39',
+        '두부제육김치': 'S40',
+        '육회비빔밥': 'H42',
+        '숙주갈비탕': 'H38',
+        '갈비찜덮밥': 'H39',
+        '육전': 'S44',
+        '육회': 'H43',
+        '육사시미': 'H44',
+        '갈비수육': 'H40',
+        '소갈비찜': 'H41',
+        '소불고기': 'S42',
+        '코카콜라': 'AI42',
+        '스프라이트': 'AI43',
+        '토닉워터': 'AI44',
+        '제로콜라': 'AI41',
+        '만월': 'AT39',
+        '문배술25': 'AT40',
+        '로아 화이트': 'AT43',
+        '황금보리': 'AT38',
+        '왕율주': 'AT41',
+        '왕주': 'AT42',
+        '청하': 'BE38',
+        '참이슬 후레쉬': 'BE39',
+        '처음처럼': 'BE40',
+        '새로': 'BE42',
+        '진로이즈백': 'BE41',
+        '카스': 'BE43',
+        '테라': 'BE44',
+        '켈리': 'BE45',
+        '소성주막걸리': 'AT45'
     }
-
+    
     # (디버깅) aggregated_products 내용 로그
     logging.info(f"[DEBUG] 최종 aggregated_products: {aggregated_products}")
 
