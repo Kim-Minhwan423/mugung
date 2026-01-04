@@ -139,9 +139,9 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
 
     try:
         WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, id_selector)))
-        driver.find_element(By.CSS_SELECTOR, id_selector).send_keys(yogiyo_id)
+        driver.find_element(By.CSS_SELECTOR, id_selector).send_keys(ddangyo_id)
         logging.info("아이디 입력")
-        driver.find_element(By.CSS_SELECTOR, pw_selector).send_keys(yogiyo_pw)
+        driver.find_element(By.CSS_SELECTOR, pw_selector).send_keys(ddangyo_pw)
         logging.info("비밀번호 입력")
         driver.find_element(By.CSS_SELECTOR, login_btn_selector).click()
         logging.info("로그인 버튼 클릭")
@@ -225,7 +225,7 @@ def normalize_product_name(product_text):
 ###############################################################################
 # 6. 주문 날짜 파싱 헬퍼 함수
 ###############################################################################
-def parse_yogiyo_order_date(date_text):
+def parse_ddangyo_order_date(date_text):
     """
     예) "02.06(목) 오후 04:31:59" -> '02.06' 부분만 파싱.
          (year는 현재 연도)
@@ -262,7 +262,7 @@ def get_todays_orders(driver):
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
             )
             raw_date_text = date_elem.text.strip()
-            parsed_date = parse_yogiyo_order_date(raw_date_text)
+            parsed_date = parse_ddangyo_order_date(raw_date_text)
             if not parsed_date:
                 logging.info(f"{i}번째 행: '{raw_date_text}' → 날짜 파싱 실패 → 스킵")
                 continue
@@ -400,7 +400,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
     - "청라 일일/월말 정산서" 스프레드시트의 "청라" 시트에서 U3:U33(날짜)와 W3:W33(주문 총액)을 업데이트
     - "재고" 시트의 지정 범위를 클리어한 후, 미리 정의한 매핑에 따라 각 품목의 수량을 업데이트
     """
-    yogiyo_id, yogiyo_pw, service_account_json_b64 = get_environment_variables()
+    ddangyo_id, ddangyo_pw, service_account_json_b64 = get_environment_variables()
     service_account_json = base64.b64decode(service_account_json_b64)
     service_account_info = json.loads(service_account_json)
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -494,12 +494,12 @@ def update_google_sheets(total_order_amount, aggregated_products):
 ###############################################################################
 def main():
     setup_logging("script.log")
-    yogiyo_id, yogiyo_pw, _ = get_environment_variables()
+    ddangyo_id, ddangyo_pw, _ = get_environment_variables()
     driver = get_chrome_driver(use_profile=False)
 
     try:
         # 1. 로그인 및 초기 팝업 처리
-        login_yogiyo(driver, yogiyo_id, yogiyo_pw)
+        login_ddangyo(driver, ddangyo_id, ddangyo_pw)
         close_popup_if_exist(driver)
 
         # 2. 매장(청라점) 선택 → 주문내역 페이지 진입
