@@ -74,20 +74,20 @@ def setup_logging(log_filename='script.log'):
 def get_environment_variables():
     """
     필수 환경 변수:
-      - YOGIYO_ID (요기요 아이디)
-      - YOGIYO_PW (요기요 비밀번호)
+      - DDANGYO_ID (땡겨요 아이디)
+      - DDANGYO_PW (땡겨요 비밀번호)
       - SERVICE_ACCOUNT_JSON_BASE64 (Base64 인코딩된 Google Service Account JSON)
     """
-    yogiyo_id = os.getenv("YOGIYO_ID")
-    yogiyo_pw = os.getenv("YOGIYO_PW")
+    ddangyo_id = os.getenv("DDANGYO_ID")
+    ddangyo_pw = os.getenv("DDANGYO_PW")
     service_account_json_b64 = os.getenv("SERVICE_ACCOUNT_JSON_BASE64")
 
-    if not yogiyo_id or not yogiyo_pw:
-        raise ValueError("YOGIYO_ID 혹은 YOGIYO_PW 환경변수가 설정되지 않았습니다.")
+    if not ddangyo_id or not ddangyo_pw:
+        raise ValueError("DDANGYO_ID 혹은 DDANGYO_PW 환경변수가 설정되지 않았습니다.")
     if not service_account_json_b64:
         raise ValueError("SERVICE_ACCOUNT_JSON_BASE64 환경변수가 설정되지 않았습니다.")
 
-    return yogiyo_id, yogiyo_pw, service_account_json_b64
+    return ddangyo_id, ddangyo_pw, service_account_json_b64
 
 ###############################################################################
 # 3. Chrome 드라이버 세팅 (고유 프로필 사용)
@@ -125,11 +125,13 @@ def get_chrome_driver(use_profile=False):
     return driver
 
 ###############################################################################
-# 4. 요기요 로그인 및 페이지 이동
+# 4. 땡겨요 로그인 및 페이지 이동
 ###############################################################################
-def login_yogiyo(driver, yogiyo_id, yogiyo_pw):
-    driver.get("https://ceo.yogiyo.co.kr/self-service-home/")
-    logging.info("요기요 사장님 사이트 로그인 페이지 접속 완료")
+def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
+    driver.get("https://boss.ddangyo.com/")
+    logging.info("땡겨요 사장님 사이트 로그인 페이지 접속 완료")
+
+    time.sleep(100000)
 
     id_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(1) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
     pw_selector = "#root > div > div.LoginLayout__Container-sc-1dkvjmn-1.cFYxDO > div > div.Login__Container-sc-11eppm3-0.eVSjOb > form > div:nth-child(2) > div > div.sc-fEOsli.iqThlJ > div.sc-bjUoiL.LLOzV > input"
