@@ -456,7 +456,7 @@ def update_google_sheets(total_order_amount, aggregated_products):
         '황금보리': 'AR38',
         '왕율주': 'AR41',
         '왕주': 'AR42',
-        '청하': 'BD38',
+        '청하': 'BC38',
         '참이슬 후레쉬': 'BC39',
         '처음처럼': 'BC40',
         '새로': 'BC42',
