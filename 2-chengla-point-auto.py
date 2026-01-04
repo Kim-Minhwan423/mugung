@@ -101,7 +101,7 @@ def get_chrome_driver(use_profile=False):
 # 4. 로그인 및 팝업 닫기
 ###############################################################################
 def login_point(driver, point_id, point_pw):
-    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/550")
+    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/549")
     logging.info("포인트 로그인 페이지 접속 완료")
 
     id_selector = "body > div > form > div:nth-child(3) > input[type=text]"
@@ -123,26 +123,8 @@ def login_point(driver, point_id, point_pw):
 ###############################################################################
 # 5. 포인트 적립&사용 조회
 ###############################################################################
-def go_visitor_usage_selector(driver):
-    visitor_usage_xpath = "/html/body/div/div[2]/div[1]/div/div[3]/a"
-    try:
-        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.XPATH, visitor_usage_xpath)))
-        driver.find_element(By.XPATH, visitor_usage_xpath).click()
-        logging.info("포인트 적립&사용 조회 메뉴 진입 버튼 클릭")
-    except TimeoutException:
-        logging.warning("포인트 적립&사용 조회 메뉴 버튼을 찾지 못함")
-    time.sleep(3)
-
-    today_selector = "#periodFilter > option:nth-child(2)"
-    try:
-        WebDriverWait(driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, today_selector)))
-        driver.find_element(By.CSS_SELECTOR, today_selector).click()
-        logging.info("오늘 메뉴 진입 버튼 클릭")
-    except TimeoutException:
-        logging.warning("오늘 메뉴 버튼을 찾지 못함")
-
 def get_today_usage(driver):
-    usage_selector = "#filteredUsedValue"
+    usage_selector = "#totalUsedPoints"
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.CSS_SELECTOR, usage_selector).text.strip() != ''
@@ -156,7 +138,7 @@ def get_today_usage(driver):
         return -1
 
 def get_today_saved_count(driver):
-    status_xpath = '//*[@id="filteredCustomersValue"]'
+    status_xpath = '/html/body/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[1]'
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.XPATH, status_xpath).text.strip() != ''
@@ -170,7 +152,52 @@ def get_today_saved_count(driver):
         logging.error(f"적립건수 파싱 오류: {e}")
         return -1
 
+def get_average_visit_gap(driver):
+    xpath = '//*[@id="averageVisitGap"]'
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
+        )
+        text = driver.find_element(By.XPATH, xpath).text.strip()
 
+        # 숫자 + 소수점 추출
+        match = re.search(r'\d+(\.\d+)?', text)
+        value = float(match.group()) if match else -1
+
+        logging.info(f"평균 방문간격: {value}")
+        return value
+    except Exception as e:
+        logging.error(f"평균 방문간격 파싱 오류: {e}")
+        return -1
+
+def get_recent_visit(driver):
+    xpath = '//*[@id="recentVisits"]'
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
+        )
+        text = driver.find_element(By.XPATH, xpath).text.strip()
+        value = int(re.sub(r'[^\d]', '', text))
+        logging.info(f"최근 3개월 방문자수: {value}")
+        return value
+    except Exception as e:
+        logging.error(f"최근 방문 파싱 오류: {e}")
+        return -1
+
+
+def get_point_holder(driver):
+    xpath = '//*[@id="pointHolders"]'
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
+        )
+        text = driver.find_element(By.XPATH, xpath).text.strip()
+        value = int(re.sub(r'[^\d]', '', text))
+        logging.info(f"포인트 보유자 수: {value}")
+        return value
+    except Exception as e:
+        logging.error(f"포인트 보유자 파싱 오류: {e}")
+        return -1
 
 ###############################################################################
 # 6. Google Sheets 업데이트
@@ -191,23 +218,47 @@ def get_gspread_client_from_b64(service_account_json_b64):
     client = gspread.authorize(creds)
     return client
 
-def batch_update_sheet(service_account_json_b64, usage_value, visitor_count):
+def batch_update_sheet(
+    service_account_json_b64,
+    usage_value,
+    visitor_count,
+    average_visit_gap,
+    recent_visit,
+    point_holder
+):
     client = get_gspread_client_from_b64(service_account_json_b64)
     spreadsheet = client.open("청라 일일/월말 정산서")
-    worksheet = spreadsheet.worksheet("청라")
+
+    # -----------------------
+    # 청라 시트 업데이트
+    # -----------------------
+    chengla_ws = spreadsheet.worksheet("청라")
 
     today_day = datetime.datetime.now().day
     row_index = today_day + 2
 
-    ak_cell = f"AK{row_index}"
-    ai_cell = f"AI{row_index}"
-
-    updates = [
-        {"range": ak_cell, "values": [[usage_value]]},
-        {"range": ai_cell, "values": [[visitor_count]]}
+    updates_chengla = [
+        {"range": f"AK{row_index}", "values": [[usage_value]]},
+        {"range": f"AI{row_index}", "values": [[visitor_count]]},
     ]
-    worksheet.batch_update(updates)
-    logging.info(f"배치 업데이트 완료: {ak_cell}={usage_value}, {ai_cell}={visitor_count}")
+    chengla_ws.batch_update(updates_chengla)
+
+    # -----------------------
+    # 예약&마케팅 시트 업데이트
+    # -----------------------
+    marketing_ws = spreadsheet.worksheet("예약&마케팅")
+
+    updates_marketing = [
+        {"range": "O42", "values": [[average_visit_gap]]},
+        {"range": "K42", "values": [[recent_visit]]},
+        {"range": "O41", "values": [[point_holder]]},
+    ]
+    marketing_ws.batch_update(updates_marketing)
+
+    logging.info(
+        f"업데이트 완료 | 사용금액:{usage_value}, 방문:{visitor_count}, "
+        f"방문간격:{average_visit_gap}, 3개월:{recent_visit}, 보유자:{point_holder}"
+    )
 
 ###############################################################################
 # 메인 실행
@@ -221,11 +272,20 @@ def main():
 
         login_point(driver, point_id, point_pw)
 
-        go_visitor_usage_selector(driver)
         usage_value = get_today_usage(driver)
         visitor_count = get_today_saved_count(driver)
+        average_visit_gap = get_average_visit_gap(driver)
+        recent_visit = get_recent_visit(driver)
+        point_holder = get_point_holder(driver)
 
-        batch_update_sheet(service_account_json_b64, usage_value, visitor_count)
+        batch_update_sheet(
+            service_account_json_b64,
+            usage_value,
+            visitor_count,
+            average_visit_gap,
+            recent_visit,
+            point_holder
+        )
 
     except Exception as e:
         logging.error(f"스크립트 실행 중 에러: {e}")
