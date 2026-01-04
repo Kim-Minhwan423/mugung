@@ -133,7 +133,7 @@ def login_ddangyo(driver, ddangyo_id, ddangyo_pw):
     time.sleep(5)
 
 def close_popup_if_exist(driver):
-    popup_close_selector = "#mf_wfm_side_SMWCO050000P02SHOPP0000074_wframe_wq_uuid_447"
+    popup_close_selector = "#mf_wfm_side_SMWCO050000P02SHOPP0000074_wframe_btn_view"
     try:
         close_btn = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector))
