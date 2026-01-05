@@ -204,6 +204,11 @@ def main():
         # ================================================
         # 6. 조회 버튼
         # ================================================
+        search_btn = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH,"//button[@onclick='fnSearch(1);' and normalize-space()='조회']")))
+        driver.execute_script("arguments[0].click();", search_btn)
+        print("[INFO] 조회 버튼 클릭 완료.")
+
         # ▼ 상품별 결과 iframe 진입
         driver.switch_to.default_content()
         WebDriverWait(driver, 20).until(EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR,"iframe[id^='myTab1PageFrm']")))
