@@ -187,21 +187,7 @@ def main():
         )
         daily_tab.click()
         print("[INFO] 일자별 클릭 완료.")
-        time.sleep(1)
-        
-        # ===== BlankFrm iframe =====
-        driver.switch_to.default_content()
-
-        WebDriverWait(driver, 15).until(
-            EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
-        )
-        print("[INFO] BlankFrm iframe 진입 완료.")
-
-        # ✅ OKPOS는 탭 DOM 생성이 느리므로 body 로딩부터 대기
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-        time.sleep(2)  # JS 탭 생성 대기 (중요)
+        time.sleep(2)
 
         # 상품별 탭 강제 클릭 (OKPOS 전용 안정 방식)
         WebDriverWait(driver, 20).until(
