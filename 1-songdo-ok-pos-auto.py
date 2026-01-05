@@ -133,32 +133,32 @@ def main():
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
-        time.sleep(80000)  # 로그인 후 화면 로딩 대기
+        time.sleep(10)  # 로그인 후 화면 로딩 대기
 
         # ================================================
         # 4. 팝업(비밀번호 변경 안내) 닫기
         # ================================================
         try:
-            WebDriverWait(driver, 3).until(
+            WebDriverWait(driver, 10).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton1 > button"))
             )
             close_btn = driver.find_element(
                 By.CSS_SELECTOR, "#divPopupCloseButton1 > button")
             close_btn.click()
             print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
-            time.sleep(1)
+            time.sleep(3)
         except TimeoutException:
             # 팝업이 없으면 패스
             print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
             pass
 
-            WebDriverWait(driver, 3).until(
+            WebDriverWait(driver, 10).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton0 > button"))
             )
             close2_btn = driver.find_element(By.CSS_SELECTOR, "#divPopupCloseButton0 > button")
             close2_btn.click()
             print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
-            time.sleep(1)
+            time.sleep(3)
         except TimeoutException:
             # 팝업이 없으면 패스
             print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
