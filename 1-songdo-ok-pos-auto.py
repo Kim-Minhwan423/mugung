@@ -198,17 +198,20 @@ def main():
             EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
         )
         print("[INFO] BlankFrm iframe 진입 완료.")
+        
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        
+        # 상품별 탭 존재 대기
+        product_tab = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
+        )
+        print("[INFO] 상품별 탭 DOM 존재 확인.")
 
-        # 상품별 일매출분석 탭 클릭
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#myTab1_tabTitle_5"))
-        )
-        specific_period_item = driver.find_element(
-            By.CSS_SELECTOR, "#myTab1_tabTitle_5"
-        )
-        specific_period_item.click()
-        print("[INFO] 상품별 일매출분석 탭 클릭 완료.")
-        time.sleep(1)
+        # JS 클릭 (OKPOS 탭은 JS로 눌러야 안정적)
+        driver.execute_script("arguments[0].click();", product_tab)
+        print("[INFO] 상품별 탭 클릭 완료.")
 
         # ================================================
         # 6. 조회 버튼
