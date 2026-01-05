@@ -188,23 +188,19 @@ def main():
         daily_tab.click()
         print("[INFO] 일자별 클릭 완료.")
         time.sleep(2)
-        
+
         driver.switch_to.default_content()
-        # 상품별 탭 클릭 (텍스트 div 직접)
-        product_tab = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm"))
         )
+        print("[INFO] MainFrm iframe 진입 완료.")
 
+        product_tab = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5")))
         driver.execute_script("arguments[0].click();", product_tab)
-
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
-
-        WebDriverWait(driver, 20).until(
-            EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
-        )
-        print("[INFO] 상품별 화면 BlankFrm iframe 진입 완료.")
-
+        
         # ================================================
         # 6. 조회 버튼
         # ================================================
