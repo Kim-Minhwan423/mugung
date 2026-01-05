@@ -203,11 +203,23 @@ def main():
         )
         time.sleep(2)  # JS 탭 생성 대기 (중요)
 
-        # 상품별 탭 클릭
-        product_tab = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.ID, "myTab1_tabTitle_5"))
+        # 상품별 탭 강제 클릭 (OKPOS 전용 안정 방식)
+        WebDriverWait(driver, 20).until(
+            lambda d: d.execute_script(
+                "return document.querySelectorAll(\"div[id^='myTab1_tabTitle']\").length > 0"
+            )
         )
-        driver.execute_script("arguments[0].click();", product_tab)
+
+        driver.execute_script("""
+            const tabs = document.querySelectorAll("div[id^='myTab1_tabTitle']");
+            for (const tab of tabs) {
+                if (tab.innerText.includes("상품별")) {
+                    tab.click();
+                    return true;
+                }
+            }
+            return false;
+        """)
 
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
