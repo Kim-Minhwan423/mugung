@@ -145,11 +145,11 @@ def main():
             close_btn = driver.find_element(
                 By.CSS_SELECTOR, "#divPopupCloseButton1 > button")
             close_btn.click()
-            print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
+            print("[INFO] 비밀번호 변경 안내 팝업1 닫기 완료.")
             time.sleep(3)
         except TimeoutException:
             # 팝업이 없으면 패스
-            print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
+            print("[INFO] 비밀번호 변경 안내 팝업1이 존재하지 않습니다.")
             pass
 
             WebDriverWait(driver, 10).until(
@@ -157,12 +157,12 @@ def main():
             )
             close2_btn = driver.find_element(By.CSS_SELECTOR, "#divPopupCloseButton0 > button")
             close2_btn.click()
-            print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
+            print("[INFO] 비밀번호 변경 안내 팝업2 닫기 완료.")
             time.sleep(3)
         except TimeoutException:
             # 팝업이 없으면 패스
-            print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
-            pass#divPopupCloseButton0 > button
+            print("[INFO] 비밀번호 변경 안내 팝업2이 존재하지 않습니다.")
+            pass
 
         # ================================================
         # 5. 즐겨찾기 → 일자별 → 상품별 일매출분석
