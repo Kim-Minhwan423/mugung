@@ -204,16 +204,13 @@ def main():
         # ================================================
         # 6. 조회 버튼
         # ================================================
-        
-        # ▼ 조회 버튼 클릭
+        # ▼ 상품별 결과 iframe 진입
         driver.switch_to.default_content()
-        WebDriverWait(driver, 20).until(
-            EC.frame_to_be_available_and_switch_to_it((By.ID, "myTab1PageFrmec2430f544c34ed9ba5a3b8cdddebf98")))
-        print("[INFO] MainFrm iframe 진입 완료 (조회 버튼).")
-
+        WebDriverWait(driver, 20).until(EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR,"iframe[id^='myTab1PageFrm']")))
+        print("[INFO] 상품별 결과 iframe 진입 완료.")
         search_btn = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((
-                By.XPATH,'//*[@id="form1"]/div/div[1]/div[6]/button[1]')))
+                By.CSS_SELECTOR,'#form1 > div > div.divRoundBlock > div:nth-child(6) > button:nth-child(1)')))
 
         driver.execute_script("""
         arguments[0].scrollIntoView({block:'center'});
