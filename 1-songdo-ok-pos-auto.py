@@ -203,15 +203,14 @@ def main():
         )
         time.sleep(2)  # JS 탭 생성 대기 (중요)
 
-        # ===== 상품별 탭 (JS 강제 클릭) =====
+        # 상품별 탭 클릭
         product_tab = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//div[text()='상품별']"))
+            EC.element_to_be_clickable((By.ID, "myTab1_tabTitle_5"))
         )
-        print("[INFO] 상품별 탭 DOM 확인.")
-
         driver.execute_script("arguments[0].click();", product_tab)
+
         print("[INFO] 상품별 탭 클릭 완료.")
-        time.sleep(2)
+        time.sleep(1)
         
         # ================================================
         # 6. 조회 버튼
