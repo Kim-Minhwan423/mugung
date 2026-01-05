@@ -189,24 +189,10 @@ def main():
         print("[INFO] 일자별 클릭 완료.")
         time.sleep(2)
 
-        # 상품별 탭 강제 클릭 (OKPOS 전용 안정 방식)
-        WebDriverWait(driver, 20).until(
-            lambda d: d.execute_script(
-                "return document.querySelectorAll(\"div[id^='myTab1_tabTitle']\").length > 0"
-            )
-        )
-
-        driver.execute_script("""
-            const tabs = document.querySelectorAll("div[id^='myTab1_tabTitle']");
-            for (const tab of tabs) {
-                if (tab.innerText.includes("상품별")) {
-                    tab.click();
-                    return true;
-                }
-            }
-            return false;
-        """)
-
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#myTab1_tabTitle_5")))
+        tab_btn = driver.find_element(By.CSS_SELECTOR, "#myTab1_tabTitle_5")
+        tab_btn.click()
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
         
