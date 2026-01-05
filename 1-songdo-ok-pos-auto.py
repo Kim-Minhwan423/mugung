@@ -190,10 +190,13 @@ def main():
         time.sleep(2)
         
         driver.switch_to.default_content()
+        # 상품별 탭 클릭 (텍스트 div 직접)
         product_tab = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.ID, "tabTabDIV_myTab1_5"))
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
         )
+
         driver.execute_script("arguments[0].click();", product_tab)
+
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
 
