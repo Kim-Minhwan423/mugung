@@ -126,9 +126,10 @@ def main():
         pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
-        time.sleep(30000)
+        time.sleep(3)
 
         # 로그인 버튼 클릭
+        login.button = driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
@@ -154,11 +155,10 @@ def main():
         # ================================================
         try:
             WebDriverWait(driver, 3).until(
-                EC.visibility_of_element_located((By.ID, "mainframe_childframe_popupChangePasswd_titlebar_closebuttonAlignImageElement"))
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton1 > button"))
             )
             close_btn = driver.find_element(
-                By.ID, "mainframe_childframe_popupChangePasswd_titlebar_closebuttonAlignImageElement"
-            )
+                By.CSS_SELECTOR, "#divPopupCloseButton1 > button")
             close_btn.click()
             print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
             time.sleep(1)
@@ -167,97 +167,67 @@ def main():
             print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
             pass
 
+            WebDriverWait(driver, 3).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton0 > button"))
+            )
+            close2_btn = driver.find_element(By.CSS_SELECTOR, "#divPopupCloseButton0 > button")
+            close2_btn.click()
+            print("[INFO] 비밀번호 변경 안내 팝업 닫기 완료.")
+            time.sleep(1)
+        except TimeoutException:
+            # 팝업이 없으면 패스
+            print("[INFO] 비밀번호 변경 안내 팝업이 존재하지 않습니다.")
+            pass#divPopupCloseButton0 > button
+
         # ================================================
-        # 5. 매출분석 → 상품분석 → 상품별 일매출분석
+        # 5. 즐겨찾기 → 일자별 → 상품별 일매출분석
         # ================================================
-        # 매출분석 탭
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divTop_img_TA_top_menu3 > div"))
+        # 즐겨찾기 탭
+        WebDriverWait(erWair, 10).un,il(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)"))
         )
-        sales_analysis_tab = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divTop_img_TA_top_menu3 > div"
+        favorite_tab = driver.find_element(
+            By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)"
         )
-        sales_analysis_tab.click()
-        print("[INFO] 매출분석 탭 클릭 완료.")
+        favorite_tab.click()
+        print("[INFO] 즐겨찾기 탭 클릭 완료.")
         time.sleep(1)
 
-        # 상품분석 탭 클릭
+        # 일자별 탭 클릭
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#sd3"))
         )
-        period_sales = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"
+        daily_sales = driver.find_element(
+            By.CSS_SELECTOR, "#sd3"
         )
-        period_sales.click()
+        daily_sales.click()
         print("[INFO] 상품분석 탭 클릭 완료.")
         time.sleep(1)
 
         # 상품별 일매출분석 탭 클릭
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_6_cell_6_0_controltreeTextBoxElement"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#myTab1_tabTitle_5"))
         )
         specific_period_item = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_6_cell_6_0_controltreeTextBoxElement"
+            By.CSS_SELECTOR, "#myTab1_tabTitle_5"
         )
         specific_period_item.click()
         print("[INFO] 상품별 일매출분석 탭 클릭 완료.")
         time.sleep(1)
 
         # ================================================
-        # 6. 당일 버튼 → 상품코드 표기 버튼 → 부가메뉴 포함 버튼 → 조회 버튼
+        # 6. 조회 버튼
         # ================================================
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_divSalesDate_btnNowDay"))
-        )
-        today_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_divSalesDate_btnNowDay"
-        )
-        today_btn.click()
-        print("[INFO] 당일 버튼 클릭 완료.")
-        time.sleep(1)
-
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_chkItemCd_chkimg"))
-        )
-        code_search_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_chkItemCd_chkimg"
-        )
-        code_search_btn.click()
-        print("[INFO] 상품코드 표기 버튼 클릭 완료.")
-        time.sleep(1)
-
-        # ▼ 드롭다운 열기
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_dropbutton"))
-        )
-        dropdown_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_cboSrchFg_dropbutton"
-        )
-        dropdown_btn.click()
-        print("[INFO] 부가메뉴 포함 드롭다운 열기 완료.")
-        time.sleep(1)
-
-        # ▼ 드롭다운에서 "부가메뉴포함" 항목 선택
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, '//div[contains(@id, "cboSrchFg_combopopup")]//div[contains(text(), "부가메뉴포함")]'))
-        )
-        menu_include_option = driver.find_element(
-            By.XPATH, '//div[contains(@id, "cboSrchFg_combopopup")]//div[contains(text(), "부가메뉴포함")]'
-        )
-        menu_include_option.click()
-        print("[INFO] '부가메뉴포함' 항목 클릭 완료.")
-        time.sleep(1)
-
         # ▼ 조회 버튼 클릭
         WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "#form1 > div > div.divRoundBlock > div:nth-child(6) > button:nth-child(1)"))
         )
         search_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"
+            By.CSS_SELECTOR, "#form1 > div > div.divRoundBlock > div:nth-child(6) > button:nth-child(1)"
         )
         search_btn.click()
         print("[INFO] 조회 버튼 클릭 완료.")
-        time.sleep(2)
+        time.sleep(200000)
 
         # ================================================
         # 7. 데이터 행 처리 및 스프레드시트 업데이트 ("재고" 시트)
