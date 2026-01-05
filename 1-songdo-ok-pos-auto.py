@@ -126,14 +126,12 @@ def main():
         pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
-        time.sleep(3)
-
         # 로그인 버튼 클릭
         login_button = driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
-        time.sleep(10)  # 로그인 후 화면 로딩 대기
+        time.sleep(5)  # 로그인 후 화면 로딩 대기
 
         # ================================================
         # 4. 팝업 2개 완전 제거 (iframe 꼬임 방지)
@@ -191,24 +189,30 @@ def main():
         print("[INFO] 일자별 클릭 완료.")
         time.sleep(1)
         
-        # ===== 메인 화면 iframe =====
+        # ===== BlankFrm iframe =====
         driver.switch_to.default_content()
 
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 15).until(
             EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
         )
         print("[INFO] BlankFrm iframe 진입 완료.")
 
-        # 상품별 탭 존재 대기
-        product_tab = WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
+        # ✅ OKPOS는 탭 DOM 생성이 느리므로 body 로딩부터 대기
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        print("[INFO] 상품별 탭 DOM 존재 확인.")
+        time.sleep(2)  # JS 탭 생성 대기 (중요)
 
-        # JS 클릭 (OKPOS 탭은 JS로 눌러야 안정적)
+        # ===== 상품별 탭 (JS 강제 클릭) =====
+        product_tab = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[text()='상품별']"))
+        )
+        print("[INFO] 상품별 탭 DOM 확인.")
+
         driver.execute_script("arguments[0].click();", product_tab)
         print("[INFO] 상품별 탭 클릭 완료.")
-
+        time.sleep(2)
+        
         # ================================================
         # 6. 조회 버튼
         # ================================================
