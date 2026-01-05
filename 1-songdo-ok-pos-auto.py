@@ -59,7 +59,7 @@ def main():
         options = webdriver.ChromeOptions()
 
         # 1) Headless (GUI 없이 동작)
-        options.add_argument("--headless=new")  # 최신 headless 모드 사용
+        #options.add_argument("--headless=new")  # 최신 headless 모드 사용
 
         # 2) 서버 환경 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -97,9 +97,9 @@ def main():
 
         # ID 입력
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "mainframe_childframe_form_divMain_edtId_input"))
+            EC.visibility_of_element_located((By.ID, "#user_id"))
         )
-        id_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtId_input")
+        id_input = driver.find_element(By.ID, "#user_id")
         id_input.click()
         id_input.clear()
         id_input.send_keys(os.getenv("SONGDO_OK_POS_ID"))
@@ -107,20 +107,20 @@ def main():
 
         # PW 입력
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "mainframe_childframe_form_divMain_edtPw_input"))
+            EC.visibility_of_element_located((By.ID, "#user_pwd"))
         )
-        pw_input = driver.find_element(By.ID, "mainframe_childframe_form_divMain_edtPw_input")
+        pw_input = driver.find_element(By.ID, "#user_pwd")
         pw_input.click()
         pw_input.clear()
         pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
         # 로그인 버튼 클릭
-        login_button = driver.find_element(By.ID, "mainframe_childframe_form_divMain_btnLogin")
+        login_button = driver.find_element(By.ID, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
-        time.sleep(3)  # 로그인 후 화면 로딩 대기
+        time.sleep(30000)  # 로그인 후 화면 로딩 대기
 
         # ================================================
         # 4. 팝업(비밀번호 변경 안내) 닫기
