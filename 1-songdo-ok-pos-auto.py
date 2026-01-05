@@ -101,7 +101,7 @@ def main():
         # ================================================
         url = "https://okasp.okpos.co.kr/login/login_form.jsp"
         driver.get(url)
-        print("[INFO] EasyPOS 로그인 페이지에 접속했습니다.")
+        print("[INFO] OKPOS 로그인 페이지에 접속했습니다.")
 
         # 프레임 전환
         driver.implicitly_wait(1)
@@ -132,21 +132,6 @@ def main():
         login_button = driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
-
-        # 🔑 로그인 후 mainframe 로딩 대기
-        WebDriverWait(driver, 20).until(
-            EC.frame_to_be_available_and_switch_to_it(
-                (By.NAME, "mainframe")
-            )
-        )
-        print("[INFO] mainframe 프레임 전환 완료.")
-        
-        WebDriverWait(driver, 10).until(
-            EC.frame_to_be_available_and_switch_to_it(
-                (By.NAME, "childframe")
-            )
-        )
-        print("[INFO] childframe 프레임 전환 완료.")
 
         time.sleep(3)  # 로그인 후 화면 로딩 대기
 
