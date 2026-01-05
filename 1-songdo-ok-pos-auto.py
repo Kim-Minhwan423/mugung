@@ -209,6 +209,11 @@ def main():
             EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm")))
         print("[INFO] 상품별 클릭 후 MainFrm 재진입 완료")
 
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")))
+        print("[INFO] myTab1PageFrm iframe 진입 완료")
+
         driver.execute_script("fnSearch(1);")
         print("[INFO] 조회 fnSearch(1) 실행 완료")
         time.sleep(200000)
