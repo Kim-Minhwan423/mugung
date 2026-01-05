@@ -22,8 +22,10 @@ def main():
     try:
         # 로그 시작 시간
         current_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-        current_local = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S') 
-        print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 현지: {current_local}")
+        current_local = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 로컬: {current_local}")
+
 
         # ================================
         # 1. Google Sheets API 인증 설정
