@@ -126,6 +126,8 @@ def main():
         pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
+        time.sleep(30000)
+
         # 로그인 버튼 클릭
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
@@ -145,7 +147,7 @@ def main():
         )
         print("[INFO] childframe 프레임 전환 완료.")
 
-        time.sleep(30000)  # 로그인 후 화면 로딩 대기
+        time.sleep(3)  # 로그인 후 화면 로딩 대기
 
         # ================================================
         # 4. 팝업(비밀번호 변경 안내) 닫기
