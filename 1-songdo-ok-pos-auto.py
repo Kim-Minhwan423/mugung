@@ -168,6 +168,21 @@ def main():
         print("[INFO] 즐겨찾기 탭 클릭 완료.")
         time.sleep(1)
 
+        # ================================================
+        # 즐겨찾기 클릭 후 메인 프레임으로 전환
+        # ================================================
+        time.sleep(2)
+
+        driver.switch_to.default_content()
+
+        WebDriverWait(driver, 10).until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (By.ID, "mainframe")
+            )
+        )
+
+        print("[INFO] mainframe 전환 완료.")
+
         # 일자별 탭 클릭
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#sd3"))
