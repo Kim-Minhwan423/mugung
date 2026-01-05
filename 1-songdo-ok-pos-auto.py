@@ -204,14 +204,22 @@ def main():
         # ================================================
         # 6. 조회 버튼
         # ================================================
+        
         # ▼ 조회 버튼 클릭
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#form1 > div > div.divRoundBlock > div:nth-child(6) > button:nth-child(1)"))
-        )
-        search_btn = driver.find_element(
-            By.CSS_SELECTOR, "#form1 > div > div.divRoundBlock > div:nth-child(6) > button:nth-child(1)"
-        )
-        search_btn.click()
+        driver.switch_to.default_content()
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm")))
+        print("[INFO] MainFrm iframe 진입 완료 (조회 버튼).")
+
+        search_btn = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((
+                By.XPATH,"//*[@id="form1"]/div/div[1]/div[6]/button[1]")))
+
+        driver.execute_script("""
+        arguments[0].scrollIntoView({block:'center'});
+        arguments[0].click();
+        """, search_btn)
+
         print("[INFO] 조회 버튼 클릭 완료.")
         time.sleep(200000)
 
