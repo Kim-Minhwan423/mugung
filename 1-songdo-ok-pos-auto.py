@@ -198,11 +198,7 @@ def main():
             EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
         )
         print("[INFO] BlankFrm iframe 진입 완료.")
-        
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import WebDriverWait
-        
+
         # 상품별 탭 존재 대기
         product_tab = WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
