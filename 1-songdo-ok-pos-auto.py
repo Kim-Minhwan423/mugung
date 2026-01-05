@@ -1,4 +1,6 @@
 import os
+import base64
+import tempfile
 import time
 import gspread
 import traceback
@@ -42,7 +44,18 @@ def main():
         ]
 
         # GitHub Actions용: /tmp/keyfile.json 경로 (헤드리스 서버에서)
-        json_path = "/tmp/keyfile.json"  
+        decoded_json = base64.b64decode(
+            os.environ["SERVICE_ACCOUNT_JSON_BASE64"]
+        ).decode("utf-8")
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".json",
+            delete=False,
+            encoding="utf-8"
+        ) as temp:
+            temp.write(decoded_json)
+            json_path = temp.name
         creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
         client = gspread.authorize(creds)
 
