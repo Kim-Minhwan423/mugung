@@ -86,7 +86,7 @@ def main():
         })
 
         # 4) 기타 설정
-        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--window-size=1720,1080")
         options.add_argument(f"user-agent={user_agent}")
 
         # ChromeDriver 설치 및 WebDriver 초기화
