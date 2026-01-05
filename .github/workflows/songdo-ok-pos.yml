@@ -1,4 +1,4 @@
-name: Songdo Ok-pos
+name: Songdo OkPos
 
 on:
   repository_dispatch:
