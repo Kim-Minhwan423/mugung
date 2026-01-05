@@ -196,7 +196,12 @@ def main():
         driver.execute_script("arguments[0].click();", product_tab)
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
-        
+
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
+        )
+        print("[INFO] 상품별 화면 BlankFrm iframe 진입 완료.")
+
         # ================================================
         # 6. 조회 버튼
         # ================================================
