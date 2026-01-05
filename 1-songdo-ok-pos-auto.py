@@ -14,14 +14,12 @@ from selenium.common.exceptions import (
     WebDriverException
 )
 from webdriver_manager.chrome import ChromeDriverManager
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
+from datetime import datetime, timezone
 
 def main():
     try:
         # 로그 시작 시간
-        current_utc = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        current_utc = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
         current_local = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         print(f"[INFO] 스크립트 시작 시간 - UTC: {current_utc}, 로컬: {current_local}")
@@ -99,9 +97,9 @@ def main():
 
         # ID 입력
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "#user_id"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#user_id"))
         )
-        id_input = driver.find_element(By.ID, "#user_id")
+        id_input = driver.find_element(By.CSS_SELECTOR, "#user_id")
         id_input.click()
         id_input.clear()
         id_input.send_keys(os.getenv("SONGDO_OK_POS_ID"))
@@ -109,16 +107,16 @@ def main():
 
         # PW 입력
         WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "#user_pwd"))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#user_pwd"))
         )
-        pw_input = driver.find_element(By.ID, "#user_pwd")
+        pw_input = driver.find_element(By.CSS_SELECTOR, "#user_pwd")
         pw_input.click()
         pw_input.clear()
         pw_input.send_keys(os.getenv("SONGDO_OK_POS_PW"))
         print("[INFO] PW 입력 완료.")
 
         # 로그인 버튼 클릭
-        login_button = driver.find_element(By.ID, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
+        login_button = driver.find_element(By.CSS_SELECTOR,"#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
