@@ -129,7 +129,7 @@ def main():
         time.sleep(3)
 
         # 로그인 버튼 클릭
-        login.button = driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
+        login_button = driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img")
         login_button.click()
         print("[INFO] 로그인 버튼 클릭 완료.")
 
