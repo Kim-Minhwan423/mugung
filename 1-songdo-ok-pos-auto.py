@@ -188,11 +188,12 @@ def main():
         daily_tab.click()
         print("[INFO] 일자별 클릭 완료.")
         time.sleep(2)
-
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "#myTab1_tabTitle_5")))
-        tab_btn = driver.find_element(By.CSS_SELECTOR, "#myTab1_tabTitle_5")
-        tab_btn.click()
+        
+        driver.switch_to.default_content()
+        product_tab = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.ID, "tabTabDIV_myTab1_5"))
+        )
+        driver.execute_script("arguments[0].click();", product_tab)
         print("[INFO] 상품별 탭 클릭 완료.")
         time.sleep(1)
         
