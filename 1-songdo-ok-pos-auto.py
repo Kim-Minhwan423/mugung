@@ -247,7 +247,7 @@ def main():
             driver, 
             code_to_cell_inventory, 
             special_prices, 
-            max_i=30  # i 값을 0~30으로 변경
+            max_i=100  # i 값을 0~100으로 변경
         )
 
         # '재고' 시트의 특정 범위를 먼저 비웁니다.
