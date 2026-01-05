@@ -136,27 +136,36 @@ def main():
         time.sleep(10)  # 로그인 후 화면 로딩 대기
 
         # ================================================
-        # 4. 팝업(비밀번호 변경 안내) 닫기 - 안정 버전
+        # 4. 팝업 2개 완전 제거 (iframe 꼬임 방지)
         # ================================================
+        driver.switch_to.default_content()
+
         popup_selectors = [
             "#divPopupCloseButton1 > button",
             "#divPopupCloseButton0 > button"
         ]
 
-        for selector in popup_selectors:
-            try:
-                WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
-                )
-                driver.find_element(By.CSS_SELECTOR, selector).click()
-                print(f"[INFO] 팝업 닫기 완료: {selector}")
-                time.sleep(2)
-            except TimeoutException:
-                print(f"[INFO] 팝업 없음: {selector}")
+        for _ in range(3):  # 혹시 늦게 뜨는 경우 대비
+            for selector in popup_selectors:
+                try:
+                    driver.switch_to.default_content()
+                    btn = WebDriverWait(driver, 3).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                    )
+                    btn.click()
+                    print(f"[INFO] 팝업 닫기 완료: {selector}")
+                    time.sleep(1)
+                except TimeoutException:
+                    pass
+
+        driver.switch_to.default_content()
+        print("[INFO] 팝업 처리 완료, default_content 복귀")
 
         # ================================================
         # 5. 즐겨찾기 → 일자별 → 상품별 일매출분석
         # ================================================
+        driver.switch_to.default_content()
+
         # 즐겨찾기 탭
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)"))
@@ -168,11 +177,27 @@ def main():
         print("[INFO] 즐겨찾기 탭 클릭 완료.")
         time.sleep(1)
 
-        # 일자별 탭 클릭
-        daily_tab = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,"//div[normalize-space()='일자별']")))
+        # ===== 일자별 (MyMenuFrm iframe 안) =====
+        driver.switch_to.default_content()
+
+        WebDriverWait(driver, 10).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MyMenuFrm"))
+        )
+
+        daily_tab = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "sd3"))
+        )
         daily_tab.click()
-        print("[INFO] 상품분석 탭 클릭 완료.")
+        print("[INFO] 일자별 클릭 완료.")
         time.sleep(1)
+        
+        # ===== 메인 화면 iframe =====
+        driver.switch_to.default_content()
+
+        WebDriverWait(driver, 10).until(
+            EC.frame_to_be_available_and_switch_to_it((By.NAME, "BlankFrm"))
+        )
+        print("[INFO] BlankFrm iframe 진입 완료.")
 
         # 상품별 일매출분석 탭 클릭
         WebDriverWait(driver, 10).until(
