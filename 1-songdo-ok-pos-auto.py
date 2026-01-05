@@ -136,33 +136,23 @@ def main():
         time.sleep(10)  # 로그인 후 화면 로딩 대기
 
         # ================================================
-        # 4. 팝업(비밀번호 변경 안내) 닫기
+        # 4. 팝업(비밀번호 변경 안내) 닫기 - 안정 버전
         # ================================================
-        try:
-            WebDriverWait(driver, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton1 > button"))
-            )
-            close_btn = driver.find_element(
-                By.CSS_SELECTOR, "#divPopupCloseButton1 > button")
-            close_btn.click()
-            print("[INFO] 비밀번호 변경 안내 팝업1 닫기 완료.")
-            time.sleep(3)
-        except TimeoutException:
-            # 팝업이 없으면 패스
-            print("[INFO] 비밀번호 변경 안내 팝업1이 존재하지 않습니다.")
-            pass
+        popup_selectors = [
+            "#divPopupCloseButton1 > button",
+            "#divPopupCloseButton0 > button"
+        ]
 
-            WebDriverWait(driver, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, "#divPopupCloseButton0 > button"))
-            )
-            close2_btn = driver.find_element(By.CSS_SELECTOR, "#divPopupCloseButton0 > button")
-            close2_btn.click()
-            print("[INFO] 비밀번호 변경 안내 팝업2 닫기 완료.")
-            time.sleep(3)
-        except TimeoutException:
-            # 팝업이 없으면 패스
-            print("[INFO] 비밀번호 변경 안내 팝업2이 존재하지 않습니다.")
-            pass
+        for selector in popup_selectors:
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                )
+                driver.find_element(By.CSS_SELECTOR, selector).click()
+                print(f"[INFO] 팝업 닫기 완료: {selector}")
+                time.sleep(2)
+            except TimeoutException:
+                print(f"[INFO] 팝업 없음: {selector}")
 
         # ================================================
         # 5. 즐겨찾기 → 일자별 → 상품별 일매출분석
