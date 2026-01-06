@@ -246,8 +246,19 @@ def main():
         extract_daily_summary(driver, sheet_report)
 
         # 상품별
+        driver.switch_to.default_content()
+        WebDriverWait(driver, timeout).until(
+            EC.frame_to_be_available_and_switch_to_it("MainFrm")
+        )
         driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "myTab1_tabTitle_5"))
         time.sleep(2)
+        inner_iframe = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+            )
+        )
+        driver.switch_to.frame(inner_iframe)
+
         driver.execute_script("fnSearch(1);")
         time.sleep(2)
 
