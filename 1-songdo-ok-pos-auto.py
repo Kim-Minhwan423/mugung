@@ -11,13 +11,14 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+TIMEOUT = 10
 
 # =====================================================
 # 숫자 안전 추출
 # =====================================================
 def get_int(driver, xpath, default=0):
     try:
-        txt = WebDriverWait(driver, 5).until(
+        txt = WebDriverWait(driver, TIMEOUT).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         ).text.replace(",", "").strip()
         return int(txt) if txt.isdigit() else default
@@ -44,7 +45,7 @@ def close_okpos_popup(driver):
     for _ in range(3):
         for sel in popup_buttons:
             try:
-                btn = WebDriverWait(driver, 2).until(
+                btn = WebDriverWait(driver, TIMEOUT).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
                 )
                 driver.execute_script("arguments[0].click();", btn)
@@ -55,7 +56,7 @@ def close_okpos_popup(driver):
 
     # ✅ 배경 오버레이가 사라질 때까지 대기
     try:
-        WebDriverWait(driver, 5).until(
+        WebDriverWait(driver, TIMEOUT).until(
             EC.invisibility_of_element_located(
                 (By.CSS_SELECTOR, "[id^='divPopupBackground']")
             )
@@ -70,12 +71,12 @@ def okpos_fn_search(driver, timeout=10):
     driver.switch_to.default_content()
 
     # 1️⃣ MainFrm 진입
-    WebDriverWait(driver, timeout).until(
+    WebDriverWait(driver, TIMEOUT).until(
         EC.frame_to_be_available_and_switch_to_it("MainFrm")
     )
 
     # 2️⃣ MainFrm 내부 myTab1PageFrm* iframe 찾기
-    inner_iframe = WebDriverWait(driver, timeout).until(
+    inner_iframe = WebDriverWait(driver, TIMEOUT).until(
         EC.presence_of_element_located(
             (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
         )
@@ -93,23 +94,30 @@ def okpos_fn_search(driver, timeout=10):
 # =====================================================
 def extract_daily_summary(driver, sheet):
     data_map = {
-        "카드": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[23]',
         "현금": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]',
         "현금영수증": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]',
         "테이블수": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[9]',
         "총매출": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[4]'
     }
+    
+    total = values["총매출"]
+    cash = values["현금"]
+    cash_receipt = values["현금영수증"]
+
+    card = total - cash - cash_receipt
+    if card < 0:
+        card = 0
 
     values = {}
     for k, xp in data_map.items():
         values[k] = get_int(driver, xp)
 
     sheet.batch_update([
-        {"range": "E3", "values": [[values["카드"]]]},
-        {"range": "E5", "values": [[values["현금"]]]},
-        {"range": "E6", "values": [[values["현금영수증"]]]},
+        {"range": "E3", "values": [[card]]},          # 카드 (계산값)
+        {"range": "E5", "values": [[cash]]},          # 현금
+        {"range": "E6", "values": [[cash_receipt]]},  # 현금영수증
         {"range": "D31", "values": [[values["테이블수"]]]},
-        {"range": "E31", "values": [[values["총매출"]]]},
+        {"range": "E31", "values": [[total]]},
     ])
 
     print("[INFO] 일별종합 데이터 업데이트 완료")
@@ -236,32 +244,40 @@ def main():
         close_okpos_popup(driver)
 
         # 즐겨찾기 → 일별종합
-        driver.find_element(By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)").click()
+        top_menu = WebDriverWait(driver, TIMEOUT).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)")
+            )
+        )
+        driver.execute_script("arguments[0].click();", top_menu)
         time.sleep(1)
-        driver.switch_to.frame("MyMenuFrm")
+        driver.switch_to.default_content()
+        WebDriverWait(driver, TIMEOUT).until(
+            EC.frame_to_be_available_and_switch_to_it("MyMenuFrm")
+        )
         driver.find_element(By.ID, "sd3").click()
         time.sleep(2)
 
         okpos_fn_search(driver)
         extract_daily_summary(driver, sheet_report)
 
-        # 상품별
+        # 상품별 탭 클릭
         driver.switch_to.default_content()
-        WebDriverWait(driver, timeout).until(
+        WebDriverWait(driver, TIMEOUT).until(
             EC.frame_to_be_available_and_switch_to_it("MainFrm")
         )
-        driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "myTab1_tabTitle_5"))
-        time.sleep(2)
-        inner_iframe = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+
+        driver.execute_script(
+            "arguments[0].click();",
+            WebDriverWait(driver, TIMEOUT).until(
+                EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
             )
         )
-        driver.switch_to.frame(inner_iframe)
 
-        driver.execute_script("fnSearch(1);")
-        time.sleep(2)
+        time.sleep(1)
 
+        # ✅ 다시 공용 fnSearch 실행
+        okpos_fn_search(driver)
         process_inventory(driver, sheet_inventory)
 
     except Exception:
