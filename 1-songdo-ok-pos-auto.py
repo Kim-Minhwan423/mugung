@@ -29,24 +29,41 @@ def get_int(driver, xpath, default=0):
 # =====================================================
 # OKPOS 모든 팝업 닫기 (안전 버전)
 # =====================================================
+# =====================================================
+# OKPOS 팝업 + 배경 완전 제거
+# =====================================================
 def close_okpos_popup(driver):
     driver.switch_to.default_content()
 
-    popup_selectors = [
+    popup_buttons = [
         "#divPopupCloseButton0 > button",
         "#divPopupCloseButton1 > button"
     ]
 
-    for sel in popup_selectors:
-        try:
-            btn = WebDriverWait(driver, 3).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
+    # 버튼은 있으면 무조건 누른다 (여러 번 시도)
+    for _ in range(3):
+        for sel in popup_buttons:
+            try:
+                btn = WebDriverWait(driver, 2).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
+                )
+                driver.execute_script("arguments[0].click();", btn)
+                time.sleep(0.3)
+                print(f"[INFO] 팝업 닫기 클릭: {sel}")
+            except:
+                pass
+
+    # ✅ 배경 오버레이가 사라질 때까지 대기
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.invisibility_of_element_located(
+                (By.CSS_SELECTOR, "[id^='divPopupBackground']")
             )
-            driver.execute_script("arguments[0].click();", btn)
-            time.sleep(1)
-            print(f"[INFO] 팝업 닫음: {sel}")
-        except:
-            pass  # 해당 팝업 없으면 그냥 넘어감
+        )
+        print("[INFO] 팝업 배경 제거 완료")
+    except:
+        print("[WARN] 팝업 배경 대기 타임아웃 (진행)")
+
 # =====================================================
 # 일별종합 데이터 추출
 # =====================================================
