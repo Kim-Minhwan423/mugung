@@ -273,7 +273,7 @@ def main():
                 driver.execute_script("arguments[0].click();", menu)
                 break
             except:
-                time.sleep(0.5)
+                time.sleep(3)
 
         okpos_fn_search(driver)
         extract_daily_summary(driver, sheet_report)
