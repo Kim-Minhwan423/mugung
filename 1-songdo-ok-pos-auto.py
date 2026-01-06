@@ -63,7 +63,31 @@ def close_okpos_popup(driver):
         print("[INFO] 팝업 배경 제거 완료")
     except:
         print("[WARN] 팝업 배경 대기 타임아웃 (진행)")
+# =====================================================
+# OKPOS fnSearch 안전 실행 (MainFrm 내부 iframe 대응)
+# =====================================================
+def okpos_fn_search(driver, timeout=10):
+    driver.switch_to.default_content()
 
+    # 1️⃣ MainFrm 진입
+    WebDriverWait(driver, timeout).until(
+        EC.frame_to_be_available_and_switch_to_it("MainFrm")
+    )
+
+    # 2️⃣ MainFrm 내부 myTab1PageFrm* iframe 찾기
+    inner_iframe = WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+        )
+    )
+
+    driver.switch_to.frame(inner_iframe)
+
+    # 3️⃣ fnSearch 실행
+    driver.execute_script("fnSearch();")
+    time.sleep(2)
+
+    print("[INFO] fnSearch 실행 완료 (inner iframe)")
 # =====================================================
 # 일별종합 데이터 추출
 # =====================================================
@@ -218,11 +242,7 @@ def main():
         driver.find_element(By.ID, "sd3").click()
         time.sleep(2)
 
-        driver.switch_to.default_content()
-        driver.switch_to.frame("MainFrm")
-        driver.execute_script("fnSearch();")
-        time.sleep(2)
-
+        okpos_fn_search(driver)
         extract_daily_summary(driver, sheet_report)
 
         # 상품별
