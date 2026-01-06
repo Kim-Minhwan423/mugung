@@ -17,7 +17,7 @@ jobs:
         run: python -m pip install -r requirements.txt
         shell: cmd
 
-      - name: Run Baemin Auto Script
+      - name: Run OKPOS Auto Script
         run: python 1-songdo-ok-pos-auto.py
         shell: cmd
         env:
