@@ -57,25 +57,41 @@ def extract_daily_summary(driver, sheet):
 # =====================================================
 def process_inventory(driver, sheet_inventory):
     code_to_cell = {
-        "000001": "C38", "000002": "C39", "000003": "C42", "000004": "AB38",
+        "000001": "C38", "000056": "C38",
+        "000002": "C39", "000057": "C39",
+        "000003": "C42", "000058": "C42",
+        "000004": "AB38", "000059": "AB38",
+
         "000005": "N38", "000006": "N45", "000007": "C40",
         "000008": "C41", "000009": "N41", "000010": "C44",
         "000011": "C43", "000012": "AB40", "000013": "N40", "000014": "N44",
-        "000015": "AB39", "000016": "N39", "000026": "AO39", "000027": "AO40",
-        "000028": "AO43", "000029": "AO42", "000030": "AO41", "000031": "AO38",
-        "000032": "AZ38", "000033": "AZ39", "000034": "AZ40", "000035": "AZ42",
-        "000036": "AZ41", "000037": "AZ43", "000038": "AZ44", "000039": "AZ45", "000040": "AO45",
-        "000041": "AB42", "000042": "AB41", "000043": "AB43", "000044": "AB44",
-        "000045": "AB45", "000046": "C45"
+        "000015": "AB39", "000016": "N39",
+
+        "000026": "AO39", "000027": "AO40", "000028": "AO43",
+        "000029": "AO42", "000030": "AO41", "000031": "AO38",
+
+        "000032": "AZ38", "000033": "AZ39", "000034": "AZ40",
+        "000035": "AZ42", "000036": "AZ41", "000037": "AZ43",
+        "000038": "AZ44", "000039": "AZ45", "000040": "AO45",
+
+        "000041": "AB42", "000042": "AB41", "000043": "AB43",
+        "000044": "AB44", "000045": "AB45", "000046": "C45"
     }
+
 
     special_prices = {
-        "000041": 2000,  "000042": 2000,  "000044": 3000,  "000043": 2000,
-        "000026": 28000, "000028": 22000, "000030": 18000, "000031": 18000,
-        "000027": 28000
+        "000041": 2000, "000042": 2000, "000043": 2000,
+        "000044": 3000,
+        "000026": 28000, "000027": 28000,
+        "000028": 22000,
+        "000030": 18000, "000031": 18000
     }
 
+    # 재고 영역 초기화
     sheet_inventory.batch_clear(list(code_to_cell.values()))
+
+    updates = []
+    cell_qty_map = {}
 
     for row in range(2, 61):
         try:
@@ -87,22 +103,31 @@ def process_inventory(driver, sheet_inventory):
             if code not in code_to_cell:
                 continue
 
-            # 항상 같은 컬럼에서 값 하나를 읽는다
-            value = get_int(
+            raw_value = get_int(
                 driver,
                 f'//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody/tr[{row}]/td[8]'
             )
 
-            # special_prices에 있으면 금액 → 수량 역산
             if code in special_prices:
-                qty = value // special_prices[code] if value else 0
+                qty = raw_value // special_prices[code] if raw_value else 0
             else:
-                # 그 외 (오늘의 메뉴 포함)는 이미 수량
-                qty = value
+                qty = raw_value
 
             if qty > 0:
-                sheet_inventory.update(code_to_cell[code], qty)
-                print("[INFO] 재고 시트 업데이트 완료")
+                cell = code_to_cell[code]
+                cell_qty_map[cell] = cell_qty_map.get(cell, 0) + qty
+
+        except Exception:
+            continue
+
+    updates = [
+        {"range": cell, "values": [[qty]]}
+        for cell, qty in cell_qty_map.items()
+    ]
+
+    if updates:
+        sheet_inventory.batch_update(updates)
+    print("[INFO] 재고 시트 업데이트 완료")
 
 # =====================================================
 # 메인
