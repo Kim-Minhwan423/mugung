@@ -23,8 +23,20 @@ def get_today_menu_cell():
     오늘 요일에 따라 '오늘의메뉴'가 들어갈 재고 시트 셀 반환
     월=0, 화=1, 수=2, 목=3, 금=4
     """
-    weekday_map = {0: "C38", 1: "C42", 2: "AB38", 3: "C39", 4: "N38"}
-    return weekday_map.get(weekday)
+    # 오늘 요일 구하기 (0=월, 1=화, ..., 6=일)
+    weekday_idx = datetime.now().weekday()
+    weekday_list = ["월", "화", "수", "목", "금", "토", "일"]
+    weekday = weekday_list[weekday_idx]
+
+    weekday_cell_map = {
+        "월": "C38",
+        "화": "C42",
+        "수": "AB38",
+        "목": "C39",
+        "금": "N38"
+    }
+
+    return weekday_cell_map.get(weekday)  # 토/일이면 None
 
 def main():
     try:
