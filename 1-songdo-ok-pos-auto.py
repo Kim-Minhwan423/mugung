@@ -18,6 +18,23 @@ from selenium.common.exceptions import (
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime, timezone
 
+def get_today_menu_cell():
+    """
+    오늘 요일에 따라 '오늘의메뉴'가 들어갈 재고 시트 셀 반환
+    월=0, 화=1, 수=2, 목=3, 금=4
+    """
+    weekday = datetime.now().weekday()
+
+    weekday_cell_map = {
+        0: "C38",   # 월요일
+        1: "C42",   # 화요일
+        2: "AB38",  # 수요일
+        3: "C39",   # 목요일
+        4: "N38"    # 금요일
+    }
+
+    return weekday_cell_map.get(weekday)  # 토/일이면 None
+
 def main():
     try:
         # 로그 시작 시간
@@ -216,7 +233,98 @@ def main():
 
         driver.execute_script("fnSearch(1);")
         print("[INFO] 조회 fnSearch(1) 실행 완료")
-        time.sleep(200000)
+        time.sleep(2)
+
+        def process_rows_sequentially(driver, code_to_cell, special_prices, max_i=60):
+            cell_qty_map = {}  # ✅ 셀별 누적 수량
+
+            for j in range(2, max_i + 1):
+                try:
+                    # ─────────────────────────────
+                    # 상품코드
+                    # ─────────────────────────────
+                    code_elem = driver.find_element(
+                        By.CSS_SELECTOR,
+                        f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
+                        f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
+                        f"td.HideCol0C5"
+                    )
+                    product_code = code_elem.text.strip()
+
+                    if not product_code:
+                        continue
+
+                    qty = 0
+                    target_cell = None
+
+                    # ─────────────────────────────
+                    # 오늘의 메뉴 (000047)
+                    # ─────────────────────────────
+                    if product_code == "000047":
+                        target_cell = get_today_menu_cell()
+                        if not target_cell:
+                            continue  # 토/일 제외
+
+                        amount_elem = driver.find_element(
+                            By.CSS_SELECTOR,
+                            f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
+                            f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
+                            f"td.HideCol0C8"
+                        )
+                        amount_text = amount_elem.text.replace(",", "").strip()
+                        amount = int(amount_text) if amount_text.isdigit() else 0
+        
+                        unit_price = special_prices.get(product_code, 0)
+                        qty = amount // unit_price if unit_price > 0 else 0
+
+                    # ─────────────────────────────
+                    # 일반 상품
+                    # ─────────────────────────────
+                    else:
+                        if product_code not in code_to_cell:
+                            continue
+
+                        target_cell = code_to_cell[product_code]
+
+                        if product_code in special_prices:
+                            amount_elem = driver.find_element(
+                                By.CSS_SELECTOR,
+                                f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
+                                f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
+                                f"td.HideCol0C8"
+                            )
+                            amount_text = amount_elem.text.replace(",", "").strip()
+                            amount = int(amount_text) if amount_text.isdigit() else 0
+
+                            unit_price = special_prices[product_code]
+                            qty = amount // unit_price if unit_price > 0 else 0
+                        else:
+                            qty_elem = driver.find_element(
+                                By.CSS_SELECTOR,
+                                f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
+                                f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
+                                f"td.HideCol0C7"
+                            )
+                            qty_text = qty_elem.text.replace(",", "").strip()
+                            qty = int(qty_text) if qty_text.isdigit() else 0
+
+                    if qty == 0 or not target_cell:
+                        continue
+
+                    # ✅ 핵심: 같은 셀이면 무조건 합산
+                    cell_qty_map[target_cell] = cell_qty_map.get(target_cell, 0) + qty
+
+                except NoSuchElementException:
+                    continue
+                except Exception as e:
+                    print(f"[WARN] j={j} 처리 중 오류: {e}")
+                    continue
+
+            # ✅ batch_update용 변환
+            return [
+                {"range": cell, "values": [[qty]]}
+                for cell, qty in cell_qty_map.items()
+            ]
 
         # ================================================
         # 7. 데이터 행 처리 및 스프레드시트 업데이트 ("재고" 시트)
@@ -232,7 +340,7 @@ def main():
             "000032": "AZ38", "000033": "AZ39", "000034": "AZ40", "000035": "AZ42",
             "000036": "AZ41", "000037": "AZ43", "000038": "AZ44", "000039": "AZ45", "000040": "AO45",
             "000041": "AB42", "000042": "AB41", "000043": "AB43", "000044": "AB44",
-            "000045": "AB45", "000046": "C45", "000047": "오늘의메뉴"
+            "000045": "AB45", "000046": "C45"
         }
 
         special_prices = {
@@ -275,74 +383,41 @@ def main():
                 traceback.print_exc()
 
         # ================================================
-        # 8. 영업속보 → 영업일보 → 영업일보 분석
+        # 8. 데이터 추출 및 스프레드시트 업데이트 ("송도" 시트)
         # ================================================
-        # 영업속보 탭
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divTop_img_TA_top_menu2"))
+        driver.switch_to.default_content()
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm"))
         )
-        sales_news_tab = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divTop_img_TA_top_menu2"
-        )
-        sales_news_tab.click()
-        print("[INFO] 영업속보 탭 클릭 완료.")
-        time.sleep(1)
+        print("[INFO] MainFrm iframe 진입 완료.")
 
-        # 영업일보 탭 클릭
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"))
-        )
-        daily_sales_tab = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_1_cell_1_0_controltreeTextBoxElement"
-        )
-        daily_sales_tab.click()
-        print("[INFO] 영업일보 탭 클릭 완료.")
+        product_tab = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_0")))
+        driver.execute_script("arguments[0].click();", product_tab)
+        print("[INFO] 일별종합 탭 클릭 완료.")
         time.sleep(1)
+        
+        driver.switch_to.default_content()
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm")))
+        print("[INFO] 상품별 클릭 후 MainFrm 재진입 완료")
 
-        # 영업일보 분석 탭 클릭
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_2_cell_2_0_controltreeTextBoxElement"))
-        )
-        sales_analysis_tab = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divLeftMenu_divLeftMainList_grdLeft_body_gridrow_2_cell_2_0_controltreeTextBoxElement"
-        )
-        sales_analysis_tab.click()
-        print("[INFO] 영업일보 분석 탭 클릭 완료.")
-        time.sleep(1)
+        WebDriverWait(driver, 20).until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")))
+        print("[INFO] myTab1PageFrm iframe 진입 완료")
 
-        # ================================================
-        # 9. 당일 버튼 → 조회 버튼
-        # ================================================
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_divSalesDate3_btnNowDay"))
-        )
-        today_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_divSalesDate3_btnNowDay"
-        )
-        today_btn.click()
-        print("[INFO] 당일 버튼 클릭 완료.")
-        time.sleep(1)
-
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"))
-        )
-        search_btn = driver.find_element(
-            By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divMainNavi_divCommonBtn_btnCommSearch"
-        )
-        search_btn.click()
-        print("[INFO] 조회 버튼 클릭 완료.")
+        driver.execute_script("fnSearch();")
+        print("[INFO] 조회 fnSearch() 실행 완료")
         time.sleep(2)
 
-        # ================================================
-        # 10. 데이터 추출 및 스프레드시트 업데이트 ("송도" 시트)
-        # ================================================
         # '송도' 시트 업데이트를 위한 요청 리스트
         requests = []
 
         # 카드 매출
         try:
             card_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_2_cell_2_2"
+                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C25"
             ).text.strip().replace(",", "")
             card_sales_int = int(card_sales)
             requests.append({
@@ -372,7 +447,7 @@ def main():
         # 현금 영수증 매출
         try:
             cash_receipt_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_1_cell_1_2"
+                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C24"
             ).text.strip().replace(",", "")
             cash_receipt_sales_int = int(cash_receipt_sales)
             requests.append({
@@ -402,7 +477,7 @@ def main():
         # 현금 매출 (총 현금 - 현금 영수증 매출)
         try:
             total_cash_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_0_cell_0_2"
+                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C23"
             ).text.strip().replace(",", "")
             total_cash_sales_value = int(total_cash_sales)
             net_cash_sales = total_cash_sales_value - cash_receipt_sales_int
@@ -433,7 +508,7 @@ def main():
         # 전체 테이블 수
         try:
             total_tables = driver.find_element(
-                By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_1"
+                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C9"
             ).text.strip().replace(",", "")
             total_tables_int = int(total_tables)
             requests.append({
@@ -448,8 +523,8 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 29,  # D30: 0-based
-                        'endRowIndex': 30,
+                        'startRowIndex': 30,  # D31: 0-based
+                        'endRowIndex': 31,
                         'startColumnIndex': 3,  # D열: 0-based (D=3)
                         'endColumnIndex': 4
                     }
@@ -463,7 +538,7 @@ def main():
         # 전체 매출
         try:
             total_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_2"
+                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C6"
             ).text.strip().replace(",", "")
             total_sales_int = int(total_sales)
             requests.append({
@@ -478,8 +553,8 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 29,  # E30: 0-based
-                        'endRowIndex': 30,
+                        'startRowIndex': 30,  # E30: 0-based
+                        'endRowIndex': 31,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
                     }
@@ -491,7 +566,7 @@ def main():
             traceback.print_exc()
 
         # "송도" 시트의 특정 범위를 먼저 비웁니다.
-        ranges_report_clear = ["E3", "E5", "E6", "D30", "E30"]
+        ranges_report_clear = ["E3", "E5", "E6", "D31", "E31"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
             print("[INFO] '송도' 시트 초기화 완료.")
@@ -501,7 +576,7 @@ def main():
 
         # 숫자 형식 설정을 위한 요청 추가
         number_format_requests = []
-        for cell in ["E3", "E5", "E6", "E30"]:
+        for cell in ["E3", "E5", "E6", "E31"]:
             column_letter = ''.join(filter(str.isalpha, cell))
             row_number = int(''.join(filter(str.isdigit, cell)))
             start_col = ord(column_letter.upper()) - 65
