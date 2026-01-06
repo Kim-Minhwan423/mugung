@@ -417,7 +417,7 @@ def main():
         # 카드 매출
         try:
             card_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C25"
+                By.Xpath, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[23]'
             ).text.strip().replace(",", "")
             card_sales_int = int(card_sales)
             requests.append({
@@ -447,7 +447,7 @@ def main():
         # 현금 영수증 매출
         try:
             cash_receipt_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C24"
+                By.Xpath, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]'
             ).text.strip().replace(",", "")
             cash_receipt_sales_int = int(cash_receipt_sales)
             requests.append({
@@ -477,7 +477,7 @@ def main():
         # 현금 매출 (총 현금 - 현금 영수증 매출)
         try:
             total_cash_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C23"
+                By.Xpath, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]'
             ).text.strip().replace(",", "")
             total_cash_sales_value = int(total_cash_sales)
             net_cash_sales = total_cash_sales_value - cash_receipt_sales_int
@@ -508,7 +508,7 @@ def main():
         # 전체 테이블 수
         try:
             total_tables = driver.find_element(
-                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C9"
+                By.Xpath, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[7]'
             ).text.strip().replace(",", "")
             total_tables_int = int(total_tables)
             requests.append({
@@ -538,7 +538,7 @@ def main():
         # 전체 매출
         try:
             total_sales = driver.find_element(
-                By.CSS_SELECTOR, "#mySheet1-table > tbody > tr:nth-child(3) > td:nth-child(2) > div > div.GMPageOne > table > tbody > tr.GMDataRow > td.GMClassReadOnly.GMWrap0.GMInt.GMCell.IBSheetFont0.HideCol0C6"
+                By.Xpath, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[4]'
             ).text.strip().replace(",", "")
             total_sales_int = int(total_sales)
             requests.append({
