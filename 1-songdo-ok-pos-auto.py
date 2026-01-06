@@ -67,26 +67,25 @@ def close_okpos_popup(driver):
 # =====================================================
 # OKPOS fnSearch 안전 실행 (MainFrm 내부 iframe 대응)
 # =====================================================
-def okpos_fn_search(driver, timeout=10):
+def okpos_fn_search(driver):
     driver.switch_to.default_content()
 
-    # 1️⃣ MainFrm 진입
+    # MainFrm으로 이동
     WebDriverWait(driver, TIMEOUT).until(
         EC.frame_to_be_available_and_switch_to_it("MainFrm")
     )
 
-    # 2️⃣ MainFrm 내부 myTab1PageFrm* iframe 찾기
+    # MainFrm 컨텍스트에서 실행
+    driver.execute_script("fnSearch();")
+    time.sleep(2)
+
+    # 결과 읽기 위해 iframe 진입
     inner_iframe = WebDriverWait(driver, TIMEOUT).until(
         EC.presence_of_element_located(
             (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
         )
     )
-
     driver.switch_to.frame(inner_iframe)
-
-    # 3️⃣ fnSearch 실행
-    driver.execute_script("fnSearch();")
-    time.sleep(2)
 
     print("[INFO] fnSearch 실행 완료 (inner iframe)")
 # =====================================================
