@@ -190,20 +190,14 @@ def process_inventory(driver, sheet_inventory):
         "000044": "AB44", "000045": "AB45", "000046": "C45"
     }
 
-    # 🔥 스페셜 프라이스 (매출액 → 수량 역산)
     special_prices = {
-        "000041": 2000,
-        "000042": 2000,
-        "000043": 2000,
+        "000041": 2000, "000042": 2000, "000043": 2000,
         "000044": 3000,
-        "000026": 28000,
-        "000027": 28000,
+        "000026": 28000, "000027": 28000,
         "000028": 22000,
-        "000030": 18000,
-        "000031": 18000
+        "000030": 18000, "000031": 18000
     }
 
-    # 재고 영역 초기화
     sheet_inventory.batch_clear(list(set(code_to_cell.values())))
     cell_qty_map = {}
 
@@ -211,14 +205,8 @@ def process_inventory(driver, sheet_inventory):
 
     for row in range(2, 64):
         try:
-            # 컬럼 위치
-            if row == 2:
-                code_td = 6
-                value_td = 8
-            else:
-                code_td = 5
-                value_td = 7
-
+            # 🔹 코드 컬럼
+            code_td = 6 if row == 2 else 5
             code = driver.find_element(
                 By.XPATH, f"{base}/tr[{row}]/td[{code_td}]"
             ).text.strip()
@@ -226,19 +214,14 @@ def process_inventory(driver, sheet_inventory):
             if code not in code_to_cell:
                 continue
 
-            value = get_int(
-                driver,
-                f"{base}/tr[{row}]/td[{value_td}]"
-            )
-
-            if value <= 0:
-                continue
-
-            # ✅ 핵심 분기
+            # 🔥 핵심: 코드 기준 value_td 분기
             if code in special_prices:
-                qty = value // special_prices[code]
+                value_td = 8   # 매출액
+                raw_value = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
+                qty = raw_value // special_prices[code] if raw_value else 0
             else:
-                qty = value
+                value_td = 7   # 수량
+                qty = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
 
             if qty > 0:
                 cell = code_to_cell[code]
@@ -247,13 +230,10 @@ def process_inventory(driver, sheet_inventory):
         except Exception:
             continue
 
-    updates = [
-        {"range": cell, "values": [[qty]]}
-        for cell, qty in cell_qty_map.items()
-    ]
-
-    if updates:
-        sheet_inventory.batch_update(updates)
+    if cell_qty_map:
+        sheet_inventory.batch_update(
+            [{"range": c, "values": [[q]]} for c, q in cell_qty_map.items()]
+        )
 
     print("[INFO] 재고 시트 업데이트 완료")
 
