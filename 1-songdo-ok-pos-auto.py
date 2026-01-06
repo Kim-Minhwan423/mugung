@@ -491,8 +491,8 @@ def main():
             'updateCells': {
                 'rows': [{'values': [{'userEnteredValue': {'numberValue': cash_receipt}}]}],
                 'fields': 'userEnteredValue',
-                'range': {'sheetId': sheet_report.id, 'startRowIndex': 5, 'endRowIndex': 6,
-                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E6
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 2, 'endRowIndex': 3,
+                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E3
             }
         })
 
