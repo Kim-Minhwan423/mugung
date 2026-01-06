@@ -407,181 +407,116 @@ def main():
         )
         print("[INFO] MainFrm iframe 진입 완료.")
 
+        # 일별종합 탭 클릭
         product_tab = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_0")))
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_0"))
+        )
         driver.execute_script("arguments[0].click();", product_tab)
         print("[INFO] 일별종합 탭 클릭 완료.")
         time.sleep(1)
-        
+
         driver.switch_to.default_content()
         WebDriverWait(driver, 20).until(
-            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm")))
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "MainFrm"))
+        )
         print("[INFO] 상품별 클릭 후 MainFrm 재진입 완료")
 
         WebDriverWait(driver, 20).until(
             EC.frame_to_be_available_and_switch_to_it(
-                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")))
+                (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+            )
+        )
         print("[INFO] myTab1PageFrm iframe 진입 완료")
 
+        # 조회 실행
         driver.execute_script("fnSearch();")
         print("[INFO] 조회 fnSearch() 실행 완료")
         time.sleep(2)
 
-        # '송도' 시트 업데이트를 위한 요청 리스트
+        # 안전하게 숫자 가져오는 함수
+        def safe_get_int(xpath: str) -> int:
+            try:
+                el = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, xpath))
+                )
+                text = el.text.strip().replace(",", "")
+                return int(text) if text.isdigit() else 0
+            except Exception:
+                return 0
+
+        # XPATH 정의
+        total_sales_xpath  = '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[20]'
+        cash_sales_xpath   = '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]'
+        cash_receipt_xpath = '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]'
+
+        # 값 가져오기
+        total_sales  = safe_get_int(total_sales_xpath)
+        cash_sales   = safe_get_int(cash_sales_xpath)
+        cash_receipt = safe_get_int(cash_receipt_xpath)
+
+        # 카드 매출 계산
+        card_sales = total_sales - (cash_sales + cash_receipt)
+        net_cash_sales = cash_sales - cash_receipt  # 현금 = 총 현금 - 현금영수증
+
+        # 전체 테이블 수
+        total_tables_xpath = '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[7]'
+        total_tables = safe_get_int(total_tables_xpath)
+
+        # 구글 시트 업데이트 요청 만들기
         requests = []
 
         # 카드 매출
-        try:
-            card_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[23]'
-            ).text.strip().replace(",", "")
-            card_sales_int = int(card_sales)
-            requests.append({
-                'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': card_sales_int
-                            }
-                        }]
-                    }],
-                    'fields': 'userEnteredValue',
-                    'range': {
-                        'sheetId': sheet_report.id,
-                        'startRowIndex': 2,  # E3: 0-based
-                        'endRowIndex': 3,
-                        'startColumnIndex': 4,  # E열: 0-based (E=4)
-                        'endColumnIndex': 5
-                    }
-                }
-            })
-            print("[INFO] 카드 매출 데이터 수집 완료.")
-        except Exception as e:
-            print(f"[ERROR] 카드 매출 데이터 수집 실패: {e}")
-            traceback.print_exc()
+        requests.append({
+            'updateCells': {
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': card_sales}}]}],
+                'fields': 'userEnteredValue',
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 2, 'endRowIndex': 3,
+                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E3
+            }
+        })
 
-        # 현금 영수증 매출
-        try:
-            cash_receipt_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]'
-            ).text.strip().replace(",", "")
-            cash_receipt_sales_int = int(cash_receipt_sales)
-            requests.append({
-                'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': cash_receipt_sales_int
-                            }
-                        }]
-                    }],
-                    'fields': 'userEnteredValue',
-                    'range': {
-                        'sheetId': sheet_report.id,
-                        'startRowIndex': 5,  # E6: 0-based
-                        'endRowIndex': 6,
-                        'startColumnIndex': 4,  # E열
-                        'endColumnIndex': 5
-                    }
-                }
-            })
-            print("[INFO] 현금 영수증 매출 데이터 수집 완료.")
-        except Exception as e:
-            print(f"[ERROR] 현금 영수증 매출 데이터 수집 실패: {e}")
-            traceback.print_exc()
+        # 현금 매출
+        requests.append({
+            'updateCells': {
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': net_cash_sales}}]}],
+                'fields': 'userEnteredValue',
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 4, 'endRowIndex': 5,
+                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E5
+            }
+        })
 
-        # 현금 매출 (총 현금 - 현금 영수증 매출)
-        try:
-            total_cash_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]'
-            ).text.strip().replace(",", "")
-            total_cash_sales_value = int(total_cash_sales)
-            net_cash_sales = total_cash_sales_value - cash_receipt_sales_int
-            requests.append({
-                'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': net_cash_sales
-                            }
-                        }]
-                    }],
-                    'fields': 'userEnteredValue',
-                    'range': {
-                        'sheetId': sheet_report.id,
-                        'startRowIndex': 4,  # E5: 0-based
-                        'endRowIndex': 5,
-                        'startColumnIndex': 4,  # E열
-                        'endColumnIndex': 5
-                    }
-                }
-            })
-            print("[INFO] 현금 매출 데이터 수집 완료.")
-        except Exception as e:
-            print(f"[ERROR] 현금 매출 데이터 수집 실패: {e}")
-            traceback.print_exc()
+        # 현금영수증 매출
+        requests.append({
+            'updateCells': {
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': cash_receipt}}]}],
+                'fields': 'userEnteredValue',
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 5, 'endRowIndex': 6,
+                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E6
+            }
+        })
 
         # 전체 테이블 수
-        try:
-            total_tables = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[7]'
-            ).text.strip().replace(",", "")
-            total_tables_int = int(total_tables)
-            requests.append({
-                'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': total_tables_int
-                            }
-                        }]
-                    }],
-                    'fields': 'userEnteredValue',
-                    'range': {
-                        'sheetId': sheet_report.id,
-                        'startRowIndex': 30,  # D31: 0-based
-                        'endRowIndex': 31,
-                        'startColumnIndex': 3,  # D열: 0-based (D=3)
-                        'endColumnIndex': 4
-                    }
-                }
-            })
-            print("[INFO] 전체 테이블 수 데이터 수집 완료.")
-        except Exception as e:
-            print(f"[ERROR] 전체 테이블 수 데이터 수집 실패: {e}")
-            traceback.print_exc()
+        requests.append({
+            'updateCells': {
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': total_tables}}]}],
+                'fields': 'userEnteredValue',
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 30, 'endRowIndex': 31,
+                          'startColumnIndex': 3, 'endColumnIndex': 4}  # D31
+            }
+        })
 
         # 전체 매출
-        try:
-            total_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[4]'
-            ).text.strip().replace(",", "")
-            total_sales_int = int(total_sales)
-            requests.append({
-                'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': total_sales_int
-                            }
-                        }]
-                    }],
-                    'fields': 'userEnteredValue',
-                    'range': {
-                        'sheetId': sheet_report.id,
-                        'startRowIndex': 30,  # E30: 0-based
-                        'endRowIndex': 31,
-                        'startColumnIndex': 4,  # E열
-                        'endColumnIndex': 5
-                    }
-                }
-            })
-            print("[INFO] 전체 매출 데이터 수집 완료.")
-        except Exception as e:
-            print(f"[ERROR] 전체 매출 데이터 수집 실패: {e}")
-            traceback.print_exc()
+        total_sales_int = total_sales  # total_sales 이미 int
+        requests.append({
+            'updateCells': {
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': total_sales_int}}]}],
+                'fields': 'userEnteredValue',
+                'range': {'sheetId': sheet_report.id, 'startRowIndex': 30, 'endRowIndex': 31,
+                          'startColumnIndex': 4, 'endColumnIndex': 5}  # E31
+            }
+        })
 
-        # "송도" 시트의 특정 범위를 먼저 비웁니다.
+        # 시트 초기화
         ranges_report_clear = ["E3", "E5", "E6", "D31", "E31"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
@@ -590,7 +525,7 @@ def main():
             print(f"[ERROR] '송도' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
-        # 숫자 형식 설정을 위한 요청 추가
+        # 숫자 형식 설정
         number_format_requests = []
         for cell in ["E3", "E5", "E6", "E31"]:
             column_letter = ''.join(filter(str.isalpha, cell))
@@ -602,34 +537,20 @@ def main():
 
             number_format_requests.append({
                 "repeatCell": {
-                    "range": {
-                        "sheetId": sheet_report.id,
-                        "startRowIndex": start_row,
-                        "endRowIndex": end_row,
-                        "startColumnIndex": start_col,
-                        "endColumnIndex": end_col
-                    },
-                    "cell": {
-                        "userEnteredFormat": {
-                            "numberFormat": {
-                                "type": "NUMBER",
-                                "pattern": "#,##0"
-                            }
-                        }
-                    },
+                    "range": {"sheetId": sheet_report.id,
+                              "startRowIndex": start_row, "endRowIndex": end_row,
+                              "startColumnIndex": start_col, "endColumnIndex": end_col},
+                    "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0"}}},
                     "fields": "userEnteredFormat.numberFormat"
                 }
             })
 
-        # 모든 요청을 하나의 리스트로 합칩니다.
+        # 모든 요청 합치기
         all_requests = requests + number_format_requests
 
-        # "송도" 시트 배치 업데이트 수행
         if all_requests:
             try:
-                body = {
-                    "requests": all_requests
-                }
+                body = {"requests": all_requests}
                 sheet_report.spreadsheet.batch_update(body)
                 print("[INFO] '송도' 시트 배치 업데이트 및 형식 적용 완료.")
             except Exception as e:
