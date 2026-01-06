@@ -274,14 +274,28 @@ def main():
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1720,1080")
 
-        # ✅ GitHub Actions에서 필수
+        # 🔥 렌더링 안정화 핵심 옵션
+        options.page_load_strategy = "eager"
+        options.add_argument("--disable-features=VizDisplayCompositor")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--blink-settings=imagesEnabled=false")
+
         options.binary_location = "/usr/bin/google-chrome"
+
         driver = webdriver.Chrome(
-            service=ChromeService(),  # ← 시스템에 설치된 chromedriver 사용
+            service=ChromeService(),
             options=options
         )
-        driver.set_page_load_timeout(60)
-        driver.get("https://okasp.okpos.co.kr/login/login_form.jsp")
+
+        driver.set_page_load_timeout(120)
+
+        try:
+            driver.get("https://okasp.okpos.co.kr/login/login_form.jsp")
+        except Exception:
+            print("[WARN] 페이지 로드 타임아웃, DOM 기준 진행")
+
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "user_id")))
         driver.find_element(By.ID, "user_id").send_keys(os.getenv("SONGDO_OK_POS_ID"))
         driver.find_element(By.ID, "user_pwd").send_keys(os.getenv("SONGDO_OK_POS_PW"))
