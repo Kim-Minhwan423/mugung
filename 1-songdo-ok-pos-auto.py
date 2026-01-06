@@ -190,15 +190,20 @@ def process_inventory(driver, sheet_inventory):
         "000044": "AB44", "000045": "AB45", "000046": "C45"
     }
 
+    # 🔥 스페셜 프라이스 (매출액 → 수량 역산)
     special_prices = {
-        "000041": 2000, "000042": 2000, "000043": 2000,
+        "000041": 2000,
+        "000042": 2000,
+        "000043": 2000,
         "000044": 3000,
-        "000026": 28000, "000027": 28000,
+        "000026": 28000,
+        "000027": 28000,
         "000028": 22000,
-        "000030": 18000, "000031": 18000
+        "000030": 18000,
+        "000031": 18000
     }
 
-    # 🔹 재고 영역 초기화
+    # 재고 영역 초기화
     sheet_inventory.batch_clear(list(set(code_to_cell.values())))
     cell_qty_map = {}
 
@@ -206,12 +211,13 @@ def process_inventory(driver, sheet_inventory):
 
     for row in range(2, 64):
         try:
+            # 컬럼 위치
             if row == 2:
                 code_td = 6
-                amount_td = 9   # ✅ 첫 행 매출액
+                value_td = 8
             else:
                 code_td = 5
-                amount_td = 8   # ✅ 나머지 매출액
+                value_td = 7
 
             code = driver.find_element(
                 By.XPATH, f"{base}/tr[{row}]/td[{code_td}]"
@@ -220,19 +226,19 @@ def process_inventory(driver, sheet_inventory):
             if code not in code_to_cell:
                 continue
 
-            amount = get_int(
+            value = get_int(
                 driver,
-                f"{base}/tr[{row}]/td[{amount_td}]"
+                f"{base}/tr[{row}]/td[{value_td}]"
             )
 
-            if amount <= 0:
+            if value <= 0:
                 continue
 
-            # 🔥 매출액 기준 수량 계산
+            # ✅ 핵심 분기
             if code in special_prices:
-                qty = amount // special_prices[code]
+                qty = value // special_prices[code]
             else:
-                qty = amount
+                qty = value
 
             if qty > 0:
                 cell = code_to_cell[code]
