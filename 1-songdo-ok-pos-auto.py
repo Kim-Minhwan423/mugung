@@ -239,132 +239,71 @@ def main():
         time.sleep(2)
 
         def process_rows_sequentially(driver, code_to_cell, special_prices, max_i=60):
-            cell_qty_map = {}  # ✅ 셀별 누적 수량
-            # 오늘의 메뉴 처리
-            today_cell = get_today_menu_cell()
-            if today_cell:
-                try:
-                    # 금액 읽기
-                    amount_elem = driver.find_element(
-                        By.XPATH,
-                        '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[8]'  # 금액 컬럼
-                    )
-                    amount_text = amount_elem.text.replace(",", "").strip()
-                    amount = int(amount_text) if amount_text.isdigit() else -1
-                    if amount == -1:
-                        print(f"[WARN] 오늘의 메뉴 금액 읽기 실패")
-                    unit_price = special_prices.get("000047", 10000)  # 기본 단가 10000원
-                    qty = amount // unit_price if amount > 0 else 0
-
-                    if qty > 0:
-                        cell_qty_map[today_cell] = cell_qty_map.get(today_cell, 0) + qty
-                        print(f"[INFO] 오늘의 메뉴 {qty}개 '{today_cell}' 셀에 기록")
-                except Exception as e:
-                    print(f"[ERROR] 오늘의 메뉴 처리 중 오류: {e}")
-
+            cell_qty_map = {}  # 셀별 누적 수량
+            # =========================
+            # 1️⃣ 일반 상품 처리 (special_prices에 있는 것만)
+            # =========================
             for j in range(2, max_i + 1):
                 try:
-                    # ─────────────────────────────
-                    # 상품코드
-                    # ─────────────────────────────
                     code_elem = driver.find_element(
                         By.CSS_SELECTOR,
-                        f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
-                        f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
-                        f"td.HideCol0C5"
+                        f"#mySheet1-table > tbody > tr[3] > td > div > "
+                        f"div.GMPageOne > table > tbody > tr:nth-child({j}) > td.HideCol0C5"
                     )
                     product_code = code_elem.text.strip()
-
-                    if not product_code:
+                    if not product_code or product_code == "000047":
                         continue
 
-                    qty = 0
-                    target_cell = None
+                    if product_code not in special_prices or product_code not in code_to_cell:
+                        continue
 
-                    # ─────────────────────────────
-                    # 오늘의 메뉴 처리용
-                    # ─────────────────────────────
-                    if product_code == "000047":
-                        # 2행 3열에서 요일 가져오기
-                        weekday_text = driver.find_element(
-                            By.XPATH,
-                            '//*[@id="mySheet1-table"]/tbody/tr[3]/td[1]/div/div[1]/table/tbody/tr[2]/td[3]'
-                        ).text.strip()
+                    # 금액 기반 수량 계산
+                    amount_elem = driver.find_element(
+                        By.CSS_SELECTOR,
+                        f"#mySheet1-table > tbody > tr[3]/td/div/div[1]/table/tbody/tr[{j}]/td.HideCol0C8"
+                    )
+                    amount_text = amount_elem.text.replace(",", "").strip()
+                    amount = int(amount_text) if amount_text.isdigit() else 0
 
-                        # 오늘 요일(월,화,수,목,금)만 처리
-                        if weekday_text not in ["월", "화", "수", "목", "금"]:
-                            continue  # 토/일 또는 데이터 없으면 패스
+                    unit_price = special_prices[product_code]
+                    qty = amount // unit_price if unit_price > 0 else 0
 
-                        # 셀 매핑: 요일 텍스트 기준
-                        weekday_cell_map = {
-                            "월": "C38",
-                            "화": "C42",
-                            "수": "AB38",
-                            "목": "C39",
-                            "금": "N38"
-                        }
-                        target_cell = weekday_cell_map.get(weekday_text)
-
-                        # 매출 금액 → 수량 계산
-                        amount_elem = driver.find_element(
-                            By.CSS_SELECTOR,
-                            f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
-                            f"div.GMPageOne > table > tbody > tr:nth-child({j}) > td.HideCol0C8"
-                        )
-                        amount_text = amount_elem.text.replace(",", "").strip()
-                        amount = int(amount_text) if amount_text.isdigit() else 0
-
-                        unit_price = special_prices.get(product_code, 0)
-                        qty = amount // unit_price if unit_price > 0 else 0
-
-                    # ─────────────────────────────
-                    # 일반 상품
-                    # ─────────────────────────────
-                    else:
-                        if product_code not in code_to_cell:
-                            continue
-
+                    if qty > 0:
                         target_cell = code_to_cell[product_code]
+                        cell_qty_map[target_cell] = cell_qty_map.get(target_cell, 0) + qty
 
-                        if product_code in special_prices:
-                            amount_elem = driver.find_element(
-                                By.CSS_SELECTOR,
-                                f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
-                                f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
-                                f"td.HideCol0C8"
-                            )
-                            amount_text = amount_elem.text.replace(",", "").strip()
-                            amount = int(amount_text) if amount_text.isdigit() else 0
-
-                            unit_price = special_prices[product_code]
-                            qty = amount // unit_price if unit_price > 0 else 0
-                        else:
-                            qty_elem = driver.find_element(
-                                By.CSS_SELECTOR,
-                                f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
-                                f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
-                                f"td.HideCol0C7"
-                            )
-                            qty_text = qty_elem.text.replace(",", "").strip()
-                            qty = int(qty_text) if qty_text.isdigit() else 0
-
-                    if qty == 0 or not target_cell:
-                        continue
-
-                    # ✅ 핵심: 같은 셀이면 무조건 합산
-                    cell_qty_map[target_cell] = cell_qty_map.get(target_cell, 0) + qty
-
-                except NoSuchElementException:
-                    continue
                 except Exception as e:
-                    print(f"[WARN] j={j} 처리 중 오류: {e}")
+                    print(f"[WARN] 일반 상품 처리 j={j} 오류: {e}")
                     continue
 
-            # ✅ batch_update용 변환
-            return [
-                {"range": cell, "values": [[qty]]}
-                for cell, qty in cell_qty_map.items()
-            ]
+            # =========================
+            # 2️⃣ 오늘의 메뉴 처리 (000047)
+            # =========================
+            try:
+                weekday_text = driver.find_element(
+                    By.XPATH,
+                    '//*[@id="mySheet1-table"]/tbody/tr[3]/td[1]/div/div[1]/table/tbody/tr[2]/td[3]'
+                ).text.strip()  # "월", "화", "수", "목", "금"
+
+                if weekday_text in ["월", "화", "수", "목", "금"]:
+                    weekday_cell_map = {
+                        "월": "C38",
+                        "화": "C42",
+                        "수": "AB38",
+                        "목": "C39",
+                        "금": "N38"
+                    }
+                    today_cell = weekday_cell_map[weekday_text]
+                    cell_qty_map[today_cell] = cell_qty_map.get(today_cell, 0) + 1
+                    print(f"[INFO] 오늘의 메뉴 1개 '{today_cell}' 셀에 기록")
+
+            except Exception as e:
+                print(f"[WARN] 오늘의 메뉴 처리 오류: {e}")
+
+            # =========================
+            # 3️⃣ batch_update용 변환
+            # =========================
+            return [{"range": cell, "values": [[qty]]} for cell, qty in cell_qty_map.items()]
 
         # ================================================
         # 7. 데이터 행 처리 및 스프레드시트 업데이트 ("재고" 시트)
@@ -501,7 +440,7 @@ def main():
         # 카드 매출
         requests.append({
             'updateCells': {
-                'rows': [{'values': [{'userEnteredValue': {'numberValue': cash_receipt}}]}],
+                'rows': [{'values': [{'userEnteredValue': {'numberValue': card_sales}}]}],
                 'fields': 'userEnteredValue',
                 'range': {'sheetId': sheet_report.id, 'startRowIndex': 2, 'endRowIndex': 3,
                           'startColumnIndex': 4, 'endColumnIndex': 5}  # E3
