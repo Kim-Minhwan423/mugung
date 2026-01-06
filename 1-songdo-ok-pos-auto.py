@@ -513,7 +513,7 @@ def main():
                 'fields': 'userEnteredValue',
                 'range': {'sheetId': sheet_report.id, 'startRowIndex': 5, 'endRowIndex': 6,
                           'startColumnIndex': 4, 'endColumnIndex': 5}  # E6
-            }https://partner.booking.naver.com/bizes/937302/booking-list-view
+            }
         })
 
         # 전체 테이블 수
