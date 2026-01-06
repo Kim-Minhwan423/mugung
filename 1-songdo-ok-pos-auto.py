@@ -190,7 +190,6 @@ def process_inventory(driver, sheet_inventory):
         "000044": "AB44", "000045": "AB45", "000046": "C45"
     }
 
-
     special_prices = {
         "000041": 2000, "000042": 2000, "000043": 2000,
         "000044": 3000,
@@ -199,17 +198,25 @@ def process_inventory(driver, sheet_inventory):
         "000030": 18000, "000031": 18000
     }
 
-    # 재고 영역 초기화
-    sheet_inventory.batch_clear(list(code_to_cell.values()))
-
-    updates = []
+    sheet_inventory.batch_clear(list(set(code_to_cell.values())))
     cell_qty_map = {}
 
-    for row in range(2, 61):
+    for row in range(2, 64):
         try:
+            base = (
+                '//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody'
+            )
+
+            # 🔥 첫 행 / 나머지 행 분기
+            if row == 2:
+                code_td = 6
+                qty_td = 8
+            else:
+                code_td = 5
+                qty_td = 7
+
             code = driver.find_element(
-                By.XPATH,
-                f'//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody/tr[{row}]/td[6]'
+                By.XPATH, f"{base}/tr[{row}]/td[{code_td}]"
             ).text.strip()
 
             if code not in code_to_cell:
@@ -217,7 +224,7 @@ def process_inventory(driver, sheet_inventory):
 
             raw_value = get_int(
                 driver,
-                f'//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody/tr[{row}]/td[8]'
+                f"{base}/tr[{row}]/td[{qty_td}]"
             )
 
             if code in special_prices:
@@ -239,6 +246,7 @@ def process_inventory(driver, sheet_inventory):
 
     if updates:
         sheet_inventory.batch_update(updates)
+
     print("[INFO] 재고 시트 업데이트 완료")
 
 # =====================================================
