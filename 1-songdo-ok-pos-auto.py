@@ -74,7 +74,13 @@ def okpos_fn_search(driver):
     WebDriverWait(driver, TIMEOUT).until(
         EC.frame_to_be_available_and_switch_to_it("MainFrm")
     )
-
+    
+    driver.execute_script(
+        "arguments[0].click();",
+        WebDriverWait(driver, TIMEOUT).until(
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_0"))
+        )
+    )
     # 2️⃣ 내부 iframe 진입 (fnSearch가 정의된 곳)
     inner_iframe = WebDriverWait(driver, TIMEOUT).until(
         EC.frame_to_be_available_and_switch_to_it(
@@ -84,6 +90,33 @@ def okpos_fn_search(driver):
 
     # 3️⃣ fnSearch 실행 (이제 정의되어 있음)
     driver.execute_script("fnSearch();")
+    time.sleep(2)
+
+    print("[INFO] fnSearch 실행 완료 (inner iframe)")
+
+def okpos_fn_search2(driver):
+    driver.switch_to.default_content()
+
+    # 1️⃣ MainFrm 진입
+    WebDriverWait(driver, TIMEOUT).until(
+        EC.frame_to_be_available_and_switch_to_it("MainFrm")
+    )
+    
+    driver.execute_script(
+        "arguments[0].click();",
+        WebDriverWait(driver, TIMEOUT).until(
+            EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
+        )
+    )
+    # 2️⃣ 내부 iframe 진입 (fnSearch가 정의된 곳)
+    inner_iframe = WebDriverWait(driver, TIMEOUT).until(
+        EC.frame_to_be_available_and_switch_to_it(
+            (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+        )
+    )
+
+    # 3️⃣ fnSearch 실행 (이제 정의되어 있음)
+    driver.execute_script("fnSearch(1);")
     time.sleep(2)
 
     print("[INFO] fnSearch 실행 완료 (inner iframe)")
@@ -277,24 +310,7 @@ def main():
 
         okpos_fn_search(driver)
         extract_daily_summary(driver, sheet_report)
-
-        # 상품별 탭 클릭
-        driver.switch_to.default_content()
-        WebDriverWait(driver, TIMEOUT).until(
-            EC.frame_to_be_available_and_switch_to_it("MainFrm")
-        )
-
-        driver.execute_script(
-            "arguments[0].click();",
-            WebDriverWait(driver, TIMEOUT).until(
-                EC.presence_of_element_located((By.ID, "myTab1_tabTitle_5"))
-            )
-        )
-
-        time.sleep(1)
-
-        # ✅ 다시 공용 fnSearch 실행
-        okpos_fn_search(driver)
+        okpos_fn_search2(driver)
         process_inventory(driver, sheet_inventory)
 
     except Exception:
