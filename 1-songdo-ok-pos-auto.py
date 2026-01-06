@@ -10,7 +10,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 TIMEOUT = 10
 
 # =====================================================
@@ -269,22 +268,19 @@ def main():
         sheet_inventory = spreadsheet.worksheet("재고")
         options = webdriver.ChromeOptions()
 
-        # ✅ Headless 실행
         options.add_argument("--headless=new")
-
-        # ✅ 필수 안정 옵션 (GitHub Actions / 서버 환경)
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
-
-        # ✅ 화면 사이즈 (안 잡히면 iframe 못 찾는 경우 있음)
         options.add_argument("--window-size=1720,1080")
 
+        # ✅ GitHub Actions에서 필수
+        options.binary_location = "/usr/bin/google-chrome"
         driver = webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install()),
+            service=ChromeService(),  # ← 시스템에 설치된 chromedriver 사용
             options=options
         )
-
+        driver.set_page_load_timeout(60)
         driver.get("https://okasp.okpos.co.kr/login/login_form.jsp")
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "user_id")))
         driver.find_element(By.ID, "user_id").send_keys(os.getenv("SONGDO_OK_POS_ID"))
