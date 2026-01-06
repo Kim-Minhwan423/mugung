@@ -23,8 +23,30 @@ def get_int(driver, xpath, default=0):
         return int(txt) if txt.isdigit() else default
     except:
         return default
+# =====================================================
+# OKPOS 공지 / 팝업 닫기
+# =====================================================
+# =====================================================
+# OKPOS 모든 팝업 닫기 (안전 버전)
+# =====================================================
+def close_okpos_popup(driver):
+    driver.switch_to.default_content()
 
+    popup_selectors = [
+        "#divPopupCloseButton0 > button",
+        "#divPopupCloseButton1 > button"
+    ]
 
+    for sel in popup_selectors:
+        try:
+            btn = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, sel))
+            )
+            driver.execute_script("arguments[0].click();", btn)
+            time.sleep(1)
+            print(f"[INFO] 팝업 닫음: {sel}")
+        except:
+            pass  # 해당 팝업 없으면 그냥 넘어감
 # =====================================================
 # 일별종합 데이터 추출
 # =====================================================
@@ -168,6 +190,9 @@ def main():
         driver.find_element(By.ID, "user_pwd").send_keys(os.getenv("SONGDO_OK_POS_PW"))
         driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img").click()
         time.sleep(5)
+
+        # ✅ 팝업 전부 닫기
+        close_okpos_popup(driver)
 
         # 즐겨찾기 → 일별종합
         driver.find_element(By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)").click()
