@@ -205,7 +205,7 @@ def process_inventory(driver, sheet_inventory):
 
     for row in range(2, 64):
         try:
-            # 🔹 코드 컬럼
+            # 🔹 코드 위치
             code_td = 6 if row == 2 else 5
             code = driver.find_element(
                 By.XPATH, f"{base}/tr[{row}]/td[{code_td}]"
@@ -214,13 +214,19 @@ def process_inventory(driver, sheet_inventory):
             if code not in code_to_cell:
                 continue
 
-            # 🔥 핵심: 코드 기준 value_td 분기
-            if code in special_prices:
-                value_td = 8   # 매출액
+            # 🔥 value_td 결정 (row + code 기준)
+            if row == 2:
+                value_td = 8
+                raw_value = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
+                qty = raw_value
+
+            elif code in special_prices:
+                value_td = 8
                 raw_value = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
                 qty = raw_value // special_prices[code] if raw_value else 0
+
             else:
-                value_td = 7   # 수량
+                value_td = 7
                 qty = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
 
             if qty > 0:
