@@ -93,25 +93,36 @@ def okpos_fn_search(driver, timeout=10):
 # 일별종합 데이터 추출
 # =====================================================
 def extract_daily_summary(driver, sheet):
+    driver.switch_to.default_content()
+    WebDriverWait(driver, TIMEOUT).until(
+        EC.frame_to_be_available_and_switch_to_it("MainFrm")
+    )
+    inner_iframe = WebDriverWait(driver, TIMEOUT).until(
+        EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+        )
+    )
+    driver.switch_to.frame(inner_iframe)
     data_map = {
         "현금": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]',
         "현금영수증": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]',
         "테이블수": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[9]',
         "총매출": '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[4]'
     }
-    
-    total = values["총매출"]
-    cash = values["현금"]
-    cash_receipt = values["현금영수증"]
 
-    card = total - cash - cash_receipt
-    if card < 0:
-        card = 0
-
+    # 1️⃣ 값 수집
     values = {}
     for k, xp in data_map.items():
         values[k] = get_int(driver, xp)
 
+    total = values["총매출"]
+    cash = values["현금"]
+    cash_receipt = values["현금영수증"]
+
+    # 2️⃣ 카드매출 계산
+    card = max(0, total - cash - cash_receipt)
+
+    # 3️⃣ 시트 반영
     sheet.batch_update([
         {"range": "E3", "values": [[card]]},          # 카드 (계산값)
         {"range": "E5", "values": [[cash]]},          # 현금
@@ -121,7 +132,6 @@ def extract_daily_summary(driver, sheet):
     ])
 
     print("[INFO] 일별종합 데이터 업데이트 완료")
-
 
 # =====================================================
 # 재고 처리
@@ -255,8 +265,17 @@ def main():
         WebDriverWait(driver, TIMEOUT).until(
             EC.frame_to_be_available_and_switch_to_it("MyMenuFrm")
         )
-        driver.find_element(By.ID, "sd3").click()
-        time.sleep(2)
+        for _ in range(3):
+            try:
+                menu = WebDriverWait(driver, TIMEOUT).until(
+                    EC.presence_of_element_located((By.ID, "sd3"))
+                )
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", menu)
+                time.sleep(0.3)
+                driver.execute_script("arguments[0].click();", menu)
+                break
+            except:
+                time.sleep(0.5)
 
         okpos_fn_search(driver)
         extract_daily_summary(driver, sheet_report)
