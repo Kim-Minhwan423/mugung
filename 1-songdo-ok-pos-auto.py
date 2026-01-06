@@ -258,22 +258,38 @@ def main():
                     target_cell = None
 
                     # ─────────────────────────────
-                    # 오늘의 메뉴 (000047)
+                    # 오늘의 메뉴 처리용
                     # ─────────────────────────────
                     if product_code == "000047":
-                        target_cell = get_today_menu_cell()
-                        if not target_cell:
-                            continue  # 토/일 제외
+                        # 2행 3열에서 요일 가져오기
+                        weekday_text = driver.find_element(
+                            By.XPATH,
+                            '//*[@id="mySheet1-table"]/tbody/tr[3]/td[1]/div/div[1]/table/tbody/tr[2]/td[3]'
+                        ).text.strip()
 
+                        # 오늘 요일(월,화,수,목,금)만 처리
+                        if weekday_text not in ["월", "화", "수", "목", "금"]:
+                            continue  # 토/일 또는 데이터 없으면 패스
+
+                        # 셀 매핑: 요일 텍스트 기준
+                        weekday_cell_map = {
+                            "월": "C38",
+                            "화": "C42",
+                            "수": "AB38",
+                            "목": "C39",
+                            "금": "N38"
+                        }
+                        target_cell = weekday_cell_map.get(weekday_text)
+
+                        # 매출 금액 → 수량 계산
                         amount_elem = driver.find_element(
                             By.CSS_SELECTOR,
                             f"#mySheet1-table > tbody > tr:nth-child(3) > td > div > "
-                            f"div.GMPageOne > table > tbody > tr:nth-child({j}) > "
-                            f"td.HideCol0C8"
+                            f"div.GMPageOne > table > tbody > tr:nth-child({j}) > td.HideCol0C8"
                         )
                         amount_text = amount_elem.text.replace(",", "").strip()
                         amount = int(amount_text) if amount_text.isdigit() else 0
-        
+
                         unit_price = special_prices.get(product_code, 0)
                         qty = amount // unit_price if unit_price > 0 else 0
 
