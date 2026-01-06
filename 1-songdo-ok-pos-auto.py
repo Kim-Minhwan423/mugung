@@ -433,7 +433,7 @@ def main():
         # 카드 매출
         try:
             card_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[23]'
+                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[23]/span'
             ).text.strip().replace(",", "")
             card_sales_int = int(card_sales)
             requests.append({
@@ -463,7 +463,7 @@ def main():
         # 현금 영수증 매출
         try:
             cash_receipt_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]'
+                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[22]/span'
             ).text.strip().replace(",", "")
             cash_receipt_sales_int = int(cash_receipt_sales)
             requests.append({
@@ -493,7 +493,7 @@ def main():
         # 현금 매출 (총 현금 - 현금 영수증 매출)
         try:
             total_cash_sales = driver.find_element(
-                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]'
+                By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[21]/span'
             ).text.strip().replace(",", "")
             total_cash_sales_value = int(total_cash_sales)
             net_cash_sales = total_cash_sales_value - cash_receipt_sales_int
