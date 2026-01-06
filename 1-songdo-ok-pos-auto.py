@@ -23,17 +23,8 @@ def get_today_menu_cell():
     오늘 요일에 따라 '오늘의메뉴'가 들어갈 재고 시트 셀 반환
     월=0, 화=1, 수=2, 목=3, 금=4
     """
-    weekday = datetime.now().weekday()
-
-    weekday_cell_map = {
-        0: "C38",   # 월요일
-        1: "C42",   # 화요일
-        2: "AB38",  # 수요일
-        3: "C39",   # 목요일
-        4: "N38"    # 금요일
-    }
-
-    return weekday_cell_map.get(weekday)  # 토/일이면 None
+    weekday_map = {0: "C38", 1: "C42", 2: "AB38", 3: "C39", 4: "N38"}
+    return weekday_map.get(weekday)
 
 def main():
     try:
@@ -237,6 +228,27 @@ def main():
 
         def process_rows_sequentially(driver, code_to_cell, special_prices, max_i=60):
             cell_qty_map = {}  # ✅ 셀별 누적 수량
+            # 오늘의 메뉴 처리
+            today_cell = get_today_menu_cell()
+            if today_cell:
+                try:
+                    # 금액 읽기
+                    amount_elem = driver.find_element(
+                        By.XPATH,
+                        '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[8]'  # 금액 컬럼
+                    )
+                    amount_text = amount_elem.text.replace(",", "").strip()
+                    amount = int(amount_text) if amount_text.isdigit() else -1
+                    if amount == -1:
+                        print(f"[WARN] 오늘의 메뉴 금액 읽기 실패")
+                    unit_price = special_prices.get("000047", 10000)  # 기본 단가 10000원
+                    qty = amount // unit_price if amount > 0 else 0
+
+                    if qty > 0:
+                        cell_qty_map[today_cell] = cell_qty_map.get(today_cell, 0) + qty
+                        print(f"[INFO] 오늘의 메뉴 {qty}개 '{today_cell}' 셀에 기록")
+                except Exception as e:
+                    print(f"[ERROR] 오늘의 메뉴 처리 중 오류: {e}")
 
             for j in range(2, max_i + 1):
                 try:
@@ -434,15 +446,24 @@ def main():
         time.sleep(2)
 
         # 안전하게 숫자 가져오는 함수
-        def safe_get_int(xpath: str) -> int:
+        
+        def safe_get_int(xpath: str, label: str = "") -> int:
             try:
                 el = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, xpath))
                 )
                 text = el.text.strip().replace(",", "")
-                return int(text) if text.isdigit() else 0
-            except Exception:
-                return 0
+                if text.isdigit():
+                    return int(text)
+                else:
+                    print(f"[WARN] {label} XPATH 읽었으나 숫자가 아님: '{text}'")
+                    return -1  
+            except TimeoutException:
+                print(f"[ERROR] {label} XPATH 요소를 찾지 못함: {xpath}")
+                return -1
+            except Exception as e:
+                print(f"[ERROR] {label} 읽는 중 예외 발생: {e}")
+                return -1
 
         # XPATH 정의
         total_sales_xpath  = '//*[@id="mySheet1-table"]/tbody/tr[3]/td[2]/div/div[1]/table/tbody/tr[2]/td[20]'
@@ -492,7 +513,7 @@ def main():
                 'fields': 'userEnteredValue',
                 'range': {'sheetId': sheet_report.id, 'startRowIndex': 5, 'endRowIndex': 6,
                           'startColumnIndex': 4, 'endColumnIndex': 5}  # E6
-            }
+            }https://partner.booking.naver.com/bizes/937302/booking-list-view
         })
 
         # 전체 테이블 수
