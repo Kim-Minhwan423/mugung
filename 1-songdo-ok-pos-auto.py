@@ -246,10 +246,7 @@ def main():
             for j in range(2, max_i + 1):
                 try:
                     code_elem = driver.find_element(
-                        By.CSS_SELECTOR,
-                        f"#mySheet1-table > tbody > tr[3] > td > div > "
-                        f"div.GMPageOne > table > tbody > tr:nth-child({j}) > td.HideCol0C5"
-                    )
+                        By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody/tr[j]/td[6]')
                     product_code = code_elem.text.strip()
                     if not product_code or product_code == "000047":
                         continue
@@ -259,9 +256,7 @@ def main():
 
                     # 금액 기반 수량 계산
                     amount_elem = driver.find_element(
-                        By.CSS_SELECTOR,
-                        f"#mySheet1-table > tbody > tr[3]/td/div/div[1]/table/tbody/tr[{j}]/td.HideCol0C8"
-                    )
+                        By.XPATH, '//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody/tr[j]/td[8]')
                     amount_text = amount_elem.text.replace(",", "").strip()
                     amount = int(amount_text) if amount_text.isdigit() else 0
 
