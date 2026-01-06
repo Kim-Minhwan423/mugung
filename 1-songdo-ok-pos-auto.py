@@ -166,14 +166,14 @@ def main():
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "user_id")))
         driver.find_element(By.ID, "user_id").send_keys(os.getenv("SONGDO_OK_POS_ID"))
         driver.find_element(By.ID, "user_pwd").send_keys(os.getenv("SONGDO_OK_POS_PW"))
-        driver.find_element(By.CSS_SELECTOR, "#loginForm img").click()
+        driver.find_element(By.CSS_SELECTOR, "#loginForm > div:nth-child(4) > div:nth-child(5) > img").click()
         time.sleep(5)
 
         # 즐겨찾기 → 일별종합
         driver.find_element(By.CSS_SELECTOR, "#divTopFrameHead > div:nth-child(2) > div:nth-child(2)").click()
         time.sleep(1)
         driver.switch_to.frame("MyMenuFrm")
-        driver.find_element(By.ID, "sd1").click()
+        driver.find_element(By.ID, "sd3").click()
         time.sleep(2)
 
         driver.switch_to.default_content()
@@ -186,7 +186,7 @@ def main():
         # 상품별
         driver.execute_script("arguments[0].click();", driver.find_element(By.ID, "myTab1_tabTitle_5"))
         time.sleep(2)
-        driver.execute_script("fnSearch();")
+        driver.execute_script("fnSearch(1);")
         time.sleep(2)
 
         process_inventory(driver, sheet_inventory)
