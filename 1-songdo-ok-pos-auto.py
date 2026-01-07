@@ -270,8 +270,6 @@ def main():
         options = webdriver.ChromeOptions()
 
         options.add_argument("--headless=new")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1720,1080")
 
@@ -283,7 +281,7 @@ def main():
         options.add_argument("--disable-infobars")
         options.add_argument("--blink-settings=imagesEnabled=false")
 
-        options.binary_location = "/usr/bin/google-chrome"
+        options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
         driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install()),
