@@ -325,7 +325,7 @@ def update_google_sheets(total_order_amount, aggregated_products, service_accoun
         '낙지볶음': 'AI40',
         '낙지파전': 'AI39',
         '우삼겹김치전': 'S39',
-        '두부제육김치': 'S40',
+        '두부김치제육': 'S40',
         '육회비빔밥': 'H42',
         '숙주갈비탕': 'H38',
         '갈비찜덮밥': 'H39',
