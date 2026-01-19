@@ -380,6 +380,7 @@ def set_daily_filter(driver, wait):
     except Exception as e:
         logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
         raise
+        time.sleep(1000)
                 
 def extract_order_summary(driver, wait):
     """
