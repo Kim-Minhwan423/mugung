@@ -47,8 +47,9 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.
         print(f"[ERROR] 증가 버튼 클릭 중 예외 발생: {e}")
         return False
 
-def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
+def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=60):
     processed_codes = set()
+    cell_qty_map = {}   # ✅ 합산용 dict
     new_data_found = True
 
     while new_data_found:
@@ -60,64 +61,56 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             total_selector = f"#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_body_gridrow_{i}_cell_{i}_7"
 
             try:
-                code_elem = driver.find_element(By.CSS_SELECTOR, code_selector)
-                code_text = code_elem.text.strip()
+                code_text = driver.find_element(By.CSS_SELECTOR, code_selector).text.strip()
                 if not code_text or code_text in processed_codes:
                     continue
 
-                qty_elem = driver.find_element(By.CSS_SELECTOR, qty_selector)
-                qty_text = qty_elem.text.strip().replace(",", "")
-                total_elem = driver.find_element(By.CSS_SELECTOR, total_selector)
-                total_text = total_elem.text.strip().replace(",", "").replace("원", "")
+                qty_text = driver.find_element(By.CSS_SELECTOR, qty_selector).text.strip().replace(",", "")
+                total_text = driver.find_element(By.CSS_SELECTOR, total_selector).text.strip().replace(",", "").replace("원", "")
                 total_val = int(total_text) if total_text.isdigit() else 0
 
+                # ✅ 수량 계산
                 if code_text in special_prices:
                     unit_price = special_prices[code_text]
                     qty_to_set = total_val // unit_price if unit_price else 0
-                    print(f"[INFO] {code_text} - 총매출 {total_val} / 단가 {unit_price} = 수량 {qty_to_set}")
                 else:
                     qty_to_set = int(qty_text) if qty_text.isdigit() else 0
-                    print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
 
+                # ✅ 셀 기준 합산
                 if code_text in code_to_cell_inventory:
                     cell = code_to_cell_inventory[code_text]
                     cell_qty_map[cell] = cell_qty_map.get(cell, 0) + qty_to_set
-                    print(f"[INFO] {code_text} - 수량 {qty_to_set} 누적 완료 → {cell}")
                     processed_codes.add(code_text)
                     new_data_found = True
-                else:
-                    print(f"[WARNING] {code_text}는 코드 매핑에 없습니다. 스킵합니다.")
+                    print(f"[INFO] {code_text} → {cell} : +{qty_to_set} (누적 {cell_qty_map[cell]})")
 
             except NoSuchElementException:
                 continue
             except Exception as e:
-                print(f"[ERROR] 행 {i} 처리 중 예외 발생: {e}")
+                print(f"[ERROR] 행 {i} 처리 중 오류: {e}")
                 traceback.print_exc()
-                continue
 
+        # ✅ 스크롤 시도
         if new_data_found:
             try:
                 for _ in range(15):
-                    inc_button = WebDriverWait(driver, 5).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton"))
-                    )
-                    inc_button.click()
+                    driver.find_element(
+                        By.CSS_SELECTOR,
+                        "#mainframe_childframe_form_divMain_divWork_grdProductSalesPerDayList_vscrollbar_incbutton"
+                    ).click()
                     time.sleep(0.1)
-                print("[INFO] 스크롤 시도 완료.")
                 time.sleep(1)
-            except Exception as e:
-                print(f"[INFO] 스크롤 불가 또는 완료: {e}")
+            except:
                 break
-                
-        update_cells_inventory = []
 
-        for cell, total_qty in cell_qty_map.items():
-            update_cells_inventory.append({
-                "range": cell,
-                "values": [[total_qty]]
-            })
+    # ✅ 최종 시트 업데이트용 리스트 생성 (한 번만)
+    update_cells_inventory = [
+        {"range": cell, "values": [[qty]]}
+        for cell, qty in cell_qty_map.items()
+    ]
 
     return update_cells_inventory
+
 
 def main():
     try:
