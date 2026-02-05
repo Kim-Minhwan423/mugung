@@ -48,7 +48,6 @@ def scroll_if_possible(driver, inc_button_selector, num_clicks=15, pause_time=0.
         return False
 
 def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, max_i=30):
-    update_cells_inventory = []
     processed_codes = set()
     new_data_found = True
 
@@ -81,11 +80,9 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
                     print(f"[INFO] {code_text} - 매출 수량 {qty_to_set} 추출 완료.")
 
                 if code_text in code_to_cell_inventory:
-                    update_cells_inventory.append({
-                        'range': code_to_cell_inventory[code_text],
-                        'values': [[qty_to_set]]
-                    })
-                    print(f"[INFO] {code_text} - 수량 {qty_to_set} 준비 완료.")
+                    cell = code_to_cell_inventory[code_text]
+                    cell_qty_map[cell] = cell_qty_map.get(cell, 0) + qty_to_set
+                    print(f"[INFO] {code_text} - 수량 {qty_to_set} 누적 완료 → {cell}")
                     processed_codes.add(code_text)
                     new_data_found = True
                 else:
@@ -111,6 +108,14 @@ def process_rows_sequentially(driver, code_to_cell_inventory, special_prices, ma
             except Exception as e:
                 print(f"[INFO] 스크롤 불가 또는 완료: {e}")
                 break
+                
+        update_cells_inventory = []
+
+        for cell, total_qty in cell_qty_map.items():
+            update_cells_inventory.append({
+                "range": cell,
+                "values": [[total_qty]]
+            })
 
     return update_cells_inventory
 
