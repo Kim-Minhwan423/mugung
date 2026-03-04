@@ -181,7 +181,6 @@ def login_coupang_eats(driver, user_id, password):
 def close_coupang_popup(driver):
     def try_click_js(selector, name):
         try:
-            time.sleep(1000)
             element = WebDriverWait(driver, 3).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
@@ -193,6 +192,8 @@ def close_coupang_popup(driver):
 
     # 팝업 3 (문제 발생한 버튼)
     try_click_js(
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > button",
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > button",
         "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
         "팝업3"
     )
