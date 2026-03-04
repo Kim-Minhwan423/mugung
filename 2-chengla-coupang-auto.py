@@ -169,38 +169,41 @@ def login_coupang_eats(driver, user_id, password):
             )
             logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
             break
+            time.sleep(1)
 
         except TimeoutException:
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
             time.sleep(1)
 
-    # 로그인 후 팝업 닫기 (기존 코드 유지)
-    close_coupang_popup(driver)
-    
 def close_coupang_popup(driver):
-    def try_click_js(selector, name):
+
+    popup_selectors = [
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > div.css-rucxuz.ezi9xs112 > div",
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > div > div.css-2bi7a5.e462wnt4 > div",
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
+    ]
+
+    for idx, selector in enumerate(popup_selectors, start=1):
         try:
-            element = WebDriverWait(driver, 3).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+            logging.info(f"[팝업{idx}] 클릭 시도")
+
+            element = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
             )
+
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+            time.sleep(0.5)
+
             driver.execute_script("arguments[0].click();", element)
-            logging.info(f"{name} JS 클릭 성공")
-            time.sleep(1)
-        except Exception:
-            logging.info(f"{name} 없음 또는 클릭 실패 → 스킵")
 
-    # 팝업 3 (문제 발생한 버튼)
-    try_click_js(
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
-        "팝업3"
-    )
+            logging.info(f"[팝업{idx}] 클릭 성공")
+            time.sleep(1)  # ✅ 1초 대기
 
-    # ✅ 최소 주문 금액 팝업 닫기 (최신 등장 요소)
-    try_click_js(
-        "button[data-testid='Dialog__CloseButton']",
-        "최소주문금액 팝업"
-    )
-        
+        except TimeoutException:
+            logging.info(f"[팝업{idx}] 없음 또는 클릭 불가 → 스킵")
+        except Exception as e:
+            logging.info(f"[팝업{idx}] 예외 발생 → {e}")
+
     # 매출관리 버튼
     try:
         order_management_button = WebDriverWait(driver, 10).until(
@@ -226,7 +229,6 @@ def close_coupang_popup(driver):
         time.sleep(2)
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
-        
 ###############################################################################
 # 5. '오늘' 버튼 + '조회' 버튼
 ###############################################################################
@@ -534,6 +536,7 @@ def main():
     try:
         # 1) 로그인
         login_coupang_eats(driver, user_id=coupang_id, password=coupang_pw)
+        close_coupang_popup(driver):
 
         # 2) 오늘/조회
         click_today_and_search(driver)
