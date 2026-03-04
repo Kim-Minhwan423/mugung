@@ -542,6 +542,7 @@ def main():
     try:
         # 1) 로그인
         login_coupang_eats(driver, user_id=coupang_id, password=coupang_pw)
+        close_coupang_popup(driver)
 
         # 2) 오늘/조회
         click_today_and_search(driver)
