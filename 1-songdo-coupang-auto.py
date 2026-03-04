@@ -175,30 +175,32 @@ def login_coupang_eats(driver, user_id, password):
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
             time.sleep(1)
 
-    # 로그인 후 팝업 닫기 (기존 코드 유지)
-    close_coupang_popup(driver)
-    
 def close_coupang_popup(driver):
+
     def try_click_js(selector, name):
         try:
             element = WebDriverWait(driver, 3).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
             driver.execute_script("arguments[0].click();", element)
-            logging.info(f"{name} JS 클릭 성공")
+            logging.info(f"{name} 클릭 성공 → {selector}")
             time.sleep(1)
+            return True
         except Exception:
-            logging.info(f"{name} 없음 또는 클릭 실패 → 스킵")
+            return False
 
-    # 팝업 3 (문제 발생한 버튼)
-    try_click_js(
+    # ✅ 여러 버전의 온보딩 팝업 대응
+    popup_selectors = [
         "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > button",
         "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > button",
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button",
-        "팝업3"
-    )
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
+    ]
 
-    # ✅ 최소 주문 금액 팝업 닫기 (최신 등장 요소)
+    for sel in popup_selectors:
+        if try_click_js(sel, "온보딩 팝업"):
+            break
+
+    # ✅ 최소 주문 금액 팝업
     try_click_js(
         "button[data-testid='Dialog__CloseButton']",
         "최소주문금액 팝업"
