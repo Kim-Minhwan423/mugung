@@ -177,29 +177,32 @@ def login_coupang_eats(driver, user_id, password):
 
 def close_coupang_popup(driver):
 
-    def try_click_js(selector, name):
-        try:
-            element = WebDriverWait(driver, 3).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-            )
-            driver.execute_script("arguments[0].click();", element)
-            logging.info(f"{name} 클릭 성공 → {selector}")
-            time.sleep(1)
-            return True
-        except Exception:
-            return False
-
-    # ✅ 여러 버전의 온보딩 팝업 대응
     popup_selectors = [
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > button",
-        "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > button",
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > div.css-rucxuz.ezi9xs112 > div",
+        "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > div > div.css-2bi7a5.e462wnt4 > div",
         "#merchant-onboarding-body > div.dialog-modal-wrapper.css-g20w7n.e1gf2dph0 > div > div > div > button"
     ]
 
-    for sel in popup_selectors:
-        if try_click_js(sel, "온보딩 팝업"):
-            break
+    for idx, selector in enumerate(popup_selectors, start=1):
+        try:
+            logging.info(f"[팝업{idx}] 클릭 시도")
 
+            element = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+            )
+
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+            time.sleep(0.5)
+
+            driver.execute_script("arguments[0].click();", element)
+
+            logging.info(f"[팝업{idx}] 클릭 성공")
+            time.sleep(1)  # ✅ 1초 대기
+
+        except TimeoutException:
+            logging.info(f"[팝업{idx}] 없음 또는 클릭 불가 → 스킵")
+        except Exception as e:
+            logging.info(f"[팝업{idx}] 예외 발생 → {e}")
     # ✅ 최소 주문 금액 팝업
     try_click_js(
         "button[data-testid='Dialog__CloseButton']",
