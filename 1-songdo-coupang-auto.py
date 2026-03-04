@@ -169,7 +169,7 @@ def login_coupang_eats(driver, user_id, password):
             )
             logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
             break
-            time.sleep(1000)
+            time.sleep(1)
 
         except TimeoutException:
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
@@ -181,6 +181,7 @@ def login_coupang_eats(driver, user_id, password):
 def close_coupang_popup(driver):
     def try_click_js(selector, name):
         try:
+            time.sleep(1000)
             element = WebDriverWait(driver, 3).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
