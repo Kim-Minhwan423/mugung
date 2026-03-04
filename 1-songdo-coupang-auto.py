@@ -203,12 +203,7 @@ def close_coupang_popup(driver):
             logging.info(f"[팝업{idx}] 없음 또는 클릭 불가 → 스킵")
         except Exception as e:
             logging.info(f"[팝업{idx}] 예외 발생 → {e}")
-    # ✅ 최소 주문 금액 팝업
-    try_click_js(
-        "button[data-testid='Dialog__CloseButton']",
-        "최소주문금액 팝업"
-    )
-        
+
     # 매출관리 버튼
     try:
         order_management_button = WebDriverWait(driver, 10).until(
