@@ -168,24 +168,16 @@ def extract_daily_summary(driver, sheet):
 # 재고 처리
 # =====================================================
 def process_inventory(driver, sheet_inventory):
-    code_to_cell = {
-        "000001": "C38", 
-        "000056": "C38",
-        
-        "000002": "C39", 
-        "000059": "C39",
-        
-        "000057": "C42",
-        "000003": "C42", 
-        
-        "000058": "AB38",
-        "000004": "AB38",
 
-        "000009": "N41",
-        "000074": "N41",
-        
+    code_to_cell = {
+        "000001": "C38", "000056": "C38",
+        "000002": "C39", "000059": "C39",
+        "000057": "C42", "000003": "C42",
+        "000058": "AB38", "000004": "AB38",
+        "000009": "N41", "000074": "N41",
+
         "000005": "N38", "000006": "N45", "000007": "C40",
-        "000008": "C41", "000010": "C44", "000011": "C43", 
+        "000008": "C41", "000010": "C44", "000011": "C43",
         "000012": "AB40", "000013": "N40", "000014": "N44",
         "000015": "AB39", "000016": "N39",
 
@@ -200,6 +192,7 @@ def process_inventory(driver, sheet_inventory):
         "000044": "AB44", "000045": "AB45", "000046": "C45"
     }
 
+    # 금액으로 계산해야 하는 상품
     special_prices = {
         "000041": 2000, "000042": 2000, "000043": 2000,
         "000044": 3000,
@@ -208,51 +201,53 @@ def process_inventory(driver, sheet_inventory):
         "000030": 18000, "000031": 18000
     }
 
-    sheet_inventory.batch_clear(list(set(code_to_cell.values())))
-    cell_qty_map = {}
-
     base = '//*[@id="mySheet1-table"]/tbody/tr[3]/td/div/div[1]/table/tbody'
 
-    for row in range(2, 64):
+    # 🔥 행 개수 자동 감지
+    rows = driver.find_elements(By.XPATH, f"{base}/tr")
+
+    # 셀 합산용
+    cell_qty_map = {cell: 0 for cell in set(code_to_cell.values())}
+
+    for row in range(1, len(rows)+1):
+
         try:
-            # 🔹 코드 위치
-            code_td = 6 if row == 2 else 5
             code = driver.find_element(
-                By.XPATH, f"{base}/tr[{row}]/td[{code_td}]"
+                By.XPATH, f"{base}/tr[{row}]/td[5]"
             ).text.strip()
 
             if code not in code_to_cell:
                 continue
 
-            # 🔥 value_td 결정 (row + code 기준)
-            if row == 2:
-                value_td = 8
-                raw_value = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
-                qty = raw_value
+            # 수량 컬럼
+            qty_value = get_int(driver, f"{base}/tr[{row}]/td[7]")
 
-            elif code in special_prices:
-                value_td = 8
-                raw_value = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
-                qty = raw_value // special_prices[code] if raw_value else 0
+            # 금액 컬럼
+            price_value = get_int(driver, f"{base}/tr[{row}]/td[8]")
 
+            # 금액상품 계산
+            if code in special_prices:
+                qty = price_value // special_prices[code] if price_value else 0
             else:
-                value_td = 7
-                qty = get_int(driver, f"{base}/tr[{row}]/td[{value_td}]")
+                qty = qty_value
 
-            if qty > 0:
-                cell = code_to_cell[code]
-                cell_qty_map[cell] = cell_qty_map.get(cell, 0) + qty
+            cell = code_to_cell[code]
+
+            cell_qty_map[cell] += qty
+
+            print(f"[DATA] {code} → {qty}")
 
         except Exception:
             continue
 
-    if cell_qty_map:
-        sheet_inventory.batch_update(
-            [{"range": c, "values": [[q]]} for c, q in cell_qty_map.items()]
-        )
+    # 🔥 모든 셀 기록 (0도 포함)
+    updates = []
+    for cell, qty in cell_qty_map.items():
+        updates.append({"range": cell, "values": [[qty]]})
+
+    sheet_inventory.batch_update(updates)
 
     print("[INFO] 재고 시트 업데이트 완료")
-
 # =====================================================
 # 메인
 # =====================================================
