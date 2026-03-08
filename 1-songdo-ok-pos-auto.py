@@ -171,6 +171,19 @@ def extract_daily_summary(driver, sheet):
 # =====================================================
 def process_inventory(driver, sheet_inventory):
 
+    driver.switch_to.default_content()
+
+    WebDriverWait(driver, TIMEOUT).until(
+        EC.frame_to_be_available_and_switch_to_it("MainFrm")
+    )
+
+    inner_iframe = WebDriverWait(driver, TIMEOUT).until(
+        EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
+        )
+    )
+
+    driver.switch_to.frame(inner_iframe)
     code_to_cell = {
         "000001": "C38", "000056": "C38",
         "000002": "C39", "000059": "C39",
