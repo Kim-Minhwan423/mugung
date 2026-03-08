@@ -21,7 +21,9 @@ def get_int(driver, xpath, default=0):
         txt = WebDriverWait(driver, TIMEOUT).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         ).text.replace(",", "").strip()
-        return int(txt) if txt.isdigit() else default
+
+        return int(txt)
+
     except:
         return default
 # =====================================================
@@ -212,9 +214,9 @@ def process_inventory(driver, sheet_inventory):
     for row in range(1, len(rows)+1):
 
         try:
-            code = driver.find_element(
+            code = "".join(driver.find_element(
                 By.XPATH, f"{base}/tr[{row}]/td[5]"
-            ).text.strip()
+            ).text.split())
 
             if code not in code_to_cell:
                 continue
