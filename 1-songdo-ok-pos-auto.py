@@ -21,9 +21,7 @@ def get_int(driver, xpath, default=0):
         txt = WebDriverWait(driver, TIMEOUT).until(
             EC.presence_of_element_located((By.XPATH, xpath))
         ).text.replace(",", "").strip()
-
-        return int(txt)
-
+        return int(txt) if txt.isdigit() else default
     except:
         return default
 # =====================================================
@@ -171,19 +169,6 @@ def extract_daily_summary(driver, sheet):
 # =====================================================
 def process_inventory(driver, sheet_inventory):
 
-    driver.switch_to.default_content()
-
-    WebDriverWait(driver, TIMEOUT).until(
-        EC.frame_to_be_available_and_switch_to_it("MainFrm")
-    )
-
-    inner_iframe = WebDriverWait(driver, TIMEOUT).until(
-        EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "iframe[id^='myTab1PageFrm']")
-        )
-    )
-
-    driver.switch_to.frame(inner_iframe)
     code_to_cell = {
         "000001": "C38", "000056": "C38",
         "000002": "C39", "000059": "C39",
@@ -227,9 +212,9 @@ def process_inventory(driver, sheet_inventory):
     for row in range(1, len(rows)+1):
 
         try:
-            code = "".join(driver.find_element(
+            code = driver.find_element(
                 By.XPATH, f"{base}/tr[{row}]/td[5]"
-            ).text.split())
+            ).text.strip()
 
             if code not in code_to_cell:
                 continue
@@ -289,7 +274,7 @@ def main():
         sheet_inventory = spreadsheet.worksheet("재고")
         options = webdriver.ChromeOptions()
 
-        #options.add_argument("--headless=new")
+        options.add_argument("--headless=new")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1720,1080")
 
