@@ -209,39 +209,40 @@ def process_inventory(driver, sheet_inventory):
     # 셀 합산용
     cell_qty_map = {cell: 0 for cell in set(code_to_cell.values())}
 
-for row in range(2, len(rows)+1):
+    for row in range(2, len(rows)+1):
 
-    if row == 2:
-        code_col = 6
-        qty_col = 8
-        price_col = 9
-    else:
-        code_col = 5
-        qty_col = 7
-        price_col = 8
-
-    try:
-        code = "".join(driver.find_element(
-            By.XPATH, f"{base}/tr[{row}]/td[{code_col}]"
-        ).text.split())
-
-        if code not in code_to_cell:
-            continue
-
-        qty_value = get_int(driver, f"{base}/tr[{row}]/td[{qty_col}]")
-        price_value = get_int(driver, f"{base}/tr[{row}]/td[{price_col}]")
-
-        if code in special_prices:
-            qty = price_value // special_prices[code] if price_value else 0
+        if row == 2:
+            code_col = 6
+            qty_col = 8
+            price_col = 9
         else:
-            qty = qty_value
+            code_col = 5
+            qty_col = 7
+            price_col = 8
 
-        cell = code_to_cell[code]
-        ws.update(cell, qty)
-        print(f"OKPOS → {code} → {qty} → {cell}")
+        try:
+            code = "".join(driver.find_element(
+                By.XPATH, f"{base}/tr[{row}]/td[{code_col}]"
+            ).text.split())
 
-    except Exception as e:
-        print(f"row {row} 오류:", e)
+            if code not in code_to_cell:
+                continue
+
+            qty_value = get_int(driver, f"{base}/tr[{row}]/td[{qty_col}]")
+            price_value = get_int(driver, f"{base}/tr[{row}]/td[{price_col}]")
+
+            if code in special_prices:
+                qty = price_value // special_prices[code] if price_value else 0
+            else:
+                qty = qty_value
+
+            cell = code_to_cell[code]
+            cell_qty_map[cell] += qty   # 🔥 합산
+
+            print(f"OKPOS → {code} → {qty} → {cell}")
+
+        except Exception as e:
+            print(f"row {row} 오류:", e)
 
     # 🔥 모든 셀 기록 (0도 포함)
     updates = []
