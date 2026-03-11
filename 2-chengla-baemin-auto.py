@@ -355,7 +355,7 @@ def set_daily_filter(driver, wait):
     
     try:
         # 필터 버튼 클릭
-        filter_button_selector = "#root > div > div.frame-container > div.frame-wrap > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
+        filter_button_selector = "#root > div.Frame.medium > div.frame-container > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
         driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
         time.sleep(1)
