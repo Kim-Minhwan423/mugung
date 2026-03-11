@@ -436,7 +436,7 @@ def extract_sales_details(driver, wait):
 
             # 첫 주문 제외, 이후 주문은 펼치기 클릭
             if order_no > 1:
-                toggle_tr = detail_tr + 1
+                toggle_tr = detail_tr
                 toggle_xpath = (
                     f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{toggle_tr}]/td[1]/div'
