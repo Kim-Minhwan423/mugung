@@ -387,11 +387,7 @@ def extract_order_summary(driver, wait):
     UI 변경에 대비해 여러 CSS 셀렉터를 순차 시도합니다.
     """
     selectors = [
-        "#root > div > div.frame-container > div.frame-wrap > div.frame-body > "
-        "div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > "
-        "div > div:nth-child(2) > span.TotalSummary-module__SysK > b",
-        "div.OrderHistoryPage-module__R0bB div.TotalSummary-module__sVL1 span.TotalSummary-module__SysK > b",
-        "div.TotalSummary-module__sVL1 b",
+        "#root > div.Frame.medium > div.frame-container > div.frame-body > div.OrderHistoryPage-module__R0bB > div.TotalSummary-module__sVL1 > div > div:nth-child(2) > span.TotalSummary-module__SysK > b"
     ]
 
     last_err = None
