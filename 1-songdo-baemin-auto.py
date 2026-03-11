@@ -436,9 +436,9 @@ def extract_sales_details(driver, wait):
 
             # 첫 주문 제외, 이후 주문은 펼치기 클릭
             if order_no > 1:
-                toggle_tr = detail_tr - 1
+                toggle_tr = detail_tr + 1
                 toggle_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{toggle_tr}]/td[1]/div'
                 )
                 try:
@@ -456,12 +456,12 @@ def extract_sales_details(driver, wait):
             # ===== 메뉴 루프 =====
             for i in range(1, 26, 3):  # 1,4,7,10,13,16,19,22,25
                 name_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
                     f'/span[1]/div/span[1]'
                 )
                 qty_xpath = (
-                    f'//*[@id="root"]/div/div[2]/div[2]/div[1]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
                     f'/span[1]/div/span[2]'
                 )
