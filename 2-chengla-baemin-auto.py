@@ -465,7 +465,7 @@ def extract_sales_details(driver, wait):
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
                     f'/span[1]/div/span[2]'
                 )
-                
+
                 try:
                     raw_name = driver.find_element(By.XPATH, name_xpath).text
                     raw_qty = driver.find_element(By.XPATH, qty_xpath).text
@@ -512,6 +512,7 @@ def extract_sales_details(driver, wait):
             break
 
     return sales_data
+
 
 
 ###############################################################################
