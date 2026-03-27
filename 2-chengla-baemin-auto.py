@@ -535,8 +535,6 @@ def main():
             # 주문내역 & 날짜 필터
             navigate_to_order_history(driver, wait)
             set_daily_filter(driver, wait)
-
-            time.sleep(100)
             
             # 요약 & 판매량
             order_summary = extract_order_summary(driver, wait)
