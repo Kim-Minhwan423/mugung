@@ -451,7 +451,6 @@ def extract_sales_details(driver, wait):
                     time.sleep(0.4)
                 except Exception:
                     logging.info(f"{order_no}번째 주문 펼치기 실패 → 다음 페이지로")
-                    break
 
             # ===== 메뉴 루프 =====
             for i in range(1, 26, 3):  # 1,4,7,10,13,16,19,22,25
