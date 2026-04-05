@@ -423,11 +423,13 @@ def extract_sales_details(driver, wait):
     while True:  # 페이지 루프
 
         detail_tr = 2
-        fail_count = 0  # ⭐ 핵심
+        fail_count = 0  # ⭐ 연속 실패 카운트
 
         for order_no in range(1, 11):
 
-            # ===== 주문 펼치기 =====
+            # ==============================
+            # 주문 펼치기
+            # ==============================
             if order_no > 1:
                 toggle_tr = detail_tr - 1
                 toggle_xpath = (
@@ -441,17 +443,21 @@ def extract_sales_details(driver, wait):
                     driver.execute_script("arguments[0].click();", btn)
                     time.sleep(0.4)
 
-                    fail_count = 0  # ⭐ 성공하면 초기화
+                    fail_count = 0  # ⭐ 성공 시 초기화
 
                 except Exception:
                     fail_count += 1
                     logging.warning(f"{order_no}번째 펼치기 실패 (연속 {fail_count})")
 
+                    # ⭐⭐⭐ 핵심: 2번 실패하면 전체 종료
                     if fail_count >= 2:
-                        logging.info("연속 2회 실패 → 현재 페이지 종료")
-                        break  # ⭐ 여기서 페이지 종료
+                        logging.info("연속 2회 실패 → 전체 크롤링 종료")
+                        logging.info(f"최종 집계 데이터: {sales_data}")
+                        return sales_data
 
-            # ===== 메뉴 추출 =====
+            # ==============================
+            # 메뉴/수량 추출
+            # ==============================
             for i in range(1, 26, 3):
                 name_xpath = (
                     f'//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[4]/div/div/'
@@ -483,7 +489,9 @@ def extract_sales_details(driver, wait):
 
             detail_tr += 2
 
-        # ===== 다음 페이지 이동 =====
+        # ==============================
+        # 다음 페이지 이동
+        # ==============================
         try:
             next_btn_xpath = (
                 '//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[5]'
@@ -495,17 +503,19 @@ def extract_sales_details(driver, wait):
                 logging.info("마지막 페이지 → 종료")
                 break
 
+            driver.execute_script("arguments[0].scrollIntoView({block:'center'});", next_btn)
+            time.sleep(0.3)
             driver.execute_script("arguments[0].click();", next_btn)
             time.sleep(1.5)
+
             logging.info("다음 페이지 이동")
 
         except NoSuchElementException:
             logging.info("다음 페이지 없음 → 종료")
             break
 
+    logging.info(f"최종 집계 데이터: {sales_data}")
     return sales_data
-
-
 
 ###############################################################################
 # 메인 함수
