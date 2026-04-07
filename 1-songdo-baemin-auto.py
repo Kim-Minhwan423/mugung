@@ -432,7 +432,7 @@ def extract_sales_details(driver, wait):
             if order_no > 1:
                 toggle_tr = detail_tr - 1
                 toggle_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{toggle_tr}]/td[1]/div'
                 )
                 try:
@@ -459,12 +459,12 @@ def extract_sales_details(driver, wait):
             # ==============================
             for i in range(1, 26, 3):
                 name_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
                     f'/span[1]/div/span[1]'
                 )
                 qty_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
                     f'/span[1]/div/span[2]'
                 )
@@ -493,7 +493,7 @@ def extract_sales_details(driver, wait):
         # ==============================
         try:
             next_btn_xpath = (
-                '//*[@id="root"]/div[1]/div[3]/div[2]/div[2]/div[5]'
+                '//*[@id="root"]/div[1]/div[2]/div[2]/div[2]/div[5]'
                 '/div/div[2]/span/button'
             )
             next_btn = driver.find_element(By.XPATH, next_btn_xpath)
