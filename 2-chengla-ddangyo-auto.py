@@ -315,7 +315,7 @@ def update_google_sheets(total_order_amount, aggregated_products, service_accoun
 
     # 2) "재고" 시트 업데이트
     sheet_inventory = sh.worksheet("재고")
-    clear_ranges = ["H38:H45", "S38:S45", "AI38:AI45", "AT38:AT45", "BE38:BE45"]
+    clear_ranges = ["H38:H45", "S38:S45", "AJ38:AJ45", "AU38:AU45", "BF38:BF45"]
     sheet_inventory.batch_clear(clear_ranges)
 
     update_mapping = {
