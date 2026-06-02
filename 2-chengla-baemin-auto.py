@@ -582,7 +582,7 @@ def main():
             logging.warning(f"시트에 오늘({day}) 날짜를 찾을 수 없음 (U3:U33 범위)")
         
         # 재고 시트 특정 범위 삭제
-        ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
+        ranges_to_clear = ['E38:E45', 'P38:P45', 'AE38:AE45', 'AR38:AR45', 'BC38:BC45']
         sheets_manager.batch_clear(inventory_sheet, ranges_to_clear)
         
         # 판매 디테일 기록
