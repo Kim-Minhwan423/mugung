@@ -464,9 +464,9 @@ def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
     ranges_to_clear = [
         "G38:G45",
         "R38:R45",
-        "AH38:AH45",
-        "AS38:AS45",
-        "BD38:BD45"
+        "AI38:AI45",
+        "AT38:AT45",
+        "BE38:BE45"
     ]
     try:
         jaego_sheet.batch_clear(ranges_to_clear)
