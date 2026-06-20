@@ -84,27 +84,27 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
 
-    # ✅ headless 모드 OFF (시각적으로 확인 가능)
-    #chrome_options.add_argument("--headless=new")  # ← 이 줄은 주석 처리
+    # Headless OFF
+    # chrome_options.add_argument("--headless=new")
 
-    # ✅ User-Agent 설정
+    # User-Agent
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/110.0.5481.77 Safari/537.36"
+        "Chrome/145.0.0.0 Safari/537.36"
     )
 
-    # ✅ 사용자 프로필 재사용 (로그인 세션 유지)
+    # 기존 크롬 프로필 사용 (가장 중요)
     if use_profile:
         user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
         if os.path.exists(user_data_dir):
             chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
             chrome_options.add_argument("--profile-directory=Default")
-            logging.info("기존 Chrome 프로필 재사용 중... (로그인 세션 유지)")
+            logging.info("기존 Chrome 프로필 재사용 중...")
         else:
-            logging.warning("지정한 프로필 경로가 존재하지 않습니다. 새 프로필이 사용됩니다.")
+            logging.warning("Chrome 프로필 경로 없음")
 
-    # ✅ 자동화 탐지 우회 옵션들
+    # 자동화 탐지 우회
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
@@ -112,21 +112,30 @@ def get_chrome_driver(use_profile=True):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1280,960")
 
-    # ✅ ChromeDriver 실행
+    # 추가 우회 옵션
+    chrome_options.add_experimental_option(
+        "excludeSwitches", ["enable-automation"]
+    )
+    chrome_options.add_experimental_option(
+        "useAutomationExtension", False
+    )
+
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # ✅ WebDriver 탐지 우회 (navigator.webdriver 제거)
+    # navigator.webdriver 제거
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {
             "source": """
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
             """
         }
     )
 
-    logging.info("ChromeDriver 초기화 성공 (수동 로그인 세션 재사용)")
+    logging.info("ChromeDriver 초기화 성공")
     return driver
 
 ###############################################################################
@@ -168,9 +177,11 @@ def login_coupang_eats(driver, user_id, password):
                 lambda d: "management" in d.current_url
             )
             logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
-            break
-            time.sleep(1)
 
+            logging.info("로그인 후 안정화 대기...")
+            time.sleep(5)
+
+            break
         except TimeoutException:
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
             time.sleep(1)
@@ -528,7 +539,7 @@ def main():
     setup_logging('script.log')
 
     coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
-    driver = get_chrome_driver(use_profile=False)
+    driver = get_chrome_driver(use_profile=True)
 
     all_order_items = []
     today_revenue = 0
