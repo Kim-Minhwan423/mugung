@@ -13,16 +13,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Check Python version
-        run: py -3.10 --version
+      - name: Check Python
+        run: '"C:\Users\day9b\venv\Scripts\Python.exe" --version'
         shell: cmd
 
       - name: Install dependencies
-        run: py -3.10 -m pip install -r requirements.txt
+        run: '"C:\Users\day9b\venv\Scripts\Python.exe" -m pip install -r requirements.txt'
         shell: cmd
 
       - name: Run Coupang Auto Script
-        run: py -3.10 2-chengla-coupang-auto.py
+        run: '"C:\Users\day9b\venv\Scripts\Python.exe" 2-chengla-coupang-auto.py'
         shell: cmd
         env:
           CHENGLA_COUPANG_ID: ${{ secrets.CHENGLA_COUPANG_ID }}
