@@ -12,16 +12,16 @@ import random
 # Selenium
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManagerfrom selenium.common.exceptions import (
-    NoSuchElementException,
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import (
     TimeoutException,
-    WebDriverException,
-    ElementClickInterceptedException
+    NoSuchElementException,
+    ElementClickInterceptedException,
+    WebDriverException
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
 # Google Sheets
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -80,7 +80,7 @@ def get_environment_variables():
 # 3. Chrome 드라이버 세팅
 ###############################################################################
 def get_chrome_driver():
-    options = uc.ChromeOptions()
+    options = webdriver.ChromeOptions()
 
     # 실제 사용 중인 크롬 프로필 사용
     user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
