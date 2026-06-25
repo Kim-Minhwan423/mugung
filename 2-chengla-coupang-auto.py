@@ -82,15 +82,20 @@ def get_environment_variables():
 def get_chrome_driver():
     options = webdriver.ChromeOptions()
 
-    # 전용 자동화 프로필
-    user_data_dir = r"C:\selenium_profile"
-    options.add_argument(f"--user-data-dir={user_data_dir}")
+    # 전용 자동화 프로필 생성 (기존 크롬 프로필 사용 X)
+    temp_profile = os.path.join(os.getcwd(), "chrome_profile")
+    options.add_argument(f"--user-data-dir={temp_profile}")
 
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+
+    # 안정화 옵션
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-infobars")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
