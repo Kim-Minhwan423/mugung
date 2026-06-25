@@ -7,6 +7,7 @@ import logging
 import traceback
 import base64
 import json
+import random
 
 # Selenium
 from selenium import webdriver
@@ -42,7 +43,7 @@ def open_google_sheet_with_retry(client, sheet_name, retries=5):
             return doc
         except Exception as e:
             print(f"[경고] 구글 시트 연결 실패 (시도 {attempt}/{retries}) → {e}")
-            time.sleep(3)
+            time.sleep(random.uniform(1.2, 2.4))
     raise RuntimeError(f"구글 시트 연결 실패: {sheet_name}")
 
 def setup_logging(log_filename='script.log'):
@@ -81,43 +82,30 @@ def get_environment_variables():
 ###############################################################################
 # 3. Chrome 드라이버 세팅
 ###############################################################################
-def get_chrome_driver(use_profile=True):
+def get_chrome_driver():
     chrome_options = webdriver.ChromeOptions()
 
-    # headless 끔
-    # chrome_options.add_argument("--headless=new")
+    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
 
-    chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/131.0.0.0 Safari/537.36"
-    )
-
-    if use_profile:
-        user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
-
-        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-        chrome_options.add_argument("--profile-directory=Profile 3")
-
-        logging.info("자동화 전용 Profile 3 사용 중...")
+    chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+    chrome_options.add_argument("--profile-directory=Profile 3")
 
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--disable-infobars")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--window-size=1280,960")
-
-    # 중요 (프로필 충돌 방지)
-    chrome_options.add_argument("--remote-debugging-port=9222")
-
-    # 중요 (자동화 흔적 최소화)
     chrome_options.add_experimental_option(
         "excludeSwitches", ["enable-automation"]
     )
     chrome_options.add_experimental_option(
         "useAutomationExtension", False
     )
+
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-web-security")
+    chrome_options.add_argument("--allow-running-insecure-content")
+    chrome_options.add_argument("--disable-features=IsolateOrigins,site-per-process")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -141,7 +129,7 @@ def get_chrome_driver(use_profile=True):
         }
     )
 
-    logging.info("ChromeDriver 초기화 완료")
+    logging.info("Profile 3 실행 완료")
     return driver
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
@@ -149,7 +137,7 @@ def get_chrome_driver(use_profile=True):
 def login_coupang_eats(driver, user_id, password):
     driver.get("https://store.coupangeats.com/merchant/login")
     logging.info("쿠팡이츠 상점 로그인 페이지 접속 완료")
-    time.sleep(3)
+    time.sleep(random.uniform(1.2, 2.4))
 
     # 아이디 입력
     username_input = WebDriverWait(driver, 10).until(
@@ -158,14 +146,14 @@ def login_coupang_eats(driver, user_id, password):
     username_input.clear()
     username_input.send_keys(user_id)
     logging.info("아이디 입력")
-    time.sleep(1)
+    time.sleep(random.uniform(1.2, 2.4))
 
     # 비밀번호 입력
     password_input = driver.find_element(By.CSS_SELECTOR, "#password")
     password_input.clear()
     password_input.send_keys(password)
     logging.info("비밀번호 입력")
-    time.sleep(1)
+    time.sleep(random.uniform(1.2, 2.4))
 
     # 로그인 성공할 때까지 버튼 계속 누르기
     while True:
@@ -174,7 +162,7 @@ def login_coupang_eats(driver, user_id, password):
                 EC.element_to_be_clickable((By.CSS_SELECTOR,
                     "#merchant-login > div > div.center-form > div > div > div > form > button"))
             )
-            login_button.click()
+            driver.execute_script("arguments[0].click();", login_button)
             logging.info("로그인 버튼 클릭")
 
             # ✅ URL이 변경될 때까지 대기
@@ -184,12 +172,12 @@ def login_coupang_eats(driver, user_id, password):
             logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
 
             logging.info("로그인 후 안정화 대기...")
-            time.sleep(5)
+            time.sleep(random.uniform(1.2, 2.4))
 
             break
         except TimeoutException:
             logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
-            time.sleep(1)
+            time.sleep(random.uniform(1.2, 2.4))
 
 def close_coupang_popup(driver):
 
@@ -208,12 +196,12 @@ def close_coupang_popup(driver):
             )
 
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
-            time.sleep(0.5)
+            time.sleep(random.uniform(1.2, 2.4))
 
             driver.execute_script("arguments[0].click();", element)
 
             logging.info(f"[팝업{idx}] 클릭 성공")
-            time.sleep(1)  # ✅ 1초 대기
+            time.sleep(random.uniform(1.2, 2.4))  # ✅ 1초 대기
 
         except TimeoutException:
             logging.info(f"[팝업{idx}] 없음 또는 클릭 불가 → 스킵")
@@ -229,7 +217,7 @@ def close_coupang_popup(driver):
         )
         order_management_button.click()
         logging.info("매출관리 버튼 클릭")
-        time.sleep(3)
+        time.sleep(random.uniform(1.2, 2.4))
     except TimeoutException:
         logging.info("매출관리가 나타나지 않아 스킵")
 
@@ -242,7 +230,7 @@ def close_coupang_popup(driver):
         )
         float_dropdown_button.click()
         logging.info("펼쳐보기 버튼 클릭")
-        time.sleep(2)
+        time.sleep(random.uniform(1.2, 2.4))
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
 ###############################################################################
@@ -262,7 +250,7 @@ def click_today_and_search(driver):
         )
         today_button.click()
         logging.info("오늘 버튼 클릭")
-        time.sleep(2)
+        time.sleep(random.uniform(1.2, 2.4))
     except TimeoutException:
         logging.warning("오늘 버튼을 찾지 못했습니다.")
 
@@ -278,7 +266,7 @@ def click_today_and_search(driver):
         )
         search_button.click()
         logging.info("조회 버튼 클릭")
-        time.sleep(3)
+        time.sleep(random.uniform(1.2, 2.4))
     except TimeoutException:
         logging.warning("조회 버튼을 찾지 못했습니다.")
 
@@ -333,7 +321,7 @@ def expand_and_parse_order(driver, order_index):
 
         # 스크롤
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", expand_btn)
-        time.sleep(1)
+        time.sleep(random.uniform(1.2, 2.4))
 
         # 클릭
         expand_btn.click()
@@ -347,9 +335,9 @@ def expand_and_parse_order(driver, order_index):
         logging.info("-> JS 클릭 재시도")
         if expand_btn:
             try:
-                time.sleep(1)
+                time.sleep(random.uniform(1.2, 2.4))
                 driver.execute_script("arguments[0].click();", expand_btn)
-                time.sleep(2)
+                time.sleep(random.uniform(1.2, 2.4))
             except WebDriverException as e2:
                 logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
                 return []
@@ -360,7 +348,7 @@ def expand_and_parse_order(driver, order_index):
         logging.warning(f"{order_index}번째 주문 펼치기 클릭 오류: {e}")
         return []
 
-    time.sleep(2)  # 펼치기 후 로딩
+    time.sleep(random.uniform(1.2, 2.4))  # 펼치기 후 로딩
     return parse_expanded_order(driver)
 
 def parse_expanded_order(driver):
@@ -425,7 +413,7 @@ def scrape_all_pages_by_buttons(driver):
             break
 
         current_page = next_page
-        time.sleep(1)
+        time.sleep(random.uniform(1.2, 2.4))
 
     return all_data
 
@@ -447,7 +435,7 @@ def go_to_page_button(driver, page_number):
         )
         page_btn.click()
         logging.info(f"{page_number}페이지 버튼 클릭 성공")
-        time.sleep(3)  # 페이지 로딩 기다림
+        time.sleep(random.uniform(1.2, 2.4))  # 페이지 로딩 기다림
 
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "ul.order-search-result-content.row"))
@@ -544,8 +532,7 @@ def main():
     setup_logging('script.log')
 
     coupang_id, coupang_pw, service_account_json_b64 = get_environment_variables()
-    driver = get_chrome_driver(use_profile=True)
-
+    driver = get_chrome_driver()
     all_order_items = []
     today_revenue = 0
 
