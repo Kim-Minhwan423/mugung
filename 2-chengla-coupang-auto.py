@@ -84,27 +84,23 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=True):
     chrome_options = webdriver.ChromeOptions()
 
-    # Headless OFF
+    # headless 끔
     # chrome_options.add_argument("--headless=new")
 
-    # User-Agent
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/145.0.0.0 Safari/537.36"
+        "Chrome/131.0.0.0 Safari/537.36"
     )
 
-    # 기존 크롬 프로필 사용 (가장 중요)
     if use_profile:
         user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
-        if os.path.exists(user_data_dir):
-            chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-            chrome_options.add_argument("--profile-directory=Default")
-            logging.info("기존 Chrome 프로필 재사용 중...")
-        else:
-            logging.warning("Chrome 프로필 경로 없음")
 
-    # 자동화 탐지 우회
+        chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
+        chrome_options.add_argument("--profile-directory=Profile 3")
+
+        logging.info("자동화 전용 Profile 3 사용 중...")
+
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-infobars")
     chrome_options.add_argument("--disable-gpu")
@@ -112,7 +108,10 @@ def get_chrome_driver(use_profile=True):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1280,960")
 
-    # 추가 우회 옵션
+    # 중요 (프로필 충돌 방지)
+    chrome_options.add_argument("--remote-debugging-port=9222")
+
+    # 중요 (자동화 흔적 최소화)
     chrome_options.add_experimental_option(
         "excludeSwitches", ["enable-automation"]
     )
@@ -123,7 +122,6 @@ def get_chrome_driver(use_profile=True):
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
-    # navigator.webdriver 제거
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {
@@ -131,13 +129,20 @@ def get_chrome_driver(use_profile=True):
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
                 });
+
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['ko-KR', 'ko']
+                });
+
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
             """
         }
     )
 
-    logging.info("ChromeDriver 초기화 성공")
+    logging.info("ChromeDriver 초기화 완료")
     return driver
-
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
 ###############################################################################
