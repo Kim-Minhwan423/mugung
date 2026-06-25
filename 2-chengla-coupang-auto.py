@@ -45,8 +45,8 @@ def open_google_sheet_with_retry(client, sheet_name, retries=5):
 
 def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
+    logger.handlers.clear()
     logger.setLevel(logging.INFO)
-
     # 콘솔 로그
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.INFO)
@@ -93,7 +93,7 @@ def get_chrome_driver():
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-
+    options.add_argument("--remote-debugging-port=9222")
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
@@ -103,7 +103,7 @@ def get_chrome_driver():
         });
     """)
 
-    logging.info("Undetected Chrome + 실제 프로필 실행 완료")
+    logging.info("Chrome 실행 완료")
     return driver
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
