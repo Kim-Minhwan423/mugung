@@ -1,4 +1,4 @@
-import os
+2import os
 import sys
 import re
 import time
@@ -82,18 +82,16 @@ def get_environment_variables():
 def get_chrome_driver():
     options = webdriver.ChromeOptions()
 
-    # 실제 사용 중인 크롬 프로필 사용
-    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
+    # 전용 자동화 프로필
+    user_data_dir = r"C:\selenium_profile"
     options.add_argument(f"--user-data-dir={user_data_dir}")
-    options.add_argument("--profile-directory=Profile 3")
 
-    # 탐지 우회
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--remote-debugging-port=9222")
+
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
