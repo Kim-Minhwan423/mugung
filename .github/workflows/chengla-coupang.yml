@@ -13,18 +13,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
-      # ✅ Python 3.10 강제 지정
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+      - name: Check Python version
+        run: py -3.10 --version
+        shell: cmd
 
-      # ✅ 패키지 설치
       - name: Install dependencies
         run: py -3.10 -m pip install -r requirements.txt
         shell: cmd
 
-      # ✅ 스크립트 실행
       - name: Run Coupang Auto Script
         run: py -3.10 2-chengla-coupang-auto.py
         shell: cmd
