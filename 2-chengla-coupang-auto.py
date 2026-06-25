@@ -83,9 +83,14 @@ def get_chrome_driver():
     options = webdriver.ChromeOptions()
 
     # 전용 자동화 프로필 생성 (기존 크롬 프로필 사용 X)
-    temp_profile = os.path.join(os.getcwd(), "chrome_profile")
-    options.add_argument(f"--user-data-dir={temp_profile}")
-
+    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+    options.add_argument("--profile-directory=Profile 3")
+    options.add_argument(
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/149.0.0.0 Safari/537.36"
+)
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     options.add_argument("--disable-blink-features=AutomationControlled")
@@ -93,20 +98,42 @@ def get_chrome_driver():
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-
-    # 안정화 옵션
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-infobars")
+    options.add_argument("--disable-features=IsolateOrigins,site-per-process")
+    options.add_argument("--disable-site-isolation-trials")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
-    driver.execute_script("""
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => undefined
-        });
-    """)
+    # Selenium 탐지 우회 강화
+    driver.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {
+            "source": """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+
+            window.navigator.chrome = {
+                runtime: {},
+            };
+
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['ko-KR', 'ko']
+            });
+
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1,2,3,4,5]
+            });
+            """
+        },
+    )
 
     logging.info("Chrome 실행 완료")
     return driver
@@ -145,11 +172,13 @@ def login_coupang_eats(driver, user_id, password):
             logging.info("로그인 버튼 클릭")
 
             # ✅ URL이 변경될 때까지 대기
-            WebDriverWait(driver, 2).until(
-                lambda d: "management" in d.current_url
+            WebDriverWait(driver, 5).until(
+                lambda d: (
+                    "management" in d.current_url
+                    and "access-denied" not in d.current_url
+                )
             )
-            logging.info("로그인 성공! URL 변경 감지됨 → " + driver.current_url)
-
+            logging.info(f"현재 URL: {driver.current_url}")
             logging.info("로그인 후 안정화 대기...")
             time.sleep(random.uniform(1.2, 2.4))
 
