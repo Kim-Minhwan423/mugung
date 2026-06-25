@@ -82,57 +82,57 @@ def get_environment_variables():
 def get_chrome_driver():
     options = webdriver.ChromeOptions()
 
-    # 전용 자동화 프로필 생성 (기존 크롬 프로필 사용 X)
-    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
-    options.add_argument(f"--user-data-dir={user_data_dir}")
-    options.add_argument("--profile-directory=Profile 3")
-    options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/149.0.0.0 Safari/537.36"
-)
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--disable-popup-blocking")
+    # 기존 크롬 프로필 사용 X (새 전용 프로필)
+    temp_profile = os.path.join(os.getcwd(), "chrome_profile")
+    options.add_argument(f"--user-data-dir={temp_profile}")
+
+    # 기본 옵션
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+
+    # DevToolsActivePort 에러 방지
+    options.add_argument("--remote-debugging-port=9222")
+
+    # Selenium 탐지 최소화
+    options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--disable-features=IsolateOrigins,site-per-process")
-    options.add_argument("--disable-site-isolation-trials")
-    options.add_argument("--disable-web-security")
-    options.add_argument("--allow-running-insecure-content")
 
+    # User-Agent 설정
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/149.0.0.0 Safari/537.36"
+    )
+
+    # ChromeDriver 실행
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
 
-    # Selenium 탐지 우회 강화
+    # Selenium 흔적 제거
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {
             "source": """
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            });
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
 
-            window.navigator.chrome = {
-                runtime: {},
-            };
+                window.navigator.chrome = {
+                    runtime: {},
+                };
 
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['ko-KR', 'ko']
-            });
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['ko-KR', 'ko']
+                });
 
-            Object.defineProperty(navigator, 'plugins', {
-                get: () => [1,2,3,4,5]
-            });
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1,2,3,4,5]
+                });
             """
-        },
+        }
     )
 
     logging.info("Chrome 실행 완료")
