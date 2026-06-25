@@ -10,8 +10,9 @@ import json
 import random
 
 # Selenium
-import undetected_chromedriver as uc
-from selenium.common.exceptions import (
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManagerfrom selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException,
     WebDriverException,
@@ -93,10 +94,8 @@ def get_chrome_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    driver = uc.Chrome(
-        options=options,
-        version_main=149
-    )
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
 
     driver.execute_script("""
         Object.defineProperty(navigator, 'webdriver', {
