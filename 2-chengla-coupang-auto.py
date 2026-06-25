@@ -18,7 +18,6 @@ from selenium.common.exceptions import (
     ElementClickInterceptedException
 )
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -82,9 +81,10 @@ def get_environment_variables():
 def get_chrome_driver():
     options = uc.ChromeOptions()
 
-    # 임시 프로필
-    temp_profile = os.path.join(os.getcwd(), "chrome_temp_profile")
-    options.add_argument(f"--user-data-dir={temp_profile}")
+    # 실제 사용 중인 크롬 프로필 사용
+    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+    options.add_argument("--profile-directory=Profile 3")
 
     # 탐지 우회
     options.add_argument("--disable-blink-features=AutomationControlled")
@@ -104,7 +104,7 @@ def get_chrome_driver():
         });
     """)
 
-    logging.info("Undetected Chrome 실행 완료")
+    logging.info("Undetected Chrome + 실제 프로필 실행 완료")
     return driver
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
