@@ -85,11 +85,9 @@ def get_environment_variables():
 def get_chrome_driver():
     chrome_options = webdriver.ChromeOptions()
 
-    user_data_dir = r"C:\Users\day9b\AppData\Local\Google\Chrome\User Data"
+    temp_profile = os.path.join(os.getcwd(), "chrome_temp_profile")
 
-    chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
-    chrome_options.add_argument("--profile-directory=Profile 3")
-
+    chrome_options.add_argument(f"--user-data-dir={temp_profile}")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_experimental_option(
         "excludeSwitches", ["enable-automation"]
