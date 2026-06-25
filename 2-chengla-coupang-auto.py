@@ -10,7 +10,7 @@ import json
 import random
 
 # Selenium
-from selenium import webdriver
+import undetected_chromedriver as uc
 from selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException,
@@ -21,9 +21,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
-# WebDriver Manager
-from webdriver_manager.chrome import ChromeDriverManager
 
 # Google Sheets
 import gspread
@@ -83,51 +80,31 @@ def get_environment_variables():
 # 3. Chrome 드라이버 세팅
 ###############################################################################
 def get_chrome_driver():
-    chrome_options = webdriver.ChromeOptions()
+    options = uc.ChromeOptions()
 
+    # 임시 프로필
     temp_profile = os.path.join(os.getcwd(), "chrome_temp_profile")
+    options.add_argument(f"--user-data-dir={temp_profile}")
 
-    chrome_options.add_argument(f"--user-data-dir={temp_profile}")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option(
-        "excludeSwitches", ["enable-automation"]
-    )
-    chrome_options.add_experimental_option(
-        "useAutomationExtension", False
-    )
+    # 탐지 우회
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--start-maximized")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
-    chrome_options.add_argument("--disable-infobars")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--disable-web-security")
-    chrome_options.add_argument("--allow-running-insecure-content")
-    chrome_options.add_argument("--disable-features=IsolateOrigins,site-per-process")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-
-    driver.execute_cdp_cmd(
-        "Page.addScriptToEvaluateOnNewDocument",
-        {
-            "source": """
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                });
-
-                Object.defineProperty(navigator, 'languages', {
-                    get: () => ['ko-KR', 'ko']
-                });
-
-                Object.defineProperty(navigator, 'plugins', {
-                    get: () => [1, 2, 3, 4, 5]
-                });
-            """
-        }
+    driver = uc.Chrome(
+        options=options,
+        version_main=149
     )
 
-    logging.info("Profile 3 실행 완료")
+    driver.execute_script("""
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        });
+    """)
+
+    logging.info("Undetected Chrome 실행 완료")
     return driver
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
