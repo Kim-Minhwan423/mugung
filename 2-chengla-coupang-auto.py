@@ -86,6 +86,8 @@ def get_chrome_driver():
     temp_profile = os.path.join(os.getcwd(), "chrome_profile")
     options.add_argument(f"--user-data-dir={temp_profile}")
 
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--disable-popup-blocking")
     options.add_argument("--start-maximized")
