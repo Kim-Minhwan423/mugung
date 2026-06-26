@@ -180,7 +180,12 @@ def login_coupang_eats(driver, user_id, password):
             )
             logging.info(f"현재 URL: {driver.current_url}")
             logging.info("로그인 후 안정화 대기...")
-            time.sleep(random.uniform(1.2, 2.4))
+            time.sleep(random.uniform(2, 3))
+
+            # 무조건 매출관리 메인으로 이동
+            driver.get("https://store.coupangeats.com/merchant/management")
+            logging.info("매출관리 메인 강제 이동")
+            time.sleep(random.uniform(2, 3))
 
             break
         except TimeoutException:
