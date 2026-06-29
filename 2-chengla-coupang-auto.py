@@ -82,20 +82,36 @@ def get_chrome_driver():
     temp_profile = os.path.join(os.getcwd(), "chrome_profile")
     options.add_argument(f"--user-data-dir={temp_profile}")
 
+    # 백그라운드(화면 없이) 실행이 필요한 환경인 경우 아래 주석(#)을 해제하세요.
+    # 일반 headless는 쿠팡이 바로 알아챕니다. 최신 --headless=new를 사용해야 안전합니다.
+    # options.add_argument("--headless=new") 
+
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     
-    # 한국어 브라우저 설정 및 봇 인식 차단 언어 추가
+    # 한국어 브라우저 설정
     options.add_argument("--lang=ko-KR")
 
-    # undetected_chromedriver 기반으로 브라우저 실행 (가장 강력한 자동화 흔적 제거)
-    driver = uc.Chrome(options=options, version_main=149) # 설치된 크롬 메인 버전에 맞춰 실행
+    try:
+        # 🚨 version_main을 제거하여 uc가 내 컴퓨터 크롬 버전을 자동으로 잡게 합니다.
+        driver = uc.Chrome(options=options)
+    except Exception as e:
+        logging.error(f"Undetected Chrome 초기화 실패: {e}")
+        logging.info("기본 크롬 드라이버로 전환을 시도합니다...")
+        
+        # 만약 uc가 환경 문제로 죽는다면 예비책으로 기본 selenium 드라이버 작동
+        from selenium import webdriver
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
+        
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
 
-    logging.info("Undetected Chrome 실행 완료 (자동화 우회 활성화)")
+    logging.info("Chrome 실행 완료 (자동화 우회 활성화)")
     return driver
-
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기 (사람처럼 행동하기 적용)
 ###############################################################################
