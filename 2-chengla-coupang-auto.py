@@ -22,17 +22,15 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
 # Google Sheets
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
-###############################################################################
-# 1. 로깅 설정
-###############################################################################
-import time
-import gspread
 from google.auth.exceptions import TransportError
 
+###############################################################################
+# 1. 로깅 및 유틸리티 설정
+###############################################################################
 def open_google_sheet_with_retry(client, sheet_name, retries=5):
     for attempt in range(1, retries + 1):
         try:
@@ -47,6 +45,7 @@ def setup_logging(log_filename='script.log'):
     logger = logging.getLogger()
     logger.handlers.clear()
     logger.setLevel(logging.INFO)
+    
     # 콘솔 로그
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.INFO)
@@ -137,6 +136,7 @@ def get_chrome_driver():
 
     logging.info("Chrome 실행 완료")
     return driver
+
 ###############################################################################
 # 4. 쿠팡이츠 로그인 & 팝업 닫기
 ###############################################################################
@@ -161,39 +161,38 @@ def login_coupang_eats(driver, user_id, password):
     logging.info("비밀번호 입력")
     time.sleep(random.uniform(1.2, 2.4))
 
-    # 로그인 성공할 때까지 버튼 계속 누르기
-    while True:
+    # 무한 루프 방지를 위해 최대 3회 시도 제한
+    max_login_attempts = 3
+    for attempt in range(1, max_login_attempts + 1):
         try:
             login_button = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR,
                     "#merchant-login > div > div.center-form > div > div > div > form > button"))
             )
             driver.execute_script("arguments[0].click();", login_button)
-            logging.info("로그인 버튼 클릭")
+            logging.info(f"로그인 버튼 클릭 (시도 {attempt}/{max_login_attempts})")
 
-            # ✅ URL이 변경될 때까지 대기
-            WebDriverWait(driver, 5).until(
-                lambda d: (
-                    "management" in d.current_url
-                    and "access-denied" not in d.current_url
-                )
+            # URL이 변경될 때까지 대기 (캡차나 2차인증 걸리면 여기서 걸림)
+            WebDriverWait(driver, 8).until(
+                lambda d: "management" in d.current_url and "access-denied" not in d.current_url
             )
             logging.info(f"현재 URL: {driver.current_url}")
             logging.info("로그인 후 안정화 대기...")
             time.sleep(random.uniform(2, 3))
 
-            # 무조건 매출관리 메인으로 이동
+            # 매출관리 메인으로 이동
             driver.get("https://store.coupangeats.com/merchant/management")
             logging.info("매출관리 메인 강제 이동")
             time.sleep(random.uniform(2, 3))
+            return  # 로그인 성공 시 함수 종료
 
-            break
         except TimeoutException:
-            logging.warning("로그인 실패 또는 URL 변경 안됨 → 재시도")
-            time.sleep(random.uniform(1.2, 2.4))
+            logging.warning(f"로그인 후 대기 시간 초과 (시도 {attempt} 실패) -> 재시도 여부 확인")
+            if attempt == max_login_attempts:
+                raise RuntimeError("쿠팡이츠 로그인에 연속 실패했습니다. (2차 인증 요구 또는 계정 정보 오류 가능성)")
+            time.sleep(random.uniform(2.0, 4.0))
 
 def close_coupang_popup(driver):
-
     popup_selectors = [
         "#merchant-onboarding-body > div.dialog-modal-wrapper.ezi9xs118.css-1g106yu.e1gf2dph0 > div > div > div > div.css-rucxuz.ezi9xs112 > div",
         "#merchant-onboarding-body > div.dialog-modal-wrapper.e462wnt15.css-1252kk2.e1gf2dph0 > div > div > div > div > div.css-2bi7a5.e462wnt4 > div",
@@ -203,25 +202,20 @@ def close_coupang_popup(driver):
     for idx, selector in enumerate(popup_selectors, start=1):
         try:
             logging.info(f"[팝업{idx}] 클릭 시도")
-
             element = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
             )
-
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
             time.sleep(random.uniform(1.2, 2.4))
-
             driver.execute_script("arguments[0].click();", element)
-
             logging.info(f"[팝업{idx}] 클릭 성공")
-            time.sleep(random.uniform(1.2, 2.4))  # ✅ 1초 대기
-
+            time.sleep(random.uniform(1.2, 2.4))
         except TimeoutException:
             logging.info(f"[팝업{idx}] 없음 또는 클릭 불가 → 스킵")
         except Exception as e:
             logging.info(f"[팝업{idx}] 예외 발생 → {e}")
 
-    # 매출관리 버튼
+    # 매출관리 버튼 클릭
     try:
         order_management_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
@@ -234,7 +228,7 @@ def close_coupang_popup(driver):
     except TimeoutException:
         logging.info("매출관리가 나타나지 않아 스킵")
 
-    # 펼쳐보기 버튼
+    # 펼쳐보기 버튼 클릭
     try:
         float_dropdown_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
@@ -246,6 +240,7 @@ def close_coupang_popup(driver):
         time.sleep(random.uniform(1.2, 2.4))
     except TimeoutException:
         logging.info("펼처보기가 나타나지 않아 스킵")
+
 ###############################################################################
 # 5. '오늘' 버튼 + '조회' 버튼
 ###############################################################################
@@ -314,7 +309,7 @@ def get_today_revenue(driver):
         return 0
 
 ###############################################################################
-# 7. 주문 목록 스크래핑 (페이지 버튼 이동, 무한)
+# 7. 주문 목록 스크래핑
 ###############################################################################
 def expand_and_parse_order(driver, order_index):
     expand_selector = (
@@ -327,25 +322,21 @@ def expand_and_parse_order(driver, order_index):
 
     expand_btn = None
     try:
-        # 버튼 대기를 10초로
         expand_btn = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, expand_selector))
         )
 
-        # 스크롤
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", expand_btn)
         time.sleep(random.uniform(1.2, 2.4))
 
-        # 클릭
         expand_btn.click()
         logging.info(f"{order_index}번째 주문 펼치기 버튼 클릭 성공")
 
     except TimeoutException:
-        logging.warning(f"{order_index}번째 주문 펼치기 버튼을 찾지 못했습니다.")
+        logging.warning(f"{order_index}번째 주문 펼치기 버튼을 찾지 못했습니다. (페이지 끝 도달 가능성)")
         return []
     except ElementClickInterceptedException as e:
-        logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e}")
-        logging.info("-> JS 클릭 재시도")
+        logging.info(f"{order_index}번째 주문 일반 클릭 실패: {e} -> JS 클릭 재시도")
         if expand_btn:
             try:
                 time.sleep(random.uniform(1.2, 2.4))
@@ -355,13 +346,12 @@ def expand_and_parse_order(driver, order_index):
                 logging.warning(f"{order_index}번째 주문 JS 클릭도 실패: {e2}")
                 return []
         else:
-            logging.warning("expand_btn이 None이라 JS 클릭 불가능 -> 스킵")
             return []
     except WebDriverException as e:
         logging.warning(f"{order_index}번째 주문 펼치기 클릭 오류: {e}")
         return []
 
-    time.sleep(random.uniform(1.2, 2.4))  # 펼치기 후 로딩
+    time.sleep(random.uniform(1.2, 2.4))
     return parse_expanded_order(driver)
 
 def parse_expanded_order(driver):
@@ -386,10 +376,8 @@ def parse_expanded_order(driver):
             raw_name = name_el.text.strip()
             lines = raw_name.split('\n')
             item_name = lines[0]
-
             item_qty = qty_el.text.strip()
 
-            # 원래 이름도 매핑용으로 기록
             results.append((item_name, item_qty))
             logging.info(f"  - ({idx}) 품목명='{item_name}', 판매량='{item_qty}'")
 
@@ -398,17 +386,16 @@ def parse_expanded_order(driver):
 
     return results
 
-
-
-# ✅ 여기에 붙여넣으세요 (이 함수가 없어서 에러 났던 것)
 def scrape_orders_in_page(driver):
     all_items = []
-    for i in range(1, 11):  # 한 페이지에 최대 10개 주문
+    for i in range(1, 11):  # 한 페이지 최대 10개 주문
         items = expand_and_parse_order(driver, i)
         if items:
             all_items.extend(items)
+        else:
+            # 더 이상 파싱할 주문 리스트가 없으면 해당 루프 조기 종료
+            break
     return all_items
-
 
 def scrape_all_pages_by_buttons(driver):
     all_data = []
@@ -448,7 +435,7 @@ def go_to_page_button(driver, page_number):
         )
         page_btn.click()
         logging.info(f"{page_number}페이지 버튼 클릭 성공")
-        time.sleep(random.uniform(1.2, 2.4))  # 페이지 로딩 기다림
+        time.sleep(random.uniform(1.2, 2.4))
 
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "ul.order-search-result-content.row"))
@@ -459,9 +446,8 @@ def go_to_page_button(driver, page_number):
         logging.info(f"{page_number}페이지 버튼 클릭 실패 또는 존재하지 않음")
         return False
 
-
 ###############################################################################
-# 8. 구글 시트
+# 8. 구글 시트 연동
 ###############################################################################
 def get_gspread_client_from_b64(service_account_json_b64):
     json_bytes = base64.b64decode(service_account_json_b64)
@@ -479,11 +465,7 @@ def get_gspread_client_from_b64(service_account_json_b64):
 
 def update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map):
     ranges_to_clear = [
-        "G38:G45",
-        "R38:R45",
-        "AI38:AI45",
-        "AT38:AT45",
-        "BE38:BE45"
+        "G38:G45", "R38:R45", "AI38:AI45", "AT38:AT45", "BE38:BE45"
     ]
     try:
         jaego_sheet.batch_clear(ranges_to_clear)
@@ -525,18 +507,24 @@ def update_revenue_by_day(mugeung_sheet, revenue):
         logging.warning(f"[청라] E1({date_in_e1})에서 일자 추출 실패.")
         return
 
-    date_cells = mugeung_sheet.range('U3:U33')
-    found = False
-    for cell in date_cells:
-        if cell.value == day_str:
-            row_num = cell.row
-            mugeung_sheet.update_cell(row_num, 24, revenue)
-            logging.info(f"[청라] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
-            found = True
-            break
+    # 성능 개선: 전체 range를 가져오는 대신 U열 데이터 리스트를 한 번에 가져옴
+    try:
+        u_values = mugeung_sheet.col_values(21)  # 21번째 열 = U열
+        found = False
+        
+        # U3부터 U33 범위 탐색 (인덱스 기준 2~32)
+        for idx in range(2, min(33, len(u_values))):
+            if u_values[idx] == day_str:
+                row_num = idx + 1
+                mugeung_sheet.update_cell(row_num, 24, revenue)  # X열(24번째) 업데이트
+                logging.info(f"[청라] E1={date_in_e1} -> day={day_str}, X{row_num}={revenue}")
+                found = True
+                break
 
-    if not found:
-        logging.warning(f"[청라] U열에서 일자 {day_str}를 찾지 못했습니다.")
+        if not found:
+            logging.warning(f"[청라] U열 3~33행 범위에서 일자 {day_str}를 찾지 못했습니다.")
+    except Exception as e:
+        logging.error(f"[청라] 매출액 업데이트 중 구글 시트 오류: {e}")
 
 ###############################################################################
 # 9. 메인 실행 흐름
@@ -566,59 +554,36 @@ def main():
         logging.info(f"[결과] 수집된 메뉴 아이템 총 {len(all_order_items)}개")
 
     except Exception as e:
-        logging.error(f"에러 발생: {e}")
+        logging.error(f"스크래핑 프로세스 중 에러 발생: {e}")
         traceback.print_exc()
 
     finally:
         driver.quit()
         logging.info("WebDriver 종료")
 
-    # 5) 구글 시트
+    # 5) 구글 시트 연동 및 업데이트
     try:
         client = get_gspread_client_from_b64(service_account_json_b64)
         doc = open_google_sheet_with_retry(client, "청라 일일/월말 정산서")
         mugeung_sheet = doc.worksheet("청라")
         jaego_sheet = doc.worksheet("재고")
 
-        # 매출액
+        # 매출액 반영
         update_revenue_by_day(mugeung_sheet, today_revenue)
 
-        # 재고
+        # 재고 매핑 맵 설정
         item_cell_map = {
-            '백골뱅이숙회': 'G45',
-            '얼큰소국밥': 'R38',
-            '낙지비빔밥': 'AI38',
-            '낙지볶음': 'AI40',
-            '낙지파전': 'AI39',
-            '우삼겹김치전': 'R39',
-            '두부김치제육': 'R40',
-            '육회비빔밥': 'G42',
-            '숙주갈비탕': 'G38',
-            '갈비찜덮밥': 'G39',
-            '육전': 'R44',
-            '육회': 'G43',
-            '육사시미': 'G44',
-            '갈비수육': 'G40',
-            '소갈비찜': 'G41',
-            '코카콜라 355ml': 'AI42',
-            '스프라이트 355ml': 'AI43',
-            '토닉워터 300ml': 'AI44',
-            '제로콜라 355ml': 'AI41',
-            '만월 360ml': 'AT39',
-            '문배술25 375ml': 'AT40',
-            '배도가 로아 화이트 350ml': 'AT43',
-            '황금보리 375ml': 'AT38',
-            '사곡양조 왕율주 360ml': 'AT41',
-            '왕주 375ml': 'AT42',
-            '청하 300ml': 'BE38',
-            '참이슬 후레쉬 360ml': 'BE39',
-            '처음처럼 360ml': 'BE40',
-            '새로 360ml': 'BE42',
-            '진로이즈백 360ml': 'BE41',
-            '카스 500ml': 'BE43',
-            '테라 500ml': 'BE44',
-            '캘리 500ml': 'BE45',
-            '소성주 750ml': 'AT45'
+            '백골뱅이숙회': 'G45', '얼큰소국밥': 'R38', '낙지비빔밥': 'AI38',
+            '낙지볶음': 'AI40', '낙지파전': 'AI39', '우삼겹김치전': 'R39',
+            '두부김치제육': 'R40', '육회비빔밥': 'G42', '숙주갈비탕': 'G38',
+            '갈비찜덮밥': 'G39', '육전': 'R44', '육회': 'G43', '육사시미': 'G44',
+            '갈비수육': 'G40', '소갈비찜': 'G41', '코카콜라 355ml': 'AI42',
+            '스프라이트 355ml': 'AI43', '토닉워터 300ml': 'AI44', '제로콜라 355ml': 'AI41',
+            '만월 360ml': 'AT39', '문배술25 375ml': 'AT40', '배도가 로아 화이트 350ml': 'AT43',
+            '황금보리 375ml': 'AT38', '사곡양조 왕율주 360ml': 'AT41', '왕주 375ml': 'AT42',
+            '청하 300ml': 'BE38', '참이슬 후레쉬 360ml': 'BE39', '처음처럼 360ml': 'BE40',
+            '새로 360ml': 'BE42', '진로이즈백 360ml': 'BE41', '카스 500ml': 'BE43',
+            '테라 500ml': 'BE44', '캘리 500ml': 'BE45', '소성주 750ml': 'AT45'
         }
 
         item_quantity_map = {}
@@ -631,7 +596,7 @@ def main():
         update_jaego_sheet(jaego_sheet, item_cell_map, item_quantity_map)
 
     except Exception as e:
-        logging.error(f"구글 시트 연동 에러: {e}")
+        logging.error(f"구글 시트 연동 및 가공 에러: {e}")
         traceback.print_exc()
 
 if __name__ == "__main__":
