@@ -227,21 +227,21 @@ def batch_update_sheet(
     point_holder
 ):
     client = get_gspread_client_from_b64(service_account_json_b64)
-    spreadsheet = client.open("송도 일일/월말 정산서")
+    spreadsheet = client.open("청라 일일/월말 정산서")
 
     # -----------------------
-    # 송도 시트 업데이트
+    # 청라 시트 업데이트
     # -----------------------
-    songdo_ws = spreadsheet.worksheet("송도")
+    chengla_ws = spreadsheet.worksheet("청라")
 
     today_day = datetime.datetime.now().day
     row_index = today_day + 2
 
-    updates_songdo = [
+    updates_chengla = [
         {"range": f"AK{row_index}", "values": [[usage_value]]},
         {"range": f"AI{row_index}", "values": [[visitor_count]]},
     ]
-    songdo_ws.batch_update(updates_songdo)
+    chengla_ws.batch_update(updates_chengla)
 
     # -----------------------
     # 예약&마케팅 시트 업데이트
