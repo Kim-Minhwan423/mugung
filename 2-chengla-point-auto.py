@@ -101,14 +101,12 @@ def get_chrome_driver(use_profile=False):
 # 4. 로그인 및 팝업 닫기
 ###############################################################################
 def login_point(driver, point_id, point_pw):
-    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/549")
+    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/550")
     logging.info("포인트 로그인 페이지 접속 완료")
 
-    time.sleep(5)
-
-    id_selector = "body > div > form > div:nth-child(3) > input[type=text]"
-    pw_selector = "body > div > form > div:nth-child(4) > input[type=password]"
-    login_btn_selector = "body > div > form > button"
+    id_selector = "#mid"
+    pw_selector = "#password"
+    login_btn_selector = "body > div.mx-auto.flex.min-h-screen.w-full.max-w-sm.items-center > div > div:nth-child(2) > form > button"
 
     try:
         WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.CSS_SELECTOR, id_selector)))
@@ -126,7 +124,7 @@ def login_point(driver, point_id, point_pw):
 # 5. 포인트 적립&사용 조회
 ###############################################################################
 def get_today_usage(driver):
-    usage_selector = "#totalUsedPoints"
+    usage_selector = "body > div.min-h-screen.w-full.bg-muted\/30 > div > div > section > div.grid.grid-cols-2.gap-4.md\:grid-cols-4 > div:nth-child(8) > div > div > div > div.mt-1.text-2xl.font-bold"
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.CSS_SELECTOR, usage_selector).text.strip() != ''
@@ -140,7 +138,7 @@ def get_today_usage(driver):
         return -1
 
 def get_today_saved_count(driver):
-    status_xpath = '/html/body/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[1]'
+    status_xpath = '/html/body/div[2]/div/div/div[2]/section[1]/div[2]/div[1]/div/div/div/div[2]'
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.XPATH, status_xpath).text.strip() != ''
@@ -155,7 +153,7 @@ def get_today_saved_count(driver):
         return -1
 
 def get_average_visit_gap(driver):
-    xpath = '//*[@id="averageVisitGap"]'
+    xpath = '/html/body/div[2]/div/div/section/div[2]/div[3]/div/div/div/div[2]'
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
@@ -173,7 +171,7 @@ def get_average_visit_gap(driver):
         return -1
 
 def get_recent_visit(driver):
-    xpath = '//*[@id="recentVisits"]'
+    xpath = '/html/body/div[2]/div/div/section/div[2]/div[2]/div/div/div/div[2]'
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
@@ -188,7 +186,7 @@ def get_recent_visit(driver):
 
 
 def get_point_holder(driver):
-    xpath = '//*[@id="pointHolders"]'
+    xpath = '/html/body/div[2]/div/div/section/div[2]/div[7]/div/div/div/div[2]'
     try:
         WebDriverWait(driver, 10).until(
             lambda d: d.find_element(By.XPATH, xpath).text.strip() != ''
@@ -200,7 +198,7 @@ def get_point_holder(driver):
     except Exception as e:
         logging.error(f"포인트 보유자 파싱 오류: {e}")
         return -1
-        
+
 ###############################################################################
 # 6. Google Sheets 업데이트
 ###############################################################################
@@ -229,21 +227,21 @@ def batch_update_sheet(
     point_holder
 ):
     client = get_gspread_client_from_b64(service_account_json_b64)
-    spreadsheet = client.open("청라 일일/월말 정산서")
+    spreadsheet = client.open("송도 일일/월말 정산서")
 
     # -----------------------
-    # 청라 시트 업데이트
+    # 송도 시트 업데이트
     # -----------------------
-    chengla_ws = spreadsheet.worksheet("청라")
+    songdo_ws = spreadsheet.worksheet("송도")
 
     today_day = datetime.datetime.now().day
     row_index = today_day + 2
 
-    updates_chengla = [
+    updates_songdo = [
         {"range": f"AK{row_index}", "values": [[usage_value]]},
         {"range": f"AI{row_index}", "values": [[visitor_count]]},
     ]
-    chengla_ws.batch_update(updates_chengla)
+    songdo_ws.batch_update(updates_songdo)
 
     # -----------------------
     # 예약&마케팅 시트 업데이트
