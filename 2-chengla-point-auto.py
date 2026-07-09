@@ -72,7 +72,7 @@ def get_environment_variables():
 ###############################################################################
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -101,8 +101,10 @@ def get_chrome_driver(use_profile=False):
 # 4. 로그인 및 팝업 닫기
 ###############################################################################
 def login_point(driver, point_id, point_pw):
-    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/550")
+    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/549")
     logging.info("포인트 로그인 페이지 접속 완료")
+
+    time.sleep(5)
 
     id_selector = "body > div > form > div:nth-child(3) > input[type=text]"
     pw_selector = "body > div > form > div:nth-child(4) > input[type=password]"
