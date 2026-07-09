@@ -101,7 +101,7 @@ def get_chrome_driver(use_profile=False):
 # 4. 로그인 및 팝업 닫기
 ###############################################################################
 def login_point(driver, point_id, point_pw):
-    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/550")
+    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/549")
     logging.info("포인트 로그인 페이지 접속 완료")
 
     id_selector = "#mid"
