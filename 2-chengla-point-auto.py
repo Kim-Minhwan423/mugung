@@ -101,7 +101,7 @@ def get_chrome_driver(use_profile=False):
 # 4. 로그인 및 팝업 닫기
 ###############################################################################
 def login_point(driver, point_id, point_pw):
-    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/549")
+    driver.get("https://xn--3j1b74x8mfjtk.com/visits/stats/550")
     logging.info("포인트 로그인 페이지 접속 완료")
 
     id_selector = "body > div > form > div:nth-child(3) > input[type=text]"
@@ -198,7 +198,7 @@ def get_point_holder(driver):
     except Exception as e:
         logging.error(f"포인트 보유자 파싱 오류: {e}")
         return -1
-
+        
 ###############################################################################
 # 6. Google Sheets 업데이트
 ###############################################################################
