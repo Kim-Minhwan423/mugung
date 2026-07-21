@@ -35,7 +35,7 @@ import time
 import gspread
 from google.auth.exceptions import TransportError
 
-def open_google_sheet_with_retry(client, sheet_name, retries=5):
+1def open_google_sheet_with_retry(client, sheet_name, retries=5):
     for attempt in range(1, retries + 1):
         try:
             doc = client.open(sheet_name)
