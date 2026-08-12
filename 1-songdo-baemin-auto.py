@@ -180,8 +180,8 @@ class SeleniumDriverManager:
         options = webdriver.ChromeOptions()
         
         # 헤드리스 모드
-        #if self.headless:
-         #   options.add_argument("--headless=new")
+        if self.headless:
+            options.add_argument("--headless=new")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
