@@ -397,7 +397,7 @@ def login_and_close_popup(driver, wait, username, password):
     password_element.send_keys(password)
     logging.info("비밀번호 입력 완료")
 
-    time.sleep(50)
+    time.sleep(5)
 
     # ------------------------------------------------------------------
     # 4. CAPTCHA 확인
@@ -517,6 +517,8 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     # 7. 로그인 후 팝업 닫기
     # ------------------------------------------------------------------
+    time.sleep(50)
+    
     popup_close_selectors = [
         (
             "div[id^='\\:r'] "
