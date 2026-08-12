@@ -36,9 +36,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 ITEM_TO_CELL = {
     '백골뱅이숙회': 'E45',
     '얼큰소국밥': 'P38',
-    '낙지비빔밥': 'AE38',
-    '낙지볶음': 'AE40',
-    '낙지파전': 'AE39',
+    '낙지비빔밥': 'AD38',
+    '낙지볶음': 'AD40',
+    '낙지파전': 'AD39',
     '우삼겹김치전': 'P39',
     '두부김치제육': 'P40',
     '육회비빔밥': 'E42',
@@ -50,25 +50,25 @@ ITEM_TO_CELL = {
     '갈비수육': 'E40',
     '소갈비찜': 'E41',
     '소불고기': 'P42',
-    '코카콜라': 'AE42',
-    '스프라이트': 'AE43',
-    '토닉워터': 'AE44',
-    '제로콜라': 'AE41',
-    '만월': 'AR39',
-    '문배술25': 'AR40',
-    '로아 화이트': 'AR43',
-    '황금보리': 'AR38',
-    '왕율주': 'AR41',
-    '왕주': 'AR42',
-    '청하': 'BC38',
-    '참이슬 후레쉬': 'BC39',
-    '처음처럼': 'BC40',
-    '새로': 'BC42',
-    '진로이즈백': 'BC41',
-    '카스': 'BC43',
-    '테라': 'BC44',
-    '켈리': 'BC45',
-    '소성주막걸리': 'AR45'
+    '코카콜라': 'AD42',
+    '스프라이트': 'AD43',
+    '토닉워터': 'AD44',
+    '제로콜라': 'AD41',
+    '만월': 'AQ39',
+    '문배술25': 'AQ40',
+    '로아 화이트': 'AQ43',
+    '황금보리': 'AQ38',
+    '왕율주': 'AQ41',
+    '왕주': 'AQ42',
+    '청하': 'BB38',
+    '참이슬 후레쉬': 'BB39',
+    '처음처럼': 'BB40',
+    '새로': 'BB42',
+    '진로이즈백': 'BB41',
+    '카스': 'BB43',
+    '테라': 'BB44',
+    '켈리': 'BB45',
+    '소성주막걸리': 'AQ45'
 }
 
 
@@ -179,9 +179,9 @@ class SeleniumDriverManager:
     def __enter__(self):
         options = webdriver.ChromeOptions()
         
-        # (필요 시) 헤드리스 모드
+        # 헤드리스 모드
         if self.headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
         
         # 안정성 옵션
         options.add_argument("--no-sandbox")
@@ -191,7 +191,6 @@ class SeleniumDriverManager:
         options.add_argument(f"user-agent={self.user_agent}")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-infobars")
-        options.add_argument("--remote-debugging-port=9222")
         
         # 예시: user-data-dir (원한다면 사용)
         # unique_dir = f"/tmp/chrome-user-data-{uuid.uuid4()}"
@@ -300,39 +299,247 @@ class GoogleSheetsManager:
 # 기능별 함수 (배민 사이트 크롤링)
 ###############################################################################
 def login_and_close_popup(driver, wait, username, password):
+    """
+    배민 로그인 안정화 버전.
+
+    핵심:
+    1. 로그인 입력창은 고정된 전체 XPath/CSS 대신 비교적 안정적인 속성을 우선 사용.
+    2. reCAPTCHA는 항상 존재한다고 가정하지 않음.
+    3. reCAPTCHA가 iframe 안에 있거나 동적으로 생성되는 경우를 고려.
+    4. 자동으로 CAPTCHA를 우회하지 않고, 표시되면 사용자가 직접 확인할 시간을 제공.
+    5. 로그인 버튼은 존재/클릭 가능 상태를 기다린 후 클릭.
+    6. 로그인 성공 여부를 URL 또는 로그인 화면 소멸로 확인.
+    """
+
     driver.get("https://self.baemin.com/")
     logging.info("배민 페이지 접속 시도")
-    
+
+    # ------------------------------------------------------------------
+    # 1. 로그인 화면 대기
+    # ------------------------------------------------------------------
     login_page_selector = "div.style__LoginWrap-sc-145yrm0-0.hKiYRl"
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, login_page_selector)))
-    
-    username_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div:nth-child(1) > span > input[type=text]"
-    password_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > div.Input__InputWrap-sc-tapcpf-1.kjWnKT.mt-half-3 > span > input[type=password]"
-    
-    driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
-    driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
-    
-    login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
-    driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
+
+    try:
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, login_page_selector))
+        )
+    except TimeoutException:
+        logging.warning("기존 로그인 컨테이너를 찾지 못했습니다. 입력창을 직접 탐색합니다.")
+
+    # ------------------------------------------------------------------
+    # 2. 아이디 입력창 탐색
+    # ------------------------------------------------------------------
+    username_selectors = [
+        "input[type='text']",
+        "input[name='id']",
+        "input[name='username']",
+        "input[autocomplete='username']",
+    ]
+
+    username_element = None
+
+    for selector in username_selectors:
+        try:
+            elements = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector))
+            )
+
+            for element in elements:
+                if element.is_displayed() and element.is_enabled():
+                    username_element = element
+                    break
+
+            if username_element:
+                break
+
+        except TimeoutException:
+            continue
+
+    if username_element is None:
+        raise RuntimeError("배민 로그인 아이디 입력창을 찾지 못했습니다.")
+
+    username_element.clear()
+    username_element.send_keys(username)
+    logging.info("아이디 입력 완료")
+
+    # ------------------------------------------------------------------
+    # 3. 비밀번호 입력창 탐색
+    # ------------------------------------------------------------------
+    password_selectors = [
+        "input[type='password']",
+        "input[name='password']",
+        "input[autocomplete='current-password']",
+    ]
+
+    password_element = None
+
+    for selector in password_selectors:
+        try:
+            elements = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector))
+            )
+
+            for element in elements:
+                if element.is_displayed() and element.is_enabled():
+                    password_element = element
+                    break
+
+            if password_element:
+                break
+
+        except TimeoutException:
+            continue
+
+    if password_element is None:
+        raise RuntimeError("배민 로그인 비밀번호 입력창을 찾지 못했습니다.")
+
+    password_element.clear()
+    password_element.send_keys(password)
+    logging.info("비밀번호 입력 완료")
+
+    time.sleep(5)
+
+    # ------------------------------------------------------------------
+    # 4. CAPTCHA 확인
+    #
+    # CAPTCHA는 항상 표시되는 것이 아니므로 무조건 클릭하지 않습니다.
+    # 또한 reCAPTCHA는 iframe 내부에 존재할 수 있습니다.
+    # 자동 우회는 하지 않고, 존재할 경우 사용자가 직접 처리할 수 있도록
+    # 최대 30초 동안 확인합니다.
+    # ------------------------------------------------------------------
+    captcha_found = False
+
+    try:
+        # 현재 문서에서 reCAPTCHA 관련 요소가 있는지 확인
+        captcha_candidates = driver.find_elements(
+            By.CSS_SELECTOR,
+            "#recaptcha-anchor, .g-recaptcha, iframe[src*='recaptcha'], iframe[title*='reCAPTCHA']"
+        )
+
+        visible_captcha = [
+            el for el in captcha_candidates
+            if el.is_displayed()
+        ]
+
+        if visible_captcha:
+            captcha_found = True
+            logging.info("reCAPTCHA가 감지되었습니다. 자동 우회하지 않고 사용자 확인을 기다립니다.")
+
+    except Exception as e:
+        logging.warning(f"CAPTCHA 감지 중 예외: {e}")
+
+    if captcha_found:
+        # 사용자가 CAPTCHA를 직접 처리할 시간을 줌.
+        # 체크박스를 프로그램으로 클릭하지 않음.
+        time.sleep(1)
+
+        try:
+            WebDriverWait(driver, 30).until(
+                lambda d: not any(
+                    el.is_displayed()
+                    for el in d.find_elements(
+                        By.CSS_SELECTOR,
+                        "#recaptcha-anchor, .g-recaptcha, iframe[src*='recaptcha'], iframe[title*='reCAPTCHA']"
+                    )
+                )
+            )
+            logging.info("reCAPTCHA 확인 단계 종료")
+        except TimeoutException:
+            logging.warning("reCAPTCHA가 30초 안에 사라지지 않았습니다. 로그인 버튼을 시도합니다.")
+    else:
+        logging.info("reCAPTCHA가 표시되지 않았습니다. 바로 로그인 진행")
+
+    # ------------------------------------------------------------------
+    # 5. 로그인 버튼 탐색
+    # ------------------------------------------------------------------
+    login_button_selectors = [
+        "form button[type='submit']",
+        "form button",
+        "button[type='submit']",
+    ]
+
+    login_button = None
+
+    for selector in login_button_selectors:
+        try:
+            elements = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, selector))
+            )
+
+            for element in elements:
+                if element.is_displayed() and element.is_enabled():
+                    login_button = element
+                    break
+
+            if login_button:
+                break
+
+        except TimeoutException:
+            continue
+
+    if login_button is None:
+        raise RuntimeError("배민 로그인 버튼을 찾지 못했습니다.")
+
+    # 일반 클릭 → 실패하면 JS 클릭
+    try:
+        WebDriverWait(driver, 10).until(
+            lambda d: login_button.is_displayed() and login_button.is_enabled()
+        )
+        login_button.click()
+    except Exception as e:
+        logging.warning(f"로그인 버튼 일반 클릭 실패 → JS 클릭 시도: {e}")
+        driver.execute_script("arguments[0].click();", login_button)
+
     logging.info("로그인 버튼 클릭")
 
-    time.sleep(3)
+    # ------------------------------------------------------------------
+    # 6. 로그인 결과 대기
+    # ------------------------------------------------------------------
+    time.sleep(2)
 
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button > span > svg")
     try:
-        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        close_btn.click()
-        logging.info("팝업 닫기 성공")
+        WebDriverWait(driver, 15).until(
+            lambda d: (
+                "self.baemin.com" in d.current_url
+                and not d.find_elements(
+                    By.CSS_SELECTOR,
+                    "input[type='password']"
+                )
+            )
+            or "/login" not in d.current_url.lower()
+        )
+        logging.info("로그인 화면 종료 확인")
     except TimeoutException:
-        logging.info("팝업이 없거나 이미 닫힘")
-        
-    popup_close_selector = ("div[id^='\\:r'] div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button > span > svg")
-    try:
-        close_btn = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, popup_close_selector)))
-        close_btn.click()
-        logging.info("팝업 닫기 성공")
-    except TimeoutException:
-        logging.info("팝업이 없거나 이미 닫힘")
+        logging.warning(
+            f"로그인 결과 확인 시간 초과. 현재 URL: {driver.current_url}"
+        )
+
+    # ------------------------------------------------------------------
+    # 7. 로그인 후 팝업 닫기
+    # ------------------------------------------------------------------
+    popup_close_selectors = [
+        (
+            "div.OverlayHeader_b_r4ax_5xyph31."
+            "c_qx9u_13c33de0."
+            "c_qx9u_13ysz3p2."
+            "c_qx9u_13ysz3p0 "
+            "div:nth-child(1) > button"
+        )
+    ]
+
+    for popup_selector in popup_close_selectors:
+        try:
+            close_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, popup_selector)
+                )
+            )
+            close_btn.click()
+            logging.info("팝업 닫기 성공")
+        except TimeoutException:
+            logging.info("팝업이 없거나 이미 닫힘")
+        except Exception as e:
+            logging.warning(f"팝업 닫기 실패: {e}")
 
 def navigate_to_order_history(driver, wait):
     menu_button_selector = "#root > div.Frame.medium > div.Container_c_qx9u_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button"
@@ -340,7 +547,7 @@ def navigate_to_order_history(driver, wait):
     driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
 
     time.sleep(3)
-    
+
     order_history_selector = "#root > div > div.frame-container.lnb-open > div.frame-aside > div > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_qx9u_1utdzds5 > a:nth-child(19) > button"
     wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
     driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
@@ -408,7 +615,6 @@ def extract_order_summary(driver, wait):
 # 주문 상세 메뉴/수량 추출
 # ==============================
 def extract_sales_details(driver, wait):
-
     price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
 
     def normalize_text(s: str) -> str:
@@ -434,7 +640,7 @@ def extract_sales_details(driver, wait):
                 toggle_tr = detail_tr - 1
                 toggle_xpath = (
                     f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
-                    f'table/tbody/tr[{toggle_tr}]/td[1]/div'
+                    f'table/tbody/tr[{toggle_tr}]/td/div'
                 )
                 try:
                     btn = wait.until(EC.presence_of_element_located((By.XPATH, toggle_xpath)))
@@ -516,7 +722,6 @@ def extract_sales_details(driver, wait):
 
     logging.info(f"최종 집계 데이터: {sales_data}")
     return sales_data
-
 ###############################################################################
 # 메인 함수
 ###############################################################################
@@ -582,7 +787,7 @@ def main():
             logging.warning(f"시트에 오늘({day}) 날짜를 찾을 수 없음 (U3:U33 범위)")
         
         # 재고 시트 특정 범위 삭제
-        ranges_to_clear = ['E38:E45', 'P38:P45', 'AE38:AE45', 'AR38:AR45', 'BC38:BC45']
+        ranges_to_clear = ['E38:E45', 'P38:P45', 'AD38:AD45', 'AP38:AP45', 'BA38:BA45']
         sheets_manager.batch_clear(inventory_sheet, ranges_to_clear)
         
         # 판매 디테일 기록
