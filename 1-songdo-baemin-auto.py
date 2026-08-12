@@ -517,27 +517,25 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     # 7. 로그인 후 팝업 닫기
     # ------------------------------------------------------------------
-    popup_close_selector = (
-    "div.OverlayHeader_b_r4ax_5xyph31."
-    "c_qx9u_13c33de0."
-    "c_qx9u_13ysz3p2."
-    "c_qx9u_13ysz3p0 "
-    "div:nth-child(1) > button"
-)
+    popup_close_selectors = [
+        (
+            "div.OverlayHeader_b_r4ax_5xyph31."
+            "c_qx9u_13c33de0."
+            "c_qx9u_13ysz3p2."
+            "c_qx9u_13ysz3p0 "
+            "div:nth-child(1) > button"
+        )
+    ]
 
     for popup_selector in popup_close_selectors:
         try:
-            close_btn = WebDriverWait(driver, 3).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, popup_selector))
+            close_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, popup_selector)
+                )
             )
-            driver.execute_script(
-                "arguments[0].scrollIntoView({block:'center'});",
-                close_btn
-            )
-            time.sleep(0.2)
-            driver.execute_script("arguments[0].click();", close_btn)
+            close_btn.click()
             logging.info("팝업 닫기 성공")
-            time.sleep(0.5)
         except TimeoutException:
             logging.info("팝업이 없거나 이미 닫힘")
         except Exception as e:
