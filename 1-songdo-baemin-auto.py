@@ -517,30 +517,11 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     # 7. 로그인 후 팝업 닫기
     # ------------------------------------------------------------------
-    time.sleep(50)
-    
-    popup_close_selectors = [
-        (
-            "div[id^='\\:r'] "
-            "div.Container_c_qx9u_1utdzds5."
-            "OverlayHeader_b_r4ax_5xyph30."
-            "c_qx9u_13c33de0 > div."
-            "OverlayHeader_b_r4ax_5xyph31."
-            "c_qx9u_13c33de0.c_qx9u_13ysz3p2."
-            "c_qx9u_13ysz3p0 > div:nth-child(1) > "
-            "button > span > svg"
-        ),
-        (
-            "div[id^='\\:r'] "
-            "div.Container_c_rfd6_1utdzds5."
-            "OverlayFooter_b_rmnf_1slqmfa0 > div > "
-            "button.TextButton_b_rmnf_1j0jumh3."
-            "c_rfd6_13ysz3p2.c_rfd6_13ysz3p0."
-            "TextButton_b_rmnf_1j0jumh6."
-            "TextButton_b_rmnf_1j0jumhb."
-            "c_rfd6_13c33de3"
-        )
-    ]
+    popup_close_selector = (
+    "div[id^='\\:r'] > div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 "
+    "> div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 "
+    "> div:nth-child(1) > button > span > svg"
+)
 
     for popup_selector in popup_close_selectors:
         try:
