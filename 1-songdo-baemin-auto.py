@@ -311,9 +311,15 @@ def login_and_close_popup(driver, wait, username, password):
     
     driver.find_element(By.CSS_SELECTOR, username_selector).send_keys(username)
     driver.find_element(By.CSS_SELECTOR, password_selector).send_keys(password)
+
+    login_button1_selector = "#recaptcha-anchor > div.recaptcha-checkbox-border"
+    driver.find_element(By.CSS_SELECTOR, login_button1_selector).click()
+    logging.info("로그인 버튼 클릭")
+
+    time.sleep(10)
     
-    login_button_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
-    driver.find_element(By.CSS_SELECTOR, login_button_selector).click()
+    login_button2_selector = "#root > div.style__LoginWrap-sc-145yrm0-0.hKiYRl > div > div > form > button"
+    driver.find_element(By.CSS_SELECTOR, login_button2_selector).click()
     logging.info("로그인 버튼 클릭")
 
     time.sleep(3)
