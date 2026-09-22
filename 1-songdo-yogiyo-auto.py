@@ -319,141 +319,60 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
 
-        # (4) 품목 정보 추출
-        products = {}
-
+        # (4) 품목추출
         try:
-            # 메뉴가 들어있는 기본 영역
             base_selector = (
-                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-                "div > div:nth-child(2) > div > div"
-            )
-
-            # -------------------------------------------------
-            # 1. 먼저 메뉴가 들어있는 ghPAZZ 요소를 찾는다.
-            # -------------------------------------------------
-            menu_list_selector = (
-                f"{base_selector} > "
+                "#portal-root > div > div > "
+                "div.FullScreenModal__Container-sc-7lyzl-4.dogeK > "
+                "div > div:nth-child(2) > div > div > "
                 "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
             )
 
-            # ghPAZZ가 나타날 때까지 대기
-            menu_list = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, menu_list_selector)
-                )
+            products = {}
+
+            # 먼저 1개짜리 구조 확인
+            single_item_selector = (
+                f"{base_selector} > div > "
+                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                "span:nth-child(1)"
             )
 
-            # -------------------------------------------------
-            # 2. ghPAZZ 아래의 실제 메뉴 div 개수 확인
-            # -------------------------------------------------
-            menu_items = menu_list.find_elements(
-                By.XPATH,
-                "./div"
-            )
-
-            menu_count = len(menu_items)
-
-            logging.info(f"메뉴 개수: {menu_count}개")
-
-            # -------------------------------------------------
-            # 3. 메뉴가 1개인 경우
-            # -------------------------------------------------
-            if menu_count == 1:
-
-                item_selector = (
-                    f"{menu_list_selector} > div > "
-                    "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                    "span:nth-child(1)"
-                )
-
-                elem = WebDriverWait(driver, 5).until(
-                    EC.visibility_of_element_located(
-                        (By.CSS_SELECTOR, item_selector)
-                    )
-                )
-
+            try:
+                elem = driver.find_element(By.CSS_SELECTOR, single_item_selector)
                 text = elem.text.strip()
 
-                logging.info(f"1개 메뉴 원본 텍스트: {text}")
+                if text:
+                    products[text] = products.get(text, 0) + 1
+                    logging.info(f"[품목] {text} x 1")
 
-                if "배달요금" not in text:
-
-                    match = re.search(r"x\s*(\d+)", text)
-                    qty = int(match.group(1)) if match else 1
-
-                    name = normalize_product_name(text)
-
-                    products[name] = products.get(name, 0) + qty
-
-                    logging.info(
-                        f"상품 추출: {name} x {qty}"
-                    )
-
-            # -------------------------------------------------
-            # 4. 메뉴가 2개 이상인 경우
-            # -------------------------------------------------
-            elif menu_count >= 2:
-
-                for n in range(1, menu_count + 1):
-
+            except Exception:
+                # 1개 구조가 아니면 2개 이상 구조로 확인
+                for n in range(1, 11):
                     try:
                         item_selector = (
-                            f"{menu_list_selector} > div:nth-child({n}) > "
+                            f"{base_selector} > div:nth-child({n}) > "
                             "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
                             "span:nth-child(1)"
                         )
 
-                        elem = WebDriverWait(driver, 5).until(
-                            EC.visibility_of_element_located(
-                                (By.CSS_SELECTOR, item_selector)
-                            )
-                        )
-
+                        elem = driver.find_element(By.CSS_SELECTOR, item_selector)
                         text = elem.text.strip()
 
-                        logging.info(
-                            f"{n}번째 메뉴 원본 텍스트: {text}"
-                        )
+                        if text:
+                            products[text] = products.get(text, 0) + 1
+                            logging.info(f"[품목] {text} x 1")
 
-                        if "배달요금" in text:
-                            continue
-
-                        match = re.search(
-                            r"x\s*(\d+)",
-                            text
-                        )
-
-                        qty = int(match.group(1)) if match else 1
-
-                        name = normalize_product_name(text)
-
-                        products[name] = products.get(name, 0) + qty
-
-                        logging.info(
-                            f"{n}번째 상품 추출: {name} x {qty}"
-                        )
-
-                    except NoSuchElementException:
-                        logging.warning(
-                            f"{n}번째 메뉴 상품 정보를 찾지 못함"
-                        )
+                    except Exception:
+                        # 해당 번호의 메뉴가 없으면 다음 번호 확인
                         continue
 
-                    except TimeoutException:
-                        logging.warning(
-                            f"{n}번째 메뉴 상품 정보 대기시간 초과"
-                        )
-                        continue
+            orders_data[-1]["products"] = products
 
-            logging.info(
-                f"현재 주문 상품 추출 결과: {products}"
-            )
+            logging.info(f"[DEBUG] 추출 품목: {products}")
 
         except Exception as e:
-            logging.warning(
-                f"품목 추출 전체 실패: {e}"
-            )
+            logging.warning(f"품목 추출 전체 실패: {e}")
+            orders_data[-1]["products"] = {}
             
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
