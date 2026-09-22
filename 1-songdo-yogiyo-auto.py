@@ -179,7 +179,7 @@ def go_songdo_selector(driver):
         logging.info("송도점 선택 완료")
     except TimeoutException:
         logging.warning("송도점 버튼을 찾지 못함")
-    time.sleep(300)
+    time.sleep(3)
 
 def go_order_history(driver):
     order_btn_xpath = "//*[@id='root']/div/div[2]/div[2]/div[2]/div[1]/button[1]"
@@ -254,7 +254,7 @@ def get_todays_orders(driver):
 
     for i in range(1, 11):  # 최대 10개의 주문 확인
         # (1) 주문 날짜 확인
-        row_date_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]/div"
+        row_date_xpath = f"//*[@id='common-layout-wrapper-id']/div[1]/div/div/div[1]/div/div[2]/div/div/div/div[4]/table/tbody/tr[{i}]/td[1]"
         try:
             date_elem = WebDriverWait(driver, 5).until(
                 EC.visibility_of_element_located((By.XPATH, row_date_xpath))
