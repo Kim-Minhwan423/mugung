@@ -338,7 +338,11 @@ def get_todays_orders(driver):
             )
 
             try:
-                elem = driver.find_element(By.CSS_SELECTOR, single_item_selector)
+                elem = driver.find_element(
+                    By.CSS_SELECTOR,
+                    single_item_selector
+                )
+
                 text = elem.text.strip()
 
                 if text:
@@ -355,7 +359,11 @@ def get_todays_orders(driver):
                             "span:nth-child(1)"
                         )
 
-                        elem = driver.find_element(By.CSS_SELECTOR, item_selector)
+                        elem = driver.find_element(
+                            By.CSS_SELECTOR,
+                            item_selector
+                        )
+
                         text = elem.text.strip()
 
                         if text:
@@ -366,13 +374,11 @@ def get_todays_orders(driver):
                         # 해당 번호의 메뉴가 없으면 다음 번호 확인
                         continue
 
-            orders_data[-1]["products"] = products
-
             logging.info(f"[DEBUG] 추출 품목: {products}")
 
         except Exception as e:
             logging.warning(f"품목 추출 전체 실패: {e}")
-            orders_data[-1]["products"] = {}
+            products = {}
             
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
