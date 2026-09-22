@@ -330,49 +330,29 @@ def get_todays_orders(driver):
 
             products = {}
 
-            # 먼저 1개짜리 구조 확인
-            single_item_selector = (
-                f"{base_selector} > div > "
-                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                "span:nth-child(1)"
-            )
+            # 메뉴는 최대 10개까지 순서대로 확인
+            for n in range(1, 11):
+                try:
+                    item_selector = (
+                        f"{base_selector} > div:nth-child({n}) > "
+                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                        "span:nth-child(1)"
+                    )
 
-            try:
-                elem = driver.find_element(
-                    By.CSS_SELECTOR,
-                    single_item_selector
-                )
+                    elem = driver.find_element(
+                        By.CSS_SELECTOR,
+                        item_selector
+                    )
 
-                text = elem.text.strip()
+                    text = elem.text.strip()
 
-                if text:
-                    products[text] = products.get(text, 0) + 1
-                    logging.info(f"[품목] {text} x 1")
+                    if text:
+                        products[text] = products.get(text, 0) + 1
+                        logging.info(f"[품목] {text} x 1")
 
-            except Exception:
-                # 1개 구조가 아니면 2개 이상 구조로 확인
-                for n in range(1, 11):
-                    try:
-                        item_selector = (
-                            f"{base_selector} > div:nth-child({n}) > "
-                            "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                            "span:nth-child(1)"
-                        )
-
-                        elem = driver.find_element(
-                            By.CSS_SELECTOR,
-                            item_selector
-                        )
-
-                        text = elem.text.strip()
-
-                        if text:
-                            products[text] = products.get(text, 0) + 1
-                            logging.info(f"[품목] {text} x 1")
-
-                    except Exception:
-                        # 해당 번호의 메뉴가 없으면 다음 번호 확인
-                        continue
+                except Exception:
+                    # 해당 번호의 메뉴가 없으면 다음 번호 확인
+                    continue
 
             logging.info(f"[DEBUG] 추출 품목: {products}")
 
