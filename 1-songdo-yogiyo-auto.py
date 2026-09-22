@@ -95,7 +95,7 @@ def get_environment_variables():
 def get_chrome_driver(use_profile=False):
     chrome_options = webdriver.ChromeOptions()
     # 필요 시 headless 모드 주석 해제
-    #chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
 
     # User-Agent 변경
     chrome_options.add_argument(
@@ -169,7 +169,7 @@ def go_store_selector(driver):
         logging.info("스토어 셀렉터 버튼 클릭")
     except TimeoutException:
         logging.warning("스토어 셀렉터 버튼을 찾지 못함")
-    time.sleep(300)
+    time.sleep(3)
 
 def go_songdo_selector(driver):
     songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
@@ -330,49 +330,35 @@ def get_todays_orders(driver):
 
             products = {}
 
-            # 먼저 1개짜리 구조 확인
-            single_item_selector = (
-                f"{base_selector} > div > "
-                "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                "span:nth-child(1)"
-            )
+            # 메뉴는 최대 10개까지 순서대로 확인
+            for n in range(1, 11):
+                try:
+                    item_selector = (
+                        f"{base_selector} > div:nth-child({n}) > "
+                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                        "span:nth-child(1)"
+                    )
 
-            try:
-                elem = driver.find_element(By.CSS_SELECTOR, single_item_selector)
-                text = elem.text.strip()
+                    elem = driver.find_element(
+                        By.CSS_SELECTOR,
+                        item_selector
+                    )
 
-                if text:
-                    products[text] = products.get(text, 0) + 1
-                    logging.info(f"[품목] {text} x 1")
+                    text = elem.text.strip()
 
-            except Exception:
-                # 1개 구조가 아니면 2개 이상 구조로 확인
-                for n in range(1, 11):
-                    try:
-                        item_selector = (
-                            f"{base_selector} > div:nth-child({n}) > "
-                            "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                            "span:nth-child(1)"
-                        )
+                    if text:
+                        products[text] = products.get(text, 0) + 1
+                        logging.info(f"[품목] {text} x 1")
 
-                        elem = driver.find_element(By.CSS_SELECTOR, item_selector)
-                        text = elem.text.strip()
-
-                        if text:
-                            products[text] = products.get(text, 0) + 1
-                            logging.info(f"[품목] {text} x 1")
-
-                    except Exception:
-                        # 해당 번호의 메뉴가 없으면 다음 번호 확인
-                        continue
-
-            orders_data[-1]["products"] = products
+                except Exception:
+                    # 해당 번호의 메뉴가 없으면 다음 번호 확인
+                    continue
 
             logging.info(f"[DEBUG] 추출 품목: {products}")
 
         except Exception as e:
             logging.warning(f"품목 추출 전체 실패: {e}")
-            orders_data[-1]["products"] = {}
+            products = {}
             
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
