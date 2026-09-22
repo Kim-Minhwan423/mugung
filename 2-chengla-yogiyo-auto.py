@@ -319,43 +319,122 @@ def get_todays_orders(driver):
             logging.error(f"{i}번째 행 팝업: 총 주문금액 추출 오류: {e}")
             fee_value = 0
 
-        # (4) 품목 정보 추출 (nth-child 순회 방식)
+        # (4) 품목 정보 추출
         products = {}
 
         try:
             base_selector = (
-                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-4.dogeK > div"
+                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
+                "div > div:nth-child(2) > div > div"
             )
 
-            for n in range(1, 11):  # 최대 10개까지 시도
+            menu_list_selector = (
+                f"{base_selector} > "
+                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
+            )
+
+            # 메뉴 목록 영역 찾기
+            menu_list = driver.find_element(
+                By.CSS_SELECTOR,
+                menu_list_selector
+            )
+
+            # 메뉴 개수 확인
+            menu_items = menu_list.find_elements(
+                By.XPATH,
+                "./div"
+            )
+
+            menu_count = len(menu_items)
+
+            logging.info(f"메뉴 개수: {menu_count}개")
+
+            # -------------------------------------------------
+            # 메뉴가 1개인 경우
+            # -------------------------------------------------
+            if menu_count == 1:
+
+                item_selector = (
+                    f"{menu_list_selector} > div > "
+                    "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                    "span:nth-child(1)"
+                )
+
                 try:
-                    item_selector = (
-                        f"{base_selector} > div:nth-child(2) > div > div  > "
-                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-11.ghPAZZ > "
-                        "div:nth-child({n}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > span:nth-child(1)"
+                    elem = driver.find_element(
+                        By.CSS_SELECTOR,
+                        item_selector
                     )
 
-                    elem = driver.find_element(By.CSS_SELECTOR, item_selector)
                     text = elem.text.strip()
 
-                    if "배달요금" in text:
-                        continue
+                    if "배달요금" not in text:
 
-                    match = re.search(r"x\s*(\d+)", text)
-                    qty = int(match.group(1)) if match else 1
+                        match = re.search(r"x\s*(\d+)", text)
+                        qty = int(match.group(1)) if match else 1
 
-                    name = normalize_product_name(text)
-                    products[name] = products.get(name, 0) + qty
+                        name = normalize_product_name(text)
 
-                    logging.info(f"상품 추출: {name} x {qty}")
+                        products[name] = products.get(name, 0) + qty
+
+                        logging.info(
+                            f"상품 추출: {name} x {qty}"
+                        )
 
                 except NoSuchElementException:
-                    logging.info(f"{n}번째 품목 없음 → 종료")
-                    break
+                    logging.warning(
+                        "메뉴 1개인 주문에서 상품 정보를 찾지 못함"
+                    )
+
+            # -------------------------------------------------
+            # 메뉴가 2개 이상인 경우
+            # -------------------------------------------------
+            elif menu_count >= 2:
+
+                for n in range(1, menu_count + 1):
+
+                    try:
+                        item_selector = (
+                            f"{menu_list_selector} > div:nth-child({n}) > "
+                            "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
+                            "span:nth-child(1)"
+                        )
+
+                        elem = driver.find_element(
+                            By.CSS_SELECTOR,
+                            item_selector
+                        )
+
+                        text = elem.text.strip()
+
+                        if "배달요금" in text:
+                            continue
+
+                        match = re.search(
+                            r"x\s*(\d+)",
+                            text
+                        )
+
+                        qty = int(match.group(1)) if match else 1
+
+                        name = normalize_product_name(text)
+
+                        products[name] = products.get(name, 0) + qty
+
+                        logging.info(
+                            f"{n}번째 상품 추출: {name} x {qty}"
+                        )
+
+                    except NoSuchElementException:
+                        logging.warning(
+                            f"{n}번째 메뉴 상품 정보를 찾지 못함 → 다음 메뉴로 진행"
+                        )
+                        continue
 
         except Exception as e:
-            logging.warning(f"품목 추출 전체 실패: {e}")
-
+            logging.warning(
+                f"품목 추출 전체 실패: {e}"
+            )
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
 
