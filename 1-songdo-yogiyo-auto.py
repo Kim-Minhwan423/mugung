@@ -323,23 +323,30 @@ def get_todays_orders(driver):
         products = {}
 
         try:
+            # 메뉴가 들어있는 기본 영역
             base_selector = (
                 "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
                 "div > div:nth-child(2) > div > div"
             )
 
+            # -------------------------------------------------
+            # 1. 먼저 메뉴가 들어있는 ghPAZZ 요소를 찾는다.
+            # -------------------------------------------------
             menu_list_selector = (
                 f"{base_selector} > "
                 "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
             )
 
-            # 메뉴 목록 영역 찾기
-            menu_list = driver.find_element(
-                By.CSS_SELECTOR,
-                menu_list_selector
+            # ghPAZZ가 나타날 때까지 대기
+            menu_list = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, menu_list_selector)
+                )
             )
 
-            # 메뉴 개수 확인
+            # -------------------------------------------------
+            # 2. ghPAZZ 아래의 실제 메뉴 div 개수 확인
+            # -------------------------------------------------
             menu_items = menu_list.find_elements(
                 By.XPATH,
                 "./div"
@@ -350,7 +357,7 @@ def get_todays_orders(driver):
             logging.info(f"메뉴 개수: {menu_count}개")
 
             # -------------------------------------------------
-            # 메뉴가 1개인 경우
+            # 3. 메뉴가 1개인 경우
             # -------------------------------------------------
             if menu_count == 1:
 
@@ -360,34 +367,31 @@ def get_todays_orders(driver):
                     "span:nth-child(1)"
                 )
 
-                try:
-                    elem = driver.find_element(
-                        By.CSS_SELECTOR,
-                        item_selector
+                elem = WebDriverWait(driver, 5).until(
+                    EC.visibility_of_element_located(
+                        (By.CSS_SELECTOR, item_selector)
                     )
+                )
 
-                    text = elem.text.strip()
+                text = elem.text.strip()
 
-                    if "배달요금" not in text:
+                logging.info(f"1개 메뉴 원본 텍스트: {text}")
 
-                        match = re.search(r"x\s*(\d+)", text)
-                        qty = int(match.group(1)) if match else 1
+                if "배달요금" not in text:
 
-                        name = normalize_product_name(text)
+                    match = re.search(r"x\s*(\d+)", text)
+                    qty = int(match.group(1)) if match else 1
 
-                        products[name] = products.get(name, 0) + qty
+                    name = normalize_product_name(text)
 
-                        logging.info(
-                            f"상품 추출: {name} x {qty}"
-                        )
+                    products[name] = products.get(name, 0) + qty
 
-                except NoSuchElementException:
-                    logging.warning(
-                        "메뉴 1개인 주문에서 상품 정보를 찾지 못함"
+                    logging.info(
+                        f"상품 추출: {name} x {qty}"
                     )
 
             # -------------------------------------------------
-            # 메뉴가 2개 이상인 경우
+            # 4. 메뉴가 2개 이상인 경우
             # -------------------------------------------------
             elif menu_count >= 2:
 
@@ -400,12 +404,17 @@ def get_todays_orders(driver):
                             "span:nth-child(1)"
                         )
 
-                        elem = driver.find_element(
-                            By.CSS_SELECTOR,
-                            item_selector
+                        elem = WebDriverWait(driver, 5).until(
+                            EC.visibility_of_element_located(
+                                (By.CSS_SELECTOR, item_selector)
+                            )
                         )
 
                         text = elem.text.strip()
+
+                        logging.info(
+                            f"{n}번째 메뉴 원본 텍스트: {text}"
+                        )
 
                         if "배달요금" in text:
                             continue
@@ -427,14 +436,25 @@ def get_todays_orders(driver):
 
                     except NoSuchElementException:
                         logging.warning(
-                            f"{n}번째 메뉴 상품 정보를 찾지 못함 → 다음 메뉴로 진행"
+                            f"{n}번째 메뉴 상품 정보를 찾지 못함"
                         )
                         continue
+
+                    except TimeoutException:
+                        logging.warning(
+                            f"{n}번째 메뉴 상품 정보 대기시간 초과"
+                        )
+                        continue
+
+            logging.info(
+                f"현재 주문 상품 추출 결과: {products}"
+            )
 
         except Exception as e:
             logging.warning(
                 f"품목 추출 전체 실패: {e}"
             )
+            
         # (5) 팝업 닫기 + 언더레이 사라질 때까지 대기
         close_popup_selector = "#portal-root svg"
 
