@@ -169,7 +169,7 @@ def go_store_selector(driver):
         logging.info("스토어 셀렉터 버튼 클릭")
     except TimeoutException:
         logging.warning("스토어 셀렉터 버튼을 찾지 못함")
-    time.sleep(3)
+    time.sleep(300)
 
 def go_songdo_selector(driver):
     songdo_xpath = "//*[@id='root']/div/div[2]/div[2]/div[1]/div/div[2]/ul/li[1]/ul/li"
