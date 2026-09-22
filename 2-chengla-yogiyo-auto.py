@@ -302,9 +302,7 @@ def get_todays_orders(driver):
 
         # (3) 총 주문금액
         fee_selector = (
-            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-            "div > div:nth-child(1) > div > li > "
-            "div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
+            "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-4.dogeK > div > div:nth-child(1) > div > li > div.OrderDetailPopup__OrderDeliveryFee-sc-cm3uu3-6.kCCvPa"
         )
         try:
             fee_elem = WebDriverWait(driver, 5).until(
@@ -326,17 +324,15 @@ def get_todays_orders(driver):
 
         try:
             base_selector = (
-                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-3.jJODWd > "
-                "div > div:nth-child(2) > div > div > "
-                "div.OrderDetailPopup__OrderFeeListItem-sc-cm3uu3-11.ghPAZZ"
+                "#portal-root > div > div > div.FullScreenModal__Container-sc-7lyzl-4.dogeK > div"
             )
 
             for n in range(1, 11):  # 최대 10개까지 시도
                 try:
                     item_selector = (
-                        f"{base_selector} > div:nth-child({n}) > "
-                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > "
-                        "span:nth-child(1)"
+                        f"{base_selector} > div:nth-child({n}) > div > div  > "
+                        "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-11.ghPAZZ > "
+                        "div:nth-child(1) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > span:nth-child(1)"
                     )
 
                     elem = driver.find_element(By.CSS_SELECTOR, item_selector)
@@ -389,6 +385,7 @@ def get_todays_orders(driver):
         })
 
     return result_data
+
 
 ###############################################################################
 # 8. Google Sheets 업데이트 함수
