@@ -345,6 +345,7 @@ def get_todays_orders(driver):
                     )
 
                     text = elem.text.strip()
+                    text = normalize_product_name(text)
 
                     if text:
                         products[text] = products.get(text, 0) + 1
