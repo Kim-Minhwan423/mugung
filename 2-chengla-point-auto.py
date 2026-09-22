@@ -124,15 +124,30 @@ def login_point(driver, point_id, point_pw):
 # 5. 포인트 적립&사용 조회
 ###############################################################################
 def get_today_usage(driver):
-    usage_selector = "body > div.min-h-screen.w-full.bg-muted\/30 > div > div > section > div.grid.grid-cols-2.gap-4.md\:grid-cols-4 > div:nth-child(8) > div > div > div > div.mt-1.text-2xl.font-bold"
+    usage_selector = "div.mt-1.text-2xl.font-bold"
+
     try:
-        WebDriverWait(driver, 10).until(
-            lambda d: d.find_element(By.CSS_SELECTOR, usage_selector).text.strip() != ''
+        elements = WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located(
+                (By.CSS_SELECTOR, usage_selector)
+            )
         )
-        text = driver.find_element(By.CSS_SELECTOR, usage_selector).text.strip()
-        usage_value = re.sub(r'[^\d]', '', text)
-        logging.info(f"오늘 사용금액: {usage_value}")
-        return int(usage_value) if usage_value else -1
+
+        # 페이지에 같은 클래스의 요소가 여러 개 있을 수 있으므로
+        # "P"가 붙은 값을 찾아 사용금액으로 판단
+        for element in elements:
+            text = element.text.strip()
+
+            if "P" in text:
+                usage_value = re.sub(r'[^\d]', '', text)
+
+                if usage_value:
+                    logging.info(f"오늘 사용금액: {usage_value}")
+                    return int(usage_value)
+
+        logging.error("오늘 사용금액 요소를 찾지 못했습니다.")
+        return -1
+
     except Exception as e:
         logging.error(f"사용금액 파싱 오류: {e}")
         return -1
