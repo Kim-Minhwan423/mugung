@@ -329,7 +329,7 @@ def get_todays_orders(driver):
 
             for n in range(1, 11):  # 최대 10개까지 시도
                 try:
-                    item_selector = 
+                    item_selector = (
                         f"{base_selector} > div:nth-child(2) > div > div  > "
                         "div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-11.ghPAZZ > "
                         "div:nth-child({n}) > div.OrderDetailPopup__OrderFeeItemContent-sc-cm3uu3-15.fnJncm > span:nth-child(1)"
