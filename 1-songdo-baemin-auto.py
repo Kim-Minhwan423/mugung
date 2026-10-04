@@ -627,63 +627,76 @@ def extract_order_summary(driver, wait):
     )
 
 
-# ==============================
-# 주문 상세 메뉴/수량 추출
-# ==============================
 def extract_sales_details(driver, wait):
+    import re
+    import time
+    import logging
+    from selenium.webdriver.common.by import By
+    from selenium.common.exceptions import (
+        NoSuchElementException,
+        StaleElementReferenceException,
+        TimeoutException
+    )
 
-    # 메뉴명 뒤의 "(1,000원)" 같은 가격 제거
-    price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
-
-    def normalize_text(s: str) -> str:
-        """
-        여러 공백을 하나로 정리하고 앞뒤 공백 제거
-        """
-        return re.sub(r"\s+", " ", s).strip()
-
-    def extract_qty(text: str) -> int:
-        """
-        문자열에서 숫자를 추출합니다.
-
-        예:
-        '1'      → 1
-        '수량 2' → 2
-        '2개'    → 2
-        """
-        m = re.search(r"\d+", text.replace(",", ""))
-        return int(m.group()) if m else 0
-
-    # 최종 집계 데이터
     sales_data = {}
 
-    # ==========================================
-    # ⭐ 추가 집계할 음료 목록
-    # ==========================================
+    # ============================================================
+    # 기존 메뉴명에서 "(1,000원)" 같은 가격 부분 제거
+    # ============================================================
+    price_tail_re = re.compile(r"\s*\([^)]*원\)\s*")
+
+    def normalize_text(text):
+        return re.sub(r"\s+", " ", text).strip()
+
+    # ============================================================
+    # 기존 메뉴 수량 추출
+    # ============================================================
+    def extract_qty(text):
+        if not text:
+            return 0
+
+        text = normalize_text(text)
+
+        match = re.search(r"\d+", text)
+
+        if match:
+            try:
+                return int(match.group())
+            except Exception:
+                return 0
+
+        return 0
+
+    # ============================================================
+    # 음료로 인정할 메뉴
+    # ============================================================
     drink_names = {
         "스프라이트",
         "코카콜라",
-        "제로콜라"
+        "제로콜라",
     }
 
-    # ==========================================
-    # 페이지 루프
-    # ==========================================
+    # ============================================================
+    # 페이지/주문 상세의 시작 tr
+    # 기존 코드 유지
+    # ============================================================
+    detail_tr = 2
+
+    fail_count = 0
+
+    # ============================================================
+    # 페이지 반복
+    # ============================================================
     while True:
 
-        # 현재 페이지의 첫 번째 주문 상세 행
-        detail_tr = 2
-
-        # 연속 펼치기 실패 횟수
-        fail_count = 0
-
-        # ==========================================
-        # 한 페이지에서 최대 10개 주문 처리
-        # ==========================================
+        # --------------------------------------------------------
+        # 주문 10개씩 처리
+        # --------------------------------------------------------
         for order_no in range(1, 11):
 
-            # ==========================================
-            # 주문 펼치기
-            # ==========================================
+            # ====================================================
+            # 첫 번째 주문 이후에는 다음 주문 펼치기
+            # ====================================================
             if order_no > 1:
 
                 toggle_tr = detail_tr - 1
@@ -694,30 +707,32 @@ def extract_sales_details(driver, wait):
                 )
 
                 try:
-                    btn = wait.until(
-                        EC.presence_of_element_located(
-                            (By.XPATH, toggle_xpath)
+                    toggle_element = wait.until(
+                        lambda d: d.find_element(
+                            By.XPATH,
+                            toggle_xpath
                         )
                     )
 
                     driver.execute_script(
-                        "arguments[0].scrollIntoView({block:'center'});",
-                        btn
+                        "arguments[0].scrollIntoView({block: 'center'});",
+                        toggle_element
                     )
 
                     time.sleep(0.2)
 
-                    driver.execute_script(
-                        "arguments[0].click();",
-                        btn
-                    )
+                    toggle_element.click()
 
-                    time.sleep(0.4)
+                    time.sleep(0.5)
 
-                    # 펼치기 성공
                     fail_count = 0
 
-                except Exception as e:
+                except (
+                    NoSuchElementException,
+                    StaleElementReferenceException,
+                    TimeoutException,
+                    Exception
+                ) as e:
 
                     fail_count += 1
 
@@ -726,85 +741,109 @@ def extract_sales_details(driver, wait):
                         f"(연속 {fail_count})"
                     )
 
-                    # 기존 로직 그대로
-                    # 연속 2회 실패하면 전체 종료
                     if fail_count >= 2:
-
-                        logging.info(
+                        logging.warning(
                             "연속 2회 실패 → 전체 크롤링 종료"
                         )
-
-                        logging.info(
-                            f"최종 집계 데이터: {sales_data}"
-                        )
-
                         return sales_data
 
-            # ==========================================
-            # ⭐ 메뉴/수량 추출
-            # ==========================================
+                    detail_tr += 2
+                    continue
+
+            # ====================================================
+            # 메뉴 1개 주문의 메뉴들을 읽음
+            #
+            # 기존 구조:
+            #
+            # div[1] = 메뉴
+            # div[2] = 해당 메뉴에 선택된 음료들
+            #
+            # 예:
+            #
+            # div[1]/span[1]/div/span[1]
+            #     → 메뉴명
+            #
+            # div[1]/span[1]/div/span[2]
+            #     → 메뉴 수량
+            #
+            # div[2]/li[1]~li[8]
+            #     → 선택 음료
+            # ====================================================
+
             for i in range(1, 26, 3):
 
-                # ======================================
-                # 기존 메뉴명 XPath
-                # ======================================
-                name_xpath = (
+                # =================================================
+                # 메뉴명 XPath
+                # =================================================
+                menu_name_xpath = (
                     f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
-                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
-                    f'/span[1]/div/span[1]'
+                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
+                    f'div[{i}]/span[1]/div/span[1]'
                 )
 
-                # ======================================
-                # 기존 메뉴 수량 XPath
-                # ======================================
+                # =================================================
+                # 메뉴 수량 XPath
+                # =================================================
                 qty_xpath = (
                     f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
-                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
-                    f'/span[1]/div/span[2]'
+                    f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
+                    f'div[{i}]/span[1]/div/span[2]'
                 )
 
-                # ======================================
-                # 메뉴명 / 수량 가져오기
-                # ======================================
+                # =================================================
+                # 메뉴명 읽기
+                # =================================================
                 try:
-
-                    raw_name = driver.find_element(
+                    menu_element = driver.find_element(
                         By.XPATH,
-                        name_xpath
-                    ).text
+                        menu_name_xpath
+                    )
 
-                    raw_qty = driver.find_element(
-                        By.XPATH,
-                        qty_xpath
-                    ).text
+                    raw_name = menu_element.text
 
-                except NoSuchElementException:
+                except (
+                    NoSuchElementException,
+                    StaleElementReferenceException
+                ):
+                    continue
 
-                    # 기존 로직 그대로
-                    # 메뉴가 없으면 다음 메뉴 탐색 종료
-                    break
+                if not raw_name:
+                    continue
 
-                # ======================================
+                # =================================================
                 # 메뉴명 정리
-                # ======================================
+                # =================================================
                 item_name = normalize_text(
                     price_tail_re.sub("", raw_name)
                 )
 
-                # ======================================
-                # 메뉴 수량
-                # ======================================
+                # =================================================
+                # 메뉴 수량 읽기
+                # =================================================
+                try:
+                    qty_element = driver.find_element(
+                        By.XPATH,
+                        qty_xpath
+                    )
+
+                    raw_qty = qty_element.text
+
+                except (
+                    NoSuchElementException,
+                    StaleElementReferenceException
+                ):
+                    raw_qty = ""
+
                 qty = extract_qty(raw_qty)
 
                 if qty == 0:
                     continue
 
-                # ==========================================
-                # ⭐ 기존 메뉴 집계 로직
-                # ==========================================
-                # 이 부분은 기존과 동일합니다.
-                # 절대 음료 로직으로 대체하지 않습니다.
-                # ==========================================
+                # =================================================
+                # ★ 기존 메뉴 집계 로직
+                #
+                # 이 부분은 기존과 동일하게 유지
+                # =================================================
                 if item_name in ITEM_TO_CELL:
 
                     cell = ITEM_TO_CELL[item_name]
@@ -817,191 +856,160 @@ def extract_sales_details(driver, wait):
                         f"[집계] {item_name} → {cell} +{qty}"
                     )
 
-                # ==========================================
-                # ⭐⭐⭐ 추가 음료 탐색 ⭐⭐⭐
-                # ==========================================
+                # =================================================
+                # ★★★ 추가된 음료 집계 ★★★
                 #
-                # 방금 확인한 메뉴(div[i]) 내부에서
-                #
-                # li[1]
-                # li[2]
-                # ...
-                # li[8]
-                #
-                # 까지 확인합니다.
-                #
-                # li 하나가 음료 하나입니다.
+                # 메뉴의 div[2] 안에 있는
+                # li[1] ~ li[8]을 하나씩 확인
                 #
                 # 예:
                 #
-                # li[1] = 스프라이트
-                # li[2] = 코카콜라
-                # li[3] = 코카콜라
-                # li[4] = 제로콜라
+                # div[2]/li[1]
+                # div[2]/li[2]
+                # ...
+                # div[2]/li[8]
                 #
-                # → 스프라이트 +1
-                # → 코카콜라 +2
-                # → 제로콜라 +1
+                # 각각의 음료명:
                 #
-                # ==========================================
+                # /div/span/div/span[2]/div/span[1]
+                # =================================================
 
                 for li_no in range(1, 9):
 
-                    # ======================================
-                    # 음료 이름 XPath
-                    # ======================================
-                    #
-                    # 사용자가 제공한 실제 HTML 구조:
-                    #
-                    # <span>코카콜라</span>
-                    # <span>(1,000원)</span>
-                    #
-                    # 여기서 첫 번째 span만 가져옵니다.
-                    #
-                    # ======================================
-
                     drink_xpath = (
                         f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
-                        f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/div[{i}]'
-                        f'/li[{li_no}]/div/span/div/span[2]/div/span[1]'
+                        f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
+                        f'div[{i + 1}]/li[{li_no}]/div/span/div/span[2]/div/span[1]'
                     )
 
                     try:
-
                         drink_element = driver.find_element(
                             By.XPATH,
                             drink_xpath
                         )
 
-                        drink_name = drink_element.text.strip()
+                        raw_drink_name = drink_element.text
 
-                    except NoSuchElementException:
-
-                        # 해당 li가 없으면
-                        # 다음 li를 확인합니다.
+                    except (
+                        NoSuchElementException,
+                        StaleElementReferenceException
+                    ):
+                        # 해당 li가 없으면 다음 li 확인
                         continue
 
-                    # ======================================
-                    # 음료명 정리
-                    # ======================================
+                    if not raw_drink_name:
+                        continue
+
                     drink_name = normalize_text(
-                        drink_name
+                        raw_drink_name
                     )
 
-                    # ======================================
-                    # 빈 값이면 무시
-                    # ======================================
-                    if not drink_name:
+                    # =================================================
+                    # 스프라이트 / 코카콜라 / 제로콜라만 집계
+                    # =================================================
+                    if drink_name not in drink_names:
                         continue
 
-                    # ======================================
-                    # 스프라이트 / 코카콜라 / 제로콜라만
-                    # 추가 집계
-                    # ======================================
-                    if drink_name in drink_names:
+                    # =================================================
+                    # 음료도 기존 ITEM_TO_CELL을 그대로 사용
+                    # =================================================
+                    if drink_name in ITEM_TO_CELL:
 
-                        # ==================================
-                        # ITEM_TO_CELL에 해당 음료 셀이
-                        # 등록되어 있는 경우
-                        # ==================================
-                        if drink_name in ITEM_TO_CELL:
+                        drink_cell = ITEM_TO_CELL[drink_name]
 
-                            cell = ITEM_TO_CELL[drink_name]
+                        # li 하나 = 음료 1개
+                        sales_data[drink_cell] = (
+                            sales_data.get(drink_cell, 0) + 1
+                        )
 
-                            # ⭐ li 하나 = 음료 1개
-                            sales_data[cell] = (
-                                sales_data.get(cell, 0) + 1
-                            )
-
-                            logging.info(
-                                f"[음료 추가집계] "
-                                f"{item_name} → li[{li_no}] → "
-                                f"{drink_name} → {cell} +1"
-                            )
-
-                        else:
-
-                            logging.warning(
-                                f"[음료 셀 미등록] "
-                                f"{drink_name}"
-                            )
+                        logging.info(
+                            f"[음료 추가집계] "
+                            f"{item_name} → li[{li_no}] → "
+                            f"{drink_name} → "
+                            f"{drink_cell} +1"
+                        )
 
                     else:
 
-                        # 다른 옵션은 집계하지 않음
-                        logging.debug(
-                            f"[기타 옵션] "
-                            f"{item_name} → li[{li_no}] → "
-                            f"{drink_name}"
+                        logging.warning(
+                            f"[음료 셀 미등록] "
+                            f"{drink_name} "
+                            f"(메뉴: {item_name}, li[{li_no}])"
                         )
 
-            # ==========================================
-            # 다음 주문 상세 행
-            # ==========================================
+            # ====================================================
+            # 다음 주문 상세 tr
+            # 기존 구조 유지
+            # ====================================================
             detail_tr += 2
 
-        # ==============================================
-        # 다음 페이지 이동
-        # ==============================================
+        # ========================================================
+        # 다음 페이지 버튼
+        # ========================================================
+        next_button_xpath = (
+            '//*[@id="root"]/div[1]/div[2]/div[2]/div/div[5]/div/div[2]/span/button'
+        )
+
         try:
 
-            next_btn_xpath = (
-                '//*[@id="root"]/div[1]/div[2]/div[2]/div/div[5]'
-                '/div/div[2]/span/button'
-            )
-
-            next_btn = driver.find_element(
+            next_button = driver.find_element(
                 By.XPATH,
-                next_btn_xpath
+                next_button_xpath
             )
 
-            # ==========================================
-            # 마지막 페이지인지 확인
-            # ==========================================
-            if "disabled" in next_btn.get_attribute("class"):
+            # ----------------------------------------------------
+            # disabled 여부 확인
+            # ----------------------------------------------------
+            button_class = next_button.get_attribute("class") or ""
+
+            if "disabled" in button_class:
 
                 logging.info(
-                    "마지막 페이지 → 종료"
+                    "다음 페이지 버튼이 비활성화됨 → 크롤링 종료"
                 )
 
                 break
 
-            # ==========================================
-            # 다음 버튼으로 이동
-            # ==========================================
+            # ----------------------------------------------------
+            # 다음 페이지 클릭
+            # ----------------------------------------------------
             driver.execute_script(
-                "arguments[0].scrollIntoView({block:'center'});",
-                next_btn
+                "arguments[0].scrollIntoView({block: 'center'});",
+                next_button
             )
 
             time.sleep(0.3)
 
-            driver.execute_script(
-                "arguments[0].click();",
-                next_btn
-            )
-
-            time.sleep(1.5)
+            next_button.click()
 
             logging.info(
                 "다음 페이지 이동"
             )
 
-        except NoSuchElementException:
+            time.sleep(1.5)
+
+            # ----------------------------------------------------
+            # 다음 페이지에서는 detail_tr 초기화
+            # ----------------------------------------------------
+            detail_tr = 2
+
+            fail_count = 0
+
+        except (
+            NoSuchElementException,
+            StaleElementReferenceException,
+            Exception
+        ):
 
             logging.info(
-                "다음 페이지 없음 → 종료"
+                "다음 페이지 버튼을 찾을 수 없음 → 크롤링 종료"
             )
 
             break
 
-    # ==============================================
-    # 최종 집계 결과
-    # ==============================================
-    logging.info(
-        f"최종 집계 데이터: {sales_data}"
-    )
-
+    # ============================================================
+    # 최종 결과 반환
+    # ============================================================
     return sales_data
 ###############################################################################
 # 메인 함수
