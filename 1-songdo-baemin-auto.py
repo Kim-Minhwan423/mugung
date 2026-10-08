@@ -538,14 +538,166 @@ def login_and_close_popup(driver, wait, username, password):
             logging.warning(f"팝업 닫기 실패: {e}")
 
 def navigate_to_order_history(driver, wait):
-    menu_button_selector = "#root > div.Frame.medium > div.Container_c_qx9u_1utdzds5.MobileHeader-module__Zr4m > div > div > div:nth-child(1) > button"
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, menu_button_selector)))
-    driver.find_element(By.CSS_SELECTOR, menu_button_selector).click()
+    """
+    배민 주문내역 페이지로 이동
 
-    time.sleep(3)
-    order_history_selector = "#root > div.Frame.medium > div.frame-container.lnb-open > div.frame-aside > div > nav > div.LNBList-module__DDx5.LNB-module__whjk > div.Container_c_qx9u_1utdzds5 > a:nth-child(18) > button"
-    wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, order_history_selector)))
-    driver.find_element(By.CSS_SELECTOR, order_history_selector).click()
+    - 로그인 직후 남아있는 팝업/backdrop 처리
+    - 메뉴 버튼 클릭
+    - 주문내역 메뉴 클릭
+    """
+
+    # ============================================================
+    # 1. 로그인 직후 팝업 backdrop이 완전히 사라질 때까지 대기
+    # ============================================================
+    try:
+        WebDriverWait(driver, 10).until(
+            EC.invisibility_of_element_located(
+                (By.CSS_SELECTOR, "div[data-testid='backdrop']")
+            )
+        )
+        logging.info("팝업 backdrop 사라짐 확인")
+    except TimeoutException:
+        logging.info("backdrop이 아직 존재하지만 계속 진행")
+
+        # 혹시 남아있는 backdrop이 있다면 ESC로 닫기 시도
+        try:
+            driver.execute_script("""
+                document.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'Escape',
+                        code: 'Escape',
+                        keyCode: 27,
+                        which: 27,
+                        bubbles: true
+                    })
+                );
+            """)
+            time.sleep(1)
+        except Exception:
+            pass
+
+    # ============================================================
+    # 2. 메뉴 버튼
+    # ============================================================
+    menu_button_selector = (
+        "#root > div > div.Container_c_qx9u_1utdzds5."
+        "MobileHeader-module__Zr4m > div > div > div:nth-child(1) "
+        "> button > span > span > svg"
+    )
+
+    try:
+        # 메뉴 버튼이 존재할 때까지 대기
+        menu_button = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, menu_button_selector)
+            )
+        )
+
+        # backdrop이 완전히 없어졌는지 한 번 더 확인
+        try:
+            WebDriverWait(driver, 5).until(
+                EC.invisibility_of_element_located(
+                    (By.CSS_SELECTOR, "div[data-testid='backdrop']")
+                )
+            )
+        except TimeoutException:
+            logging.info("backdrop 대기 시간 초과 → JS 클릭으로 진행")
+
+        # 화면 가운데로 이동
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});",
+            menu_button
+        )
+
+        time.sleep(0.5)
+
+        # 일반 클릭 시도
+        try:
+            menu_button.click()
+            logging.info("메뉴 버튼 클릭 성공")
+
+        except Exception as e:
+            logging.info(
+                f"메뉴 버튼 일반 클릭 실패 → JavaScript 클릭 시도: {e}"
+            )
+
+            # JS 클릭
+            driver.execute_script(
+                "arguments[0].click();",
+                menu_button
+            )
+
+            logging.info("메뉴 버튼 JavaScript 클릭 성공")
+
+    except Exception as e:
+        logging.error(f"메뉴 버튼 클릭 실패: {e}")
+        raise
+
+    # ============================================================
+    # 3. 주문내역 메뉴 클릭
+    # ============================================================
+    time.sleep(1)
+
+    order_history_selector = (
+        "#root > div > div.frame-container.lnb-open "
+        "> div.frame-aside > div > nav "
+        "> div.LNBList-module__DDx5.LNB-module__whjk "
+        "> div.Container_c_qx9u_1utdzds5 > a:nth-child(18) > button"
+    )
+
+    try:
+        order_history_button = WebDriverWait(driver, 15).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, order_history_selector)
+            )
+        )
+
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block:'center'});",
+            order_history_button
+        )
+
+        time.sleep(0.3)
+
+        try:
+            order_history_button.click()
+            logging.info("주문내역 메뉴 클릭 성공")
+
+        except Exception as e:
+            logging.info(
+                f"주문내역 일반 클릭 실패 → JavaScript 클릭 시도: {e}"
+            )
+
+            driver.execute_script(
+                "arguments[0].click();",
+                order_history_button
+            )
+
+            logging.info("주문내역 JavaScript 클릭 성공")
+
+    except Exception as e:
+        logging.error(f"주문내역 메뉴 클릭 실패: {e}")
+        raise
+
+    # ============================================================
+    # 4. 주문내역 페이지 로딩 대기
+    # ============================================================
+    try:
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    "div.OrderHistoryPage-module__R0bB"
+                )
+            )
+        )
+
+        logging.info("주문내역 페이지 진입 확인")
+
+    except TimeoutException:
+        logging.warning(
+            "주문내역 페이지 로딩 확인 실패"
+        )
     
 def set_daily_filter(driver, wait):
     import logging
