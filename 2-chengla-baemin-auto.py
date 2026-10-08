@@ -698,7 +698,42 @@ def navigate_to_order_history(driver, wait):
         logging.warning(
             "주문내역 페이지 로딩 확인 실패"
         )
+def set_daily_filter(driver, wait):
+    import logging
+    import time
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
 
+    logging.info("날짜 필터 설정 시작")
+    
+    try:
+        # 필터 버튼 클릭
+        filter_button_selector = "#root > div.Frame.medium > div.frame-container > div.frame-body > div.OrderHistoryPage-module__R0bB > div.FilterContainer-module___Rxt > button.FilterContainer-module__vSPY.FilterContainer-module__vOLM"
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, filter_button_selector)))
+        driver.find_element(By.CSS_SELECTOR, filter_button_selector).click()
+        time.sleep(1)
+
+        # "일・주" 라벨 클릭
+        daily_filter_xpath = '//label[.//span[text()="일・주"]]'
+        element = wait.until(EC.presence_of_element_located((By.XPATH, daily_filter_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", element)
+        time.sleep(0.5)
+
+        # '적용' 버튼 클릭
+        apply_button_xpath = '//button[.//span[text()="적용"]]'
+        apply_button = wait.until(EC.element_to_be_clickable((By.XPATH, apply_button_xpath)))
+        driver.execute_script("arguments[0].scrollIntoView(true);", apply_button)
+        time.sleep(0.3)
+        driver.execute_script("arguments[0].click();", apply_button)
+    
+        time.sleep(0.3)
+        logging.info("날짜 필터 '일・주' 적용 완료")
+    except Exception as e:
+        logging.warning(f"[set_daily_filter] 날짜 필터 적용 중 오류 발생: {e}")
+        raise
+                
 def extract_order_summary(driver, wait):
     """
     주문내역 상단의 총 결제금액 텍스트(예: '126,000')를 읽어옵니다.
