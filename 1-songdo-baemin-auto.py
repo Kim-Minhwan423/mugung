@@ -106,7 +106,7 @@ def safe_click(driver, element):
 # ======================================
 def close_popup_if_exists(driver):
     try:
-        backdrop = driver.find_element(By.CSS_SELECTOR, '#\:r3c\: > div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button')
+        backdrop = driver.find_element(By.CSS_SELECTOR, 'Dialog_b_c9kn_3pnjmu3')
         safe_click(driver, backdrop)
         time.sleep(0.5)
         logging.info("팝업 닫기 성공")
@@ -519,11 +519,7 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     popup_close_selectors = [
         (
-            "div.OverlayHeader_b_r4ax_5xyph31."
-            "c_qx9u_13c33de0."
-            "c_qx9u_13ysz3p2."
-            "c_qx9u_13ysz3p0 "
-            "div:nth-child(1) > button"
+            "#\:r3c\: > div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button"
         )
     ]
 
