@@ -1159,7 +1159,7 @@ def extract_sales_details(driver, wait):
         # 다음 페이지 버튼
         # ========================================================
         next_button_xpath = (
-            '//*[@id="root"]/div[1]/div[2]/div[2]/div/div[5]/div/div[2]/span/button/span/svg'
+            '//*[@id="root"]/div[1]/div[2]/div[2]/div/div[5]/div/div[2]/span/button/'
         )
 
         try:
