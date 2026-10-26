@@ -1163,10 +1163,17 @@ def extract_sales_details(driver, wait):
         )
 
         try:
-
             next_button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, next_button_selector)
+                )
+            )
+
+            next_button.click()
+            print("✅ 다음 버튼 클릭 성공")
+
+        except Exception as e:
+            print(f"❌ 다음 버튼 클릭 실패: {type(e).__name__}: {e}")
                     
             # ----------------------------------------------------
             # disabled 여부 확인
