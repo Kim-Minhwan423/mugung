@@ -1144,16 +1144,22 @@ def extract_sales_details(driver, wait):
         # ========================================================
         # 다음 페이지 버튼
         # ========================================================
-        next_button_xpath = (
-            '//*[@id="root"]/div[1]/div[2]/div[2]/div/div[5]/div/div[2]/span/button'
+        next_button_selector = (
+            '#root > div.Frame.medium > div.frame-container > div.frame-body > div > div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.Contents-module__D_9P > div > div:nth-child(3) > span > button'
         )
 
         try:
-
-            next_button = driver.find_element(
-                By.XPATH,
-                next_button_xpath
+            next_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, next_button_selector)
+                )
             )
+
+            next_button.click()
+            print("✅ 다음 버튼 클릭 성공")
+
+        except Exception as e:
+            print(f"❌ 다음 버튼 클릭 실패: {type(e).__name__}: {e}")
 
             # ----------------------------------------------------
             # disabled 여부 확인
