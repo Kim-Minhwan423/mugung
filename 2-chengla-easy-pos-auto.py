@@ -560,7 +560,7 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 30,  # D31: 0-based
+                        'startRowIndex': 32,  # D33: 0-based
                         'endRowIndex': 31,
                         'startColumnIndex': 3,  # D열: 0-based (D=3)
                         'endColumnIndex': 4
@@ -590,7 +590,7 @@ def main():
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 30,  # E31: 0-based
+                        'startRowIndex': 32,  # E33: 0-based
                         'endRowIndex': 31,
                         'startColumnIndex': 4,  # E열
                         'endColumnIndex': 5
@@ -603,7 +603,7 @@ def main():
             traceback.print_exc()
 
         # "청라" 시트의 특정 범위를 먼저 비웁니다.
-        ranges_report_clear = ["E3", "E5", "E6", "D31", "E31"]
+        ranges_report_clear = ["E3", "E5", "E6", "D33", "E33"]
         try:
             sheet_report.batch_clear(ranges_report_clear)
             print("[INFO] '청라' 시트 초기화 완료.")
@@ -613,7 +613,7 @@ def main():
 
         # 숫자 형식 설정을 위한 요청 추가
         number_format_requests = []
-        for cell in ["E3", "E5", "E6", "E31"]:
+        for cell in ["E3", "E5", "E6", "E33"]:
             column_letter = ''.join(filter(str.isalpha, cell))
             row_number = int(''.join(filter(str.isdigit, cell)))
             start_col = ord(column_letter.upper()) - 65
