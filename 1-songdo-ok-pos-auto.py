@@ -158,8 +158,8 @@ def extract_daily_summary(driver, sheet):
         {"range": "E3", "values": [[card]]},          # 카드 (계산값)
         {"range": "E5", "values": [[cash]]},          # 현금
         {"range": "E6", "values": [[cash_receipt]]},  # 현금영수증
-        {"range": "D31", "values": [[values["테이블수"]]]},
-        {"range": "E31", "values": [[total]]},
+        {"range": "D33", "values": [[values["테이블수"]]]},
+        {"range": "E33", "values": [[total]]},
     ])
 
     print("[INFO] 일별종합 데이터 업데이트 완료")
