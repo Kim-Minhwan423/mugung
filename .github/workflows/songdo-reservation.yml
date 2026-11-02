@@ -4,36 +4,25 @@ name: Songdo Reservation
 on:
   repository_dispatch:
     types: [run-songdo-reservation]
-
-  workflow_dispatch:
+  workflow_dispatch:  # ← 수동으로도 실행할 수 있게 추가
 
 jobs:
   run-script:
     runs-on: self-hosted  # 로컬/개인 PC Runner
 
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+        shell: cmd
 
       - name: Run Songdo Reservation Script
+        run: python 1-songdo-reservation.py
+        shell: cmd
         env:
           NAVER_ID: ${{ secrets.NAVER_ID }}
           NAVER_PW: ${{ secrets.NAVER_PW }}
           SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.SERVICE_ACCOUNT_JSON_BASE64 }}
-
-        run: |
-          python 1-songdo-naver-reservation.py
-
+          PYTHONIOENCODING: utf-8
