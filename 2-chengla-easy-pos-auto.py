@@ -448,30 +448,28 @@ def main():
         # ================================================
         # 10. 데이터 추출 및 스프레드시트 업데이트 ("청라" 시트)
         # ================================================
+        
         # '청라' 시트 업데이트를 위한 요청 리스트
         requests = []
 
-        # 카드 매출
+        # 카드 매출 (E3)
         try:
             card_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_2_cell_2_2"
             ).text.strip().replace(",", "")
             card_sales_int = int(card_sales)
+
             requests.append({
                 'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': card_sales_int
-                            }
-                        }]
-                    }],
+                    'rows': [{'values': [{
+                        'userEnteredValue': {'numberValue': card_sales_int}
+                    }]}],
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 2,  # E3: 0-based
+                        'startRowIndex': 2,
                         'endRowIndex': 3,
-                        'startColumnIndex': 4,  # E열: 0-based (E=4)
+                        'startColumnIndex': 4,
                         'endColumnIndex': 5
                     }
                 }
@@ -481,27 +479,26 @@ def main():
             print(f"[ERROR] 카드 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 현금 영수증 매출
+        # 현금 영수증 매출 (E6)
+        cash_receipt_sales_int = 0
+
         try:
             cash_receipt_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_1_cell_1_2"
             ).text.strip().replace(",", "")
             cash_receipt_sales_int = int(cash_receipt_sales)
+
             requests.append({
                 'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': cash_receipt_sales_int
-                            }
-                        }]
-                    }],
+                    'rows': [{'values': [{
+                        'userEnteredValue': {'numberValue': cash_receipt_sales_int}
+                    }]}],
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 5,  # E6: 0-based
+                        'startRowIndex': 5,
                         'endRowIndex': 6,
-                        'startColumnIndex': 4,  # E열
+                        'startColumnIndex': 4,
                         'endColumnIndex': 5
                     }
                 }
@@ -511,28 +508,27 @@ def main():
             print(f"[ERROR] 현금 영수증 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 현금 매출 (총 현금 - 현금 영수증 매출)
+
+        # 현금 매출 (E5 = 총 현금 - 현금 영수증)
         try:
             total_cash_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_body_gridrow_0_cell_0_2"
             ).text.strip().replace(",", "")
             total_cash_sales_value = int(total_cash_sales)
+
             net_cash_sales = total_cash_sales_value - cash_receipt_sales_int
+
             requests.append({
                 'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': net_cash_sales
-                            }
-                        }]
-                    }],
+                    'rows': [{'values': [{
+                        'userEnteredValue': {'numberValue': net_cash_sales}
+                    }]}],
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 4,  # E5: 0-based
+                        'startRowIndex': 4,
                         'endRowIndex': 5,
-                        'startColumnIndex': 4,  # E열
+                        'startColumnIndex': 4,
                         'endColumnIndex': 5
                     }
                 }
@@ -542,27 +538,25 @@ def main():
             print(f"[ERROR] 현금 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 전체 테이블 수
+
+        # 전체 테이블 수 (D33)
         try:
             total_tables = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_1"
             ).text.strip().replace(",", "")
             total_tables_int = int(total_tables)
+
             requests.append({
                 'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': total_tables_int
-                            }
-                        }]
-                    }],
+                    'rows': [{'values': [{
+                        'userEnteredValue': {'numberValue': total_tables_int}
+                    }]}],
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 32,  # D33: 0-based
-                        'endRowIndex': 31,
-                        'startColumnIndex': 3,  # D열: 0-based (D=3)
+                        'startRowIndex': 32,
+                        'endRowIndex': 33,
+                        'startColumnIndex': 3,
                         'endColumnIndex': 4
                     }
                 }
@@ -572,27 +566,25 @@ def main():
             print(f"[ERROR] 전체 테이블 수 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # 전체 매출
+
+        # 전체 매출 (E33)
         try:
             total_sales = driver.find_element(
                 By.CSS_SELECTOR, "#mainframe_childframe_form_divMain_divWork_grdPaymentSale_summ_gridrow_-2_cell_-2_2"
             ).text.strip().replace(",", "")
             total_sales_int = int(total_sales)
+
             requests.append({
                 'updateCells': {
-                    'rows': [{
-                        'values': [{
-                            'userEnteredValue': {
-                                'numberValue': total_sales_int
-                            }
-                        }]
-                    }],
+                    'rows': [{'values': [{
+                        'userEnteredValue': {'numberValue': total_sales_int}
+                    }]}],
                     'fields': 'userEnteredValue',
                     'range': {
                         'sheetId': sheet_report.id,
-                        'startRowIndex': 32,  # E33: 0-based
-                        'endRowIndex': 31,
-                        'startColumnIndex': 4,  # E열
+                        'startRowIndex': 32,
+                        'endRowIndex': 33,
+                        'startColumnIndex': 4,
                         'endColumnIndex': 5
                     }
                 }
@@ -602,8 +594,10 @@ def main():
             print(f"[ERROR] 전체 매출 데이터 수집 실패: {e}")
             traceback.print_exc()
 
-        # "청라" 시트의 특정 범위를 먼저 비웁니다.
+
+        # '청라' 시트의 특정 범위 초기화
         ranges_report_clear = ["E3", "E5", "E6", "D33", "E33"]
+
         try:
             sheet_report.batch_clear(ranges_report_clear)
             print("[INFO] '청라' 시트 초기화 완료.")
@@ -611,11 +605,14 @@ def main():
             print(f"[ERROR] '청라' 시트 초기화 실패: {e}")
             traceback.print_exc()
 
-        # 숫자 형식 설정을 위한 요청 추가
+
+        # 숫자 형식 설정 (천 단위 콤마)
         number_format_requests = []
-        for cell in ["E3", "E5", "E6", "E33"]:
+
+        for cell in ["E3", "E5", "E6", "D33", "E33"]:
             column_letter = ''.join(filter(str.isalpha, cell))
             row_number = int(''.join(filter(str.isdigit, cell)))
+
             start_col = ord(column_letter.upper()) - 65
             end_col = start_col + 1
             start_row = row_number - 1
@@ -642,24 +639,21 @@ def main():
                 }
             })
 
-        # 모든 요청을 하나의 리스트로 합칩니다.
+
+        # 모든 요청 통합
         all_requests = requests + number_format_requests
 
-        # "청라" 시트 배치 업데이트 수행
+        # '청라' 시트 배치 업데이트
         if all_requests:
             try:
                 body = {
                     "requests": all_requests
                 }
                 sheet_report.spreadsheet.batch_update(body)
-                print("[INFO] '청라' 시트 배치 업데이트 및 형식 적용 완료.")
+                print("[INFO] '청라' 시트 배치 업데이트 및 숫자 형식 적용 완료.")
             except Exception as e:
                 print(f"[ERROR] '청라' 시트 배치 업데이트 실패: {e}")
                 traceback.print_exc()
-
-    except Exception as e:
-        print(f"[ERROR] 메인 함수 실행 중 예외 발생: {e}")
-        traceback.print_exc()
 
         # ================================================
         # 비상 대처: 필요한 경우 추가적인 코드 실행
