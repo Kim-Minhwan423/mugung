@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  run-script:
+    runs-on: self-hosted  # 로컬/개인 PC Runner
 
     steps:
       - name: Check out repository code
