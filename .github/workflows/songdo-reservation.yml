@@ -19,7 +19,7 @@ jobs:
         shell: cmd
 
       - name: Run Songdo Reservation Script
-        run: python 1-songdo-reservation.py
+        run: python 1-songdo-naver-reservation.py
         shell: cmd
         env:
           NAVER_ID: ${{ secrets.NAVER_ID }}
