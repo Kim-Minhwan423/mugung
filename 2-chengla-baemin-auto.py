@@ -1145,8 +1145,8 @@ def extract_sales_details(driver, wait):
         # 다음 페이지 버튼
         # ========================================================
         next_button_selector = (
-            '#root > div.Frame.medium > div.frame-container > div.frame-body > div > div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.Contents-module__D_9P > div > div:nth-child(3) > span > button'
-        )
+            '#root > div.Frame.large > div.frame-container.lnb-transitioning > div.frame-body > div > div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.Contents-module__D_9P > div > div:nth-child(3) > span > button'
+        )    
 
         try:
             next_button = WebDriverWait(driver, 5).until(
