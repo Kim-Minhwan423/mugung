@@ -519,7 +519,8 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     popup_close_selectors = [
         (
-            "#\:r4s\: > div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button"
+            "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0) "
+            "div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button"
         )
     ]
 
