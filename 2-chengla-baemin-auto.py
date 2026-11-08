@@ -400,56 +400,6 @@ def login_and_close_popup(driver, wait, username, password):
     time.sleep(5)
 
     # ------------------------------------------------------------------
-    # 4. CAPTCHA 확인
-    #
-    # CAPTCHA는 항상 표시되는 것이 아니므로 무조건 클릭하지 않습니다.
-    # 또한 reCAPTCHA는 iframe 내부에 존재할 수 있습니다.
-    # 자동 우회는 하지 않고, 존재할 경우 사용자가 직접 처리할 수 있도록
-    # 최대 30초 동안 확인합니다.
-    # ------------------------------------------------------------------
-    captcha_found = False
-
-    try:
-        # 현재 문서에서 reCAPTCHA 관련 요소가 있는지 확인
-        captcha_candidates = driver.find_elements(
-            By.CSS_SELECTOR,
-            "#recaptcha-anchor, .g-recaptcha, iframe[src*='recaptcha'], iframe[title*='reCAPTCHA']"
-        )
-
-        visible_captcha = [
-            el for el in captcha_candidates
-            if el.is_displayed()
-        ]
-
-        if visible_captcha:
-            captcha_found = True
-            logging.info("reCAPTCHA가 감지되었습니다. 자동 우회하지 않고 사용자 확인을 기다립니다.")
-
-    except Exception as e:
-        logging.warning(f"CAPTCHA 감지 중 예외: {e}")
-
-    if captcha_found:
-        # 사용자가 CAPTCHA를 직접 처리할 시간을 줌.
-        # 체크박스를 프로그램으로 클릭하지 않음.
-        time.sleep(1)
-
-        try:
-            WebDriverWait(driver, 30).until(
-                lambda d: not any(
-                    el.is_displayed()
-                    for el in d.find_elements(
-                        By.CSS_SELECTOR,
-                        "#recaptcha-anchor, .g-recaptcha, iframe[src*='recaptcha'], iframe[title*='reCAPTCHA']"
-                    )
-                )
-            )
-            logging.info("reCAPTCHA 확인 단계 종료")
-        except TimeoutException:
-            logging.warning("reCAPTCHA가 30초 안에 사라지지 않았습니다. 로그인 버튼을 시도합니다.")
-    else:
-        logging.info("reCAPTCHA가 표시되지 않았습니다. 바로 로그인 진행")
-
-    # ------------------------------------------------------------------
     # 5. 로그인 버튼 탐색
     # ------------------------------------------------------------------
     login_button_selectors = [
