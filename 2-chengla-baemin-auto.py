@@ -1093,6 +1093,7 @@ def extract_sales_details(driver, wait):
             detail_tr += 2
 
 
+
         # ========================================================
         # 다음 페이지 버튼
         # ========================================================
@@ -1104,89 +1105,102 @@ def extract_sales_details(driver, wait):
             'div:nth-child(3) > span > button'
         )
 
+        # ★ 실제 메뉴 추출 코드와 동일한 테이블 경로
+        table_xpath = (
+            '//*[@id="root"]/div[1]/div[2]/div[2]/'
+            'div/div[4]/div/div/table/tbody'
+        )
+
         try:
+            logging.info("다음 페이지 버튼 확인 중...")
+
+            # ----------------------------------------------------
+            # 현재 페이지 테이블 데이터 저장
+            # ----------------------------------------------------
+            old_page_text = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, table_xpath)
+                )
+            ).text.strip()
+
             # ----------------------------------------------------
             # 다음 페이지 버튼 찾기
             # ----------------------------------------------------
-            next_button = WebDriverWait(driver, 5).until(
+            next_button = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located(
                     (By.CSS_SELECTOR, next_button_selector)
                 )
             )
 
             # ----------------------------------------------------
-            # 마지막 페이지 여부 확인
+            # 마지막 페이지 확인
             # ----------------------------------------------------
-            button_class = next_button.get_attribute("class") or ""
+            button_class = (
+                next_button.get_attribute("class") or ""
+            )
+
             disabled = (
-                next_button.get_attribute("disabled") is not None
+                not next_button.is_enabled()
+                or next_button.get_attribute("disabled") is not None
                 or next_button.get_attribute("aria-disabled") == "true"
                 or "disabled" in button_class.lower()
             )
 
             if disabled:
                 logging.info(
-                    "다음 페이지 버튼 비활성화 → 크롤링 종료"
+                    "마지막 페이지 도달 → 크롤링 종료"
                 )
                 break
 
             # ----------------------------------------------------
-            # 현재 페이지 첫 번째 주문 내용 저장
-            # ----------------------------------------------------
-            old_page_text = driver.find_element(
-                By.XPATH,
-                '//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/table/tbody/tr[2]'
-            ).text
-
-            # ----------------------------------------------------
-            # 버튼 클릭
+            # 다음 페이지 버튼 클릭
             # ----------------------------------------------------
             driver.execute_script(
                 "arguments[0].scrollIntoView({block: 'center'});",
                 next_button
             )
 
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, next_button_selector)
-                )
-            )
+            time.sleep(0.3)
 
             next_button.click()
 
             logging.info("다음 페이지 버튼 클릭 성공")
 
             # ----------------------------------------------------
-            # 실제 페이지 변경 대기
+            # 실제 테이블 데이터 변경 대기
             # ----------------------------------------------------
-            WebDriverWait(driver, 10).until(
-                lambda d: d.find_element(
-                    By.XPATH,
-                    '//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/table/tbody/tr[2]'
-                ).text != old_page_text
+            WebDriverWait(driver, 15).until(
+                lambda d: (
+                    bool(d.find_elements(By.XPATH, table_xpath))
+                    and d.find_element(
+                        By.XPATH, table_xpath
+                    ).text.strip() != old_page_text
+                )
             )
 
+            logging.info("다음 페이지 데이터 변경 확인")
+
             # ----------------------------------------------------
-            # 다음 페이지 초기화
+            # 다음 페이지 주문 행 번호 초기화
             # ----------------------------------------------------
             detail_tr = 2
             fail_count = 0
 
             logging.info(
-                "다음 페이지 로딩 완료 → 주문 추출 재시작"
+                "다음 페이지 초기화 완료 → 주문 펼치기 및 메뉴 추출 시작"
             )
 
             time.sleep(0.5)
 
         except TimeoutException:
-            logging.info(
-                "다음 페이지 로딩 시간 초과 또는 페이지 변경 없음 → 종료"
+            logging.error(
+                "다음 페이지 데이터 변경 확인 실패 → 크롤링 종료"
             )
             break
 
         except Exception as e:
             logging.error(
-                f"다음 페이지 이동 중 오류: {type(e).__name__}: {e}"
+                f"다음 페이지 이동 오류: {type(e).__name__}: {e}"
             )
             break
 
