@@ -108,7 +108,7 @@ def close_popup_if_exists(driver):
     try:
         backdrop = driver.find_element(By.CSS_SELECTOR, 'Dialog_b_c9kn_3pnjmu3')
         safe_click(driver, backdrop)
-        time.sleep(0.5)
+        time.sleep(100)
         logging.info("팝업 닫기 성공")
     except NoSuchElementException:
         logging.info("팝업 없음")
