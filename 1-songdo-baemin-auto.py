@@ -1157,12 +1157,6 @@ def extract_sales_details(driver, wait):
 
             time.sleep(1.5)
 
-            # ----------------------------------------------------
-            # 다음 페이지에서는 detail_tr 초기화
-            # ----------------------------------------------------
-            detail_tr = 2
-
-            fail_count = 0
 
         except (
             NoSuchElementException,
