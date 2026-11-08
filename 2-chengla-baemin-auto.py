@@ -851,7 +851,7 @@ def extract_sales_details(driver, wait):
                 toggle_tr = detail_tr - 1
 
                 toggle_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
                     f'table/tbody/tr[{toggle_tr}]/td[1]/div'
                 )     
 
@@ -925,7 +925,7 @@ def extract_sales_details(driver, wait):
                 # 메뉴명 XPath
                 # =================================================
                 menu_name_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
                     f'div[{i}]/span[1]/div/span[1]'
                 )
@@ -934,7 +934,7 @@ def extract_sales_details(driver, wait):
                 # 메뉴 수량 XPath
                 # =================================================
                 qty_xpath = (
-                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
                     f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
                     f'div[{i}]/span[1]/div/span[2]'
                 )
@@ -1026,7 +1026,7 @@ def extract_sales_details(driver, wait):
                 for li_no in range(1, 9):
 
                     drink_xpath = (
-                        f'//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/'
+                        f'//*[@id="root"]/div[1]/div[2]/div[2]/div/div[4]/div/div/'
                         f'table/tbody/tr[{detail_tr}]/td/div/div/section[1]/div[3]/'
                         f'div[{i + 1}]/li[{li_no}]/div/span/div/span[2]/div/span[1]'
                     )
