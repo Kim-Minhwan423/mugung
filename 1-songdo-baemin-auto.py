@@ -397,7 +397,7 @@ def login_and_close_popup(driver, wait, username, password):
     password_element.send_keys(password)
     logging.info("비밀번호 입력 완료")
 
-    time.sleep(500)
+    time.sleep(5)
 
     # ------------------------------------------------------------------
     # 4. CAPTCHA 확인
@@ -519,7 +519,8 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     popup_close_selectors = [
         (
-            "#\:r1r\: > div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0 > div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button"
+            "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30) "
+            "div.OverlayHeader_b_r4ax_5xyph31 > div:nth-child(1) > button"
         )
     ]
 
@@ -1160,7 +1161,7 @@ def extract_sales_details(driver, wait):
         # ========================================================
         next_button_selector = (
             '#root > div.Frame.medium > div.frame-container > div.frame-body > div > div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.Contents-module__D_9P > div > div:nth-child(3) > span > button > span > svg'
-        )
+        )    
 
         try:
             next_button = WebDriverWait(driver, 5).until(
