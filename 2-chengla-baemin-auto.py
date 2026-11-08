@@ -900,9 +900,9 @@ def extract_sales_details(driver, wait):
                 toggle_tr = detail_tr - 1
 
                 toggle_xpath = (
-                    f'//*[@id="root"]/div[1]/div[2]/div[3]/div/div[4]/div/div/'
+                    f'//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/'
                     f'table/tbody/tr[{toggle_tr}]/td[1]/div'
-                )
+                )    
 
                 try:
                     toggle_element = wait.until(
