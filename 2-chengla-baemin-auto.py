@@ -1092,80 +1092,109 @@ def extract_sales_details(driver, wait):
             # ====================================================
             detail_tr += 2
 
+
         # ========================================================
         # 다음 페이지 버튼
         # ========================================================
         next_button_selector = (
-            '#root > div.Frame.medium > div.frame-container > div.frame-body > div > div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.Contents-module__D_9P > div > div:nth-child(3) > span > button > span > svg'
+            '#root > div.Frame.medium > div.frame-container > '
+            'div.frame-body > div > '
+            'div.Flex_c_qx9u_bbdidai.Flex_c_qx9u_bbdidak.'
+            'Contents-module__D_9P > div > '
+            'div:nth-child(3) > span > button'
         )
 
         try:
+            # ----------------------------------------------------
+            # 다음 페이지 버튼 찾기
+            # ----------------------------------------------------
             next_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable(
+                EC.presence_of_element_located(
                     (By.CSS_SELECTOR, next_button_selector)
                 )
             )
 
-            next_button.click()
-            print("✅ 다음 버튼 클릭 성공")
-
-        except Exception as e:
-            print(f"❌ 다음 버튼 클릭 실패: {type(e).__name__}: {e}")
-                    
             # ----------------------------------------------------
-            # disabled 여부 확인
+            # 마지막 페이지 여부 확인
             # ----------------------------------------------------
             button_class = next_button.get_attribute("class") or ""
+            disabled = (
+                next_button.get_attribute("disabled") is not None
+                or next_button.get_attribute("aria-disabled") == "true"
+                or "disabled" in button_class.lower()
+            )
 
-            if "disabled" in button_class:
-
+            if disabled:
                 logging.info(
-                    "다음 페이지 버튼이 비활성화됨 → 크롤링 종료"
+                    "다음 페이지 버튼 비활성화 → 크롤링 종료"
                 )
-
                 break
 
             # ----------------------------------------------------
-            # 다음 페이지 클릭
+            # 현재 페이지 첫 번째 주문 내용 저장
+            # ----------------------------------------------------
+            old_page_text = driver.find_element(
+                By.XPATH,
+                '//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/table/tbody/tr[2]'
+            ).text
+
+            # ----------------------------------------------------
+            # 버튼 클릭
             # ----------------------------------------------------
             driver.execute_script(
                 "arguments[0].scrollIntoView({block: 'center'});",
                 next_button
             )
 
-            time.sleep(0.3)
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, next_button_selector)
+                )
+            )
 
             next_button.click()
 
-            logging.info(
-                "다음 페이지 이동"
-            )
-
-            time.sleep(1.5)
+            logging.info("다음 페이지 버튼 클릭 성공")
 
             # ----------------------------------------------------
-            # 다음 페이지에서는 detail_tr 초기화
+            # 실제 페이지 변경 대기
+            # ----------------------------------------------------
+            WebDriverWait(driver, 10).until(
+                lambda d: d.find_element(
+                    By.XPATH,
+                    '//*[@id="root"]/div[1]/div[3]/div[2]/div/div[4]/div/div/table/tbody/tr[2]'
+                ).text != old_page_text
+            )
+
+            # ----------------------------------------------------
+            # 다음 페이지 초기화
             # ----------------------------------------------------
             detail_tr = 2
-
             fail_count = 0
 
-        except (
-            NoSuchElementException,
-            StaleElementReferenceException,
-            Exception
-        ):
-
             logging.info(
-                "다음 페이지 버튼을 찾을 수 없음 → 크롤링 종료"
+                "다음 페이지 로딩 완료 → 주문 추출 재시작"
             )
 
+            time.sleep(0.5)
+
+        except TimeoutException:
+            logging.info(
+                "다음 페이지 로딩 시간 초과 또는 페이지 변경 없음 → 종료"
+            )
+            break
+
+        except Exception as e:
+            logging.error(
+                f"다음 페이지 이동 중 오류: {type(e).__name__}: {e}"
+            )
             break
 
     # ============================================================
     # 최종 결과 반환
     # ============================================================
     return sales_data
+
 ###############################################################################
 # 메인 함수
 ###############################################################################
