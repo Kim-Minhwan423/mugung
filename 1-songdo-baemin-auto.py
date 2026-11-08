@@ -397,7 +397,7 @@ def login_and_close_popup(driver, wait, username, password):
     password_element.send_keys(password)
     logging.info("비밀번호 입력 완료")
 
-    time.sleep(5)
+    time.sleep(500)
 
     # ------------------------------------------------------------------
     # 4. CAPTCHA 확인
