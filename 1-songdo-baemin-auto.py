@@ -1163,7 +1163,6 @@ def extract_sales_details(driver, wait):
         )
 
         try:
-            time.sleep(300)
             next_button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, next_button_selector)
