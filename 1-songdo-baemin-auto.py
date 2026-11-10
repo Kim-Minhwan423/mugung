@@ -467,18 +467,18 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     # 7. 로그인 후 팝업 닫기
     # ------------------------------------------------------------------
-    popup_close_selectors = [
+    popup_close_selectors_1 = [
         (
             "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30) "
             "div.OverlayHeader_b_r4ax_5xyph31 > div:nth-child(1) > button"
         )
     ]
 
-    for popup_selector in popup_close_selectors:
+    for popup_selector_1 in popup_close_selectors_1:
         try:
             close_btn = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, popup_selector)
+                    (By.CSS_SELECTOR, popup_selector_1)
                 )
             )
             close_btn.click()
@@ -487,6 +487,28 @@ def login_and_close_popup(driver, wait, username, password):
             logging.info("팝업이 없거나 이미 닫힘")
         except Exception as e:
             logging.warning(f"팝업 닫기 실패: {e}")
+
+    popup_close_selectors_2 = [
+        (
+            "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0) "
+            "div.OverlayHeader_b_r4ax_5xyph31.c_qx9u_13c33de0.c_qx9u_13ysz3p2.c_qx9u_13ysz3p0 > div:nth-child(1) > button"
+        ) > 
+    ]
+
+    for popup_selector_2 in popup_close_selectors_2:
+        try:
+            close_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, popup_selector_2)
+                )
+            )
+            close_btn.click()
+            logging.info("팝업 닫기 성공")
+        except TimeoutException:
+            logging.info("팝업이 없거나 이미 닫힘")
+        except Exception as e:
+            logging.warning(f"팝업 닫기 실패: {e}")
+
 
 def navigate_to_order_history(driver, wait):
     """
