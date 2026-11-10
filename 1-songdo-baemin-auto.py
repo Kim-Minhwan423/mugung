@@ -467,6 +467,8 @@ def login_and_close_popup(driver, wait, username, password):
     # ------------------------------------------------------------------
     # 7. 로그인 후 팝업 닫기
     # ------------------------------------------------------------------
+    time.sleep(2)
+
     popup_close_selectors_1 = [
         (
             "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30) "
@@ -488,6 +490,8 @@ def login_and_close_popup(driver, wait, username, password):
         except Exception as e:
             logging.warning(f"팝업 닫기 실패: {e}")
 
+    time.sleep(2)
+
     popup_close_selectors_2 = [
         (
             "div[id^=':r']:has(> div.Container_c_qx9u_1utdzds5.OverlayHeader_b_r4ax_5xyph30.c_qx9u_13c33de0) "
@@ -508,6 +512,8 @@ def login_and_close_popup(driver, wait, username, password):
             logging.info("팝업이 없거나 이미 닫힘")
         except Exception as e:
             logging.warning(f"팝업 닫기 실패: {e}")
+
+    time.sleep(2)
 
 
 def navigate_to_order_history(driver, wait):
